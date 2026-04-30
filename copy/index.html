@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrainHub</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Calibri',Calibri,sans-serif;background:#f0f5fa;color:#0d1a26;font-size:15px;line-height:1.5}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-thumb{background:#a8c4d8;border-radius:4px}::-webkit-scrollbar-track{background:transparent}
+:root{
+  /* brand */
+  --blue:#0080c6;--blue-dk:#006aaa;--blue-lt:rgba(0,128,198,.1);--blue-bd:rgba(0,128,198,.35);
+  --lime:#bed52f;--lime-dk:#a0b520;--lime-lt:rgba(190,213,47,.13);--lime-bd:rgba(190,213,47,.5);
+  /* ui */
+  --ink:#0d1a26;--paper:#f0f5fa;--cream:#e2edf5;--accent:#0080c6;--card:#ffffff;--border:#c8dcea;--muted:#5a7a8f;
+  /* status colours */
+  --green:#1a6b3a;--gbg:rgba(26,107,58,.1);--gbd:rgba(26,107,58,.35);
+  --yellow:#7a5c00;--ybg:rgba(190,180,0,.11);--ybd:rgba(160,150,0,.38);
+  --red:#b81c1c;--rbg:rgba(184,28,28,.09);--rbd:rgba(184,28,28,.3);
+}
+
+/* ── ROLE BAR ── */
+.role-bar{background:#005a8e;padding:.4rem 2rem;display:flex;align-items:center;justify-content:flex-end;gap:.6rem}
+.role-label{font-size:.75rem;color:rgba(255,255,255,.5);letter-spacing:.06em;text-transform:uppercase}
+.role-toggle{display:flex;background:rgba(255,255,255,.12);border-radius:20px;padding:3px;gap:2px}
+.role-btn{border:none;background:transparent;color:rgba(255,255,255,.55);padding:.26rem .8rem;border-radius:16px;font-family:'Calibri',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .2s}
+.role-btn.active{background:var(--lime);color:#0d1a26}
+
+/* ── HEADER ── */
+header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-index:200}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem}
+.logo{font-family:'Calibri',sans-serif;font-weight:700;font-size:1.5rem;color:#fff;letter-spacing:-.01em}
+.logo span{color:var(--lime)}
+.hdr-btn{display:none;align-items:center;gap:.38rem;border:1px solid rgba(255,255,255,.3);color:#fff;padding:.34rem .8rem;border-radius:7px;font-family:'Calibri',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);transition:background .2s}
+.hdr-btn:hover{background:rgba(255,255,255,.22)}
+.hdr-summary{display:flex;align-items:center}
+.sum-main{padding-right:1.5rem;border-right:1px solid rgba(255,255,255,.2)}
+.sum-main-num{font-family:'Calibri',sans-serif;font-weight:700;font-size:2.1rem;line-height:1;color:#fff}
+.sum-main-lbl{font-size:.7rem;color:rgba(255,255,255,.55);letter-spacing:.07em;text-transform:uppercase;margin-top:.05rem}
+.sum-stats{display:flex;gap:1.4rem;padding-left:1.5rem}
+.ss{display:flex;flex-direction:column}
+.ss-num{font-family:'Calibri',sans-serif;font-weight:700;font-size:1.25rem;line-height:1}
+.ss-lbl{font-size:.69rem;color:rgba(255,255,255,.52);letter-spacing:.06em;text-transform:uppercase}
+.ss-num.g{color:#7dffa0}.ss-num.y{color:var(--lime)}.ss-num.r{color:#ff9090}
+
+/* ── TOOLBAR ── */
+.toolbar{background:var(--cream);border-bottom:1px solid var(--border);padding:.7rem 2rem;display:flex;align-items:center;gap:.65rem;flex-wrap:wrap}
+.sw{position:relative;flex:1;min-width:200px}
+.sw svg{position:absolute;left:.65rem;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.si{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:.46rem .7rem .46rem 2.1rem;font-family:'Calibri',sans-serif;font-size:.9rem;background:var(--card);outline:none;transition:border-color .2s;color:var(--ink)}
+.si:focus{border-color:var(--blue)}.si::placeholder{color:#8aaabb}
+.vt{display:flex;background:rgba(0,128,198,.08);border-radius:8px;padding:3px;gap:2px}
+.vtb{border:none;background:transparent;color:var(--muted);padding:.3rem .8rem;border-radius:6px;font-family:'Calibri',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap}
+.vtb.active{background:var(--blue);color:#fff;box-shadow:0 1px 6px rgba(0,128,198,.3)}
+.sf-wrap{display:flex;align-items:center;gap:.45rem}
+.sf-lbl{font-size:.75rem;font-weight:700;color:var(--muted);letter-spacing:.04em;white-space:nowrap}
+.ss-sel{border:1.5px solid var(--border);border-radius:8px;padding:.4rem .7rem;font-family:'Calibri',sans-serif;font-size:.83rem;background:var(--card);color:var(--ink);outline:none;cursor:pointer;min-width:170px}
+.sort-btn{display:flex;align-items:center;gap:.32rem;border:1.5px solid var(--border);border-radius:8px;padding:.4rem .8rem;font-family:'Calibri',sans-serif;font-size:.82rem;font-weight:700;background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;transition:border-color .2s}
+.sort-btn:hover{border-color:var(--blue);color:var(--blue)}
+.dl-btn{display:none;align-items:center;gap:.35rem;border:1.5px solid var(--border);border-radius:8px;padding:.4rem .8rem;font-family:'Calibri',sans-serif;font-size:.82rem;font-weight:700;background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;transition:all .2s;margin-left:auto}
+.dl-btn:hover{border-color:var(--blue);color:var(--blue)}
+
+/* ── MAIN ── */
+.main{padding:1.4rem 2rem 3rem;max-width:1400px;margin:0 auto}
+.rl{font-family:'Calibri',sans-serif;font-weight:700;font-size:.83rem;color:var(--muted);margin-bottom:.85rem;letter-spacing:.04em;text-transform:uppercase}
+
+/* ── PROVIDER GRID (3 cols, max 5 rows) ── */
+.pg{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+.pc{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow:hidden;display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s;animation:fu .35s ease both}
+.pc:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,128,198,.13)}
+@keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.pc-band{height:5px}.band-a{background:var(--green)}.band-c{background:#c8960a}.band-b{background:var(--red)}
+.pc-body{padding:1.05rem 1.15rem;flex:1;display:flex;flex-direction:column;gap:.75rem}
+.phr{display:flex;align-items:flex-start;gap:.55rem}
+.plo{width:34px;height:34px;border-radius:7px;background:var(--cream);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Calibri',sans-serif;font-weight:700;font-size:.7rem;color:var(--muted);flex-shrink:0}
+.pn{font-family:'Calibri',sans-serif;font-weight:700;font-size:.92rem;line-height:1.3}
+.pt{font-size:.73rem;color:var(--muted);margin-top:.08rem}
+.psr{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}
+
+/* status badge */
+.bdg{display:inline-flex;align-items:center;gap:.26rem;font-size:.71rem;font-weight:700;padding:.2rem .6rem;border-radius:20px;letter-spacing:.02em;white-space:nowrap;font-family:'Calibri',sans-serif}
+.bdg::before{content:'';width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.b-a{background:var(--gbg);color:var(--green);border:1px solid var(--gbd)}.b-a::before{background:var(--green)}
+.b-c{background:var(--ybg);color:var(--yellow);border:1px solid var(--ybd)}.b-c::before{background:#c8960a}
+.b-b{background:var(--rbg);color:var(--red);border:1px solid var(--rbd)}.b-b::before{background:var(--red)}
+.b-rf{background:var(--rbg);color:var(--red);border:1px solid var(--rbd)}.b-rf::before{background:var(--red)}
+
+/* clickable status badge for admin */
+.bdg.clickable-status{cursor:pointer;transition:filter .15s}
+.bdg.clickable-status:hover{filter:brightness(.88)}
+
+.pdv{height:1px;background:var(--border)}
+.fl{font-size:.66rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.28rem;font-family:'Calibri',sans-serif}
+.tpills{display:flex;flex-direction:column;gap:.32rem}
+.tp{display:flex;align-items:center;gap:.42rem}
+.tav{width:25px;height:25px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Calibri',sans-serif;font-weight:700;font-size:.6rem;color:#fff;flex-shrink:0}
+.av1{background:var(--accent)}.av2{background:#2456b8}.av3{background:#0d9488}.av4{background:#7c3aed}
+.tn{font-size:.83rem;font-weight:600;line-height:1.2}.tr2{font-size:.7rem;color:var(--muted)}
+.pc-foot{padding:.7rem 1.15rem;border-top:1px solid var(--border);background:var(--cream);display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.vb{background:var(--blue);color:#fff;border:none;border-radius:7px;padding:.38rem .85rem;font-family:'Calibri',sans-serif;font-weight:700;font-size:.79rem;cursor:pointer;transition:background .18s}
+.vb:hover{background:var(--blue-dk)}
+.fpb{display:none;align-items:center;gap:.28rem;border:1.5px solid var(--border);background:transparent;border-radius:7px;padding:.34rem .7rem;font-family:'Calibri',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer;color:var(--muted);transition:all .18s}
+.fpb:hover,.fpb.flagged{border-color:var(--red);color:var(--red)}.fpb.flagged{background:var(--rbg)}
+
+/* ── TRAINER GRID ── */
+.tg{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:1rem}
+.tc2{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow:hidden;animation:fu .35s ease both;transition:transform .2s,box-shadow .2s}
+.tc2:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,128,198,.13)}
+.tc2-inner{padding:1.15rem 1.15rem .85rem}
+.tctop{display:flex;align-items:center;gap:.7rem;margin-bottom:.7rem}
+.tavlg{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Calibri',sans-serif;font-weight:700;font-size:.95rem;color:#fff;flex-shrink:0}
+.tfn{font-family:'Calibri',sans-serif;font-weight:700;font-size:.93rem;line-height:1.2}
+.tsp{font-size:.77rem;color:var(--muted);margin-top:.08rem}
+.tcdv{height:1px;background:var(--border);margin:.7rem 0}
+.tdr{display:flex;align-items:center;gap:.42rem;font-size:.81rem;color:var(--muted);margin-bottom:.28rem}
+.tdr strong{color:var(--ink);font-weight:700}
+.tc2-foot{padding:.6rem 1.15rem;border-top:1px solid var(--border);background:var(--cream);display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.ftb{display:none;align-items:center;gap:.28rem;border:1.5px solid var(--border);background:transparent;border-radius:7px;padding:.32rem .7rem;font-family:'Calibri',sans-serif;font-size:.74rem;font-weight:700;cursor:pointer;color:var(--muted);transition:all .18s}
+.ftb:hover,.ftb.flagged{border-color:var(--red);color:var(--red)}.ftb.flagged{background:var(--rbg)}
+
+/* ── MODAL OVERLAY ── */
+.ov{position:fixed;inset:0;background:rgba(0,64,110,.5);backdrop-filter:blur(3px);z-index:500;display:none;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
+.ov.open{display:flex}
+.pm{background:var(--card);border-radius:16px;width:100%;max-width:900px;max-height:calc(100vh - 4rem);overflow-y:auto;animation:mi .24s ease}
+@keyframes mi{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+/* modal header */
+.mh{background:var(--blue);color:#fff;padding:1.3rem 1.7rem;border-radius:16px 16px 0 0;position:sticky;top:0;z-index:10;display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}
+.mpn{font-family:'Calibri',sans-serif;font-weight:700;font-size:1.2rem;margin-bottom:.35rem}
+.mbd{display:flex;gap:.4rem;flex-wrap:wrap;align-items:center}
+.mc{background:rgba(255,255,255,.15);border:none;color:#fff;width:29px;height:29px;border-radius:50%;font-size:.95rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .18s;flex-shrink:0}
+.mc:hover{background:rgba(255,255,255,.28)}
+
+/* stat bubbles */
+.mst{display:flex;gap:.65rem;padding:1rem 1.7rem;background:var(--cream);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.msb{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.6rem .95rem;display:flex;flex-direction:column;gap:.1rem;min-width:105px}
+.msb.cl{cursor:pointer;transition:border-color .18s,box-shadow .18s,background .18s}
+.msb.cl:hover{border-color:var(--blue);box-shadow:0 3px 12px rgba(0,128,198,.15)}
+/* clickable status bubble special glow based on status */
+.msb.status-approved.cl:hover{border-color:var(--green);box-shadow:0 3px 12px rgba(26,107,58,.15)}
+.msb.status-consideration.cl:hover{border-color:#c8960a;box-shadow:0 3px 12px rgba(200,150,10,.15)}
+.msb.status-blacklisted.cl:hover{border-color:var(--red);box-shadow:0 3px 12px rgba(184,28,28,.15)}
+.msb-n{font-family:'Calibri',sans-serif;font-weight:700;font-size:1.35rem;line-height:1}
+.msb-l{font-size:.68rem;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-family:'Calibri',sans-serif}
+.msb-h{font-size:.66rem;color:var(--blue);margin-top:.06rem}
+.msb-h.green{color:var(--green)}.msb-h.amber{color:#c8960a}.msb-h.red2{color:var(--red)}
+
+/* modal actions */
+.ma{display:flex;gap:.5rem;padding:.8rem 1.7rem;border-bottom:1px solid var(--border);flex-wrap:wrap;align-items:center}
+.mab{display:flex;align-items:center;gap:.32rem;border:1.5px solid var(--border);background:transparent;border-radius:7px;padding:.35rem .8rem;font-family:'Calibri',sans-serif;font-size:.79rem;font-weight:700;cursor:pointer;transition:all .18s}
+.mab.rd{color:var(--red);border-color:var(--rbd)}.mab.rd:hover{background:var(--rbg)}
+.mar{margin-left:auto;display:flex;align-items:center;gap:.45rem}
+.ysel{border:1.5px solid var(--border);border-radius:7px;padding:.33rem .6rem;font-family:'Calibri',sans-serif;font-size:.79rem;background:var(--card);color:var(--ink);outline:none;cursor:pointer}
+
+/* modal body / history */
+.mb2{padding:1.3rem 1.7rem}
+.mst2{font-family:'Calibri',sans-serif;font-weight:700;font-size:.93rem;margin-bottom:.95rem}
+.yb{margin-bottom:1.5rem}
+.yh{font-family:'Calibri',sans-serif;font-weight:700;font-size:1.4rem;margin-bottom:.45rem}
+.yr{height:2px;background:var(--border);margin-bottom:.8rem;position:relative}
+.yr::before{content:'';position:absolute;left:0;top:0;height:2px;width:34px;background:var(--accent)}
+.hr2{background:var(--cream);border:1px solid var(--border);border-radius:9px;padding:.7rem .95rem;margin-bottom:.45rem;display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
+.ht{font-weight:700;font-size:.86rem;flex:1;min-width:140px;font-family:'Calibri',sans-serif}
+.hch{display:flex;gap:.7rem;align-items:center}
+.hc{font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:.26rem;font-family:'Calibri',sans-serif}
+.hc strong{color:var(--ink)}
+/* pax button in history row — admin clickable */
+.pax-btn{display:inline-flex;align-items:center;gap:.28rem;font-size:.75rem;font-family:'Calibri',sans-serif;font-weight:700;color:var(--muted);background:transparent;border:none;cursor:default;padding:0}
+.pax-btn.admin-pax{color:var(--accent);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.pax-btn.admin-pax:hover{color:var(--red)}
+
+/* ── PARTICIPANTS MODAL ── */
+.pov{position:fixed;inset:0;background:rgba(0,64,110,.55);backdrop-filter:blur(4px);z-index:600;display:none;align-items:center;justify-content:center;padding:1.5rem}
+.pov.open{display:flex}
+.pom{background:var(--card);border-radius:14px;width:100%;max-width:800px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;animation:mi .22s ease}
+.poh{background:var(--blue);color:#fff;padding:.95rem 1.45rem;display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0}
+.poh h3{font-family:'Calibri',sans-serif;font-weight:700;font-size:.96rem}
+.poh p{font-size:.75rem;color:rgba(255,255,255,.55);margin-top:.07rem}
+.poc{background:rgba(255,255,255,.15);border:none;color:#fff;width:27px;height:27px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.poc:hover{background:rgba(255,255,255,.28)}
+.pob{overflow-y:auto;flex:1;padding:.85rem 1.45rem}
+.ptbl{width:100%;border-collapse:collapse;font-size:.82rem}
+.ptbl th{background:var(--cream);font-family:'Calibri',sans-serif;font-weight:700;font-size:.68rem;letter-spacing:.07em;text-transform:uppercase;padding:.48rem .65rem;text-align:left;border-bottom:2px solid var(--border);position:sticky;top:0}
+.ptbl td{padding:.48rem .65rem;border-bottom:1px solid var(--border);vertical-align:middle;font-family:'Calibri',sans-serif}
+.ptbl tr:last-child td{border-bottom:none}.ptbl tr:hover td{background:var(--cream)}
+.dtag{background:var(--cream);border:1px solid var(--border);border-radius:4px;padding:.1rem .4rem;font-size:.69rem;color:var(--muted);font-family:'Calibri',sans-serif}
+.pof{padding:.75rem 1.45rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--cream)}
+.pi{font-size:.78rem;color:var(--muted);font-family:'Calibri',sans-serif}
+.pbs{display:flex;gap:.32rem}
+.pb{width:29px;height:29px;border:1.5px solid var(--border);border-radius:6px;background:var(--card);font-family:'Calibri',sans-serif;font-weight:700;font-size:.77rem;cursor:pointer;transition:all .15s;color:var(--ink);display:flex;align-items:center;justify-content:center}
+.pb:hover{border-color:var(--blue);color:var(--blue)}.pb.active{background:var(--blue);border-color:var(--blue);color:#fff}.pb:disabled{opacity:.3;cursor:default;pointer-events:none}
+
+/* ── STATUS UPDATE MODAL ── */
+.stov{position:fixed;inset:0;background:rgba(0,64,110,.6);backdrop-filter:blur(4px);z-index:700;display:none;align-items:center;justify-content:center;padding:1.5rem}
+.stov.open{display:flex}
+.stm{background:var(--card);border-radius:14px;width:100%;max-width:480px;animation:mi .22s ease;overflow:hidden}
+.stm-hdr{background:var(--blue);color:#fff;padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between}
+.stm-hdr h3{font-family:'Calibri',sans-serif;font-weight:700;font-size:.96rem}
+.stm-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:27px;height:27px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem}
+.stm-close:hover{background:rgba(255,255,255,.28)}
+.stm-body{padding:1.4rem 1.5rem}
+.stm-pname{font-family:'Calibri',sans-serif;font-weight:700;font-size:.9rem;color:var(--ink);margin-bottom:1.1rem;padding:.6rem .85rem;background:var(--cream);border-radius:8px;border-left:3px solid var(--blue)}
+.stm-label{font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:.45rem;font-family:'Calibri',sans-serif}
+.stm-options{display:flex;flex-direction:column;gap:.5rem;margin-bottom:1.1rem}
+.sto{display:flex;align-items:center;gap:.7rem;padding:.7rem .9rem;border:1.5px solid var(--border);border-radius:9px;cursor:pointer;transition:all .18s;background:var(--card)}
+.sto:hover{border-color:#aaa}
+.sto.sel-a{border-color:var(--green);background:var(--gbg)}
+.sto.sel-c{border-color:#c8960a;background:var(--ybg)}
+.sto.sel-b{border-color:var(--red);background:var(--rbg)}
+.sto-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;transition:all .18s}
+.sto.sel-a .sto-dot{background:var(--green);border-color:var(--green)}
+.sto.sel-c .sto-dot{background:#c8960a;border-color:#c8960a}
+.sto.sel-b .sto-dot{background:var(--red);border-color:var(--red)}
+.sto-label{font-family:'Calibri',sans-serif;font-weight:700;font-size:.87rem}
+.sto-desc{font-size:.74rem;color:var(--muted);margin-top:.05rem;font-family:'Calibri',sans-serif}
+/* blacklist reason area */
+.bl-reason-wrap{display:none;margin-bottom:1.1rem}
+.bl-reason-wrap.show{display:block}
+.bl-reason-label{font-size:.72rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--red);margin-bottom:.4rem;font-family:'Calibri',sans-serif;display:flex;align-items:center;gap:.3rem}
+.bl-reason-ta{width:100%;border:1.5px solid var(--rbd);border-radius:8px;padding:.65rem .85rem;font-family:'Calibri',sans-serif;font-size:.88rem;color:var(--ink);background:var(--card);outline:none;resize:vertical;min-height:90px;transition:border-color .2s;line-height:1.5}
+.bl-reason-ta:focus{border-color:var(--red)}
+.bl-reason-ta::placeholder{color:#b0a898;font-style:italic}
+.stm-actions{display:flex;gap:.6rem}
+.stm-confirm{flex:1;background:var(--blue);color:#fff;border:none;border-radius:8px;padding:.58rem;font-family:'Calibri',sans-serif;font-weight:700;font-size:.88rem;cursor:pointer;transition:opacity .2s}
+.stm-confirm:hover{opacity:.88}
+.stm-cancel{flex:1;background:var(--cream);color:var(--ink);border:1.5px solid var(--border);border-radius:8px;padding:.58rem;font-family:'Calibri',sans-serif;font-size:.88rem;cursor:pointer}
+.stm-cancel:hover{background:var(--border)}
+
+/* blacklist reason VIEW banner (for non-admin / read-only) */
+.bl-banner{display:none;margin:.9rem 1.7rem 0;padding:.75rem 1rem;background:var(--rbg);border:1px solid var(--rbd);border-radius:9px;border-left:4px solid var(--red)}
+.bl-banner.show{display:block}
+.bl-banner-title{font-family:'Calibri',sans-serif;font-weight:700;font-size:.8rem;color:var(--red);margin-bottom:.25rem;display:flex;align-items:center;gap:.3rem}
+.bl-banner-reason{font-size:.85rem;color:var(--ink);font-family:'Calibri',sans-serif;line-height:1.5}
+
+/* ── UPLOAD MODAL ── */
+.uov{position:fixed;inset:0;background:rgba(0,64,110,.6);backdrop-filter:blur(4px);z-index:800;display:none;align-items:center;justify-content:center;padding:1.5rem}
+.uov.open{display:flex}
+.uom{background:var(--card);border-radius:14px;width:100%;max-width:450px;animation:mi .22s ease}
+.uoh{background:var(--blue);padding:1rem 1.45rem;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between}
+.uoh h3{font-family:'Calibri',sans-serif;font-weight:700;font-size:.93rem;color:#fff}
+.uoc{background:rgba(255,255,255,.15);border:none;width:25px;height:25px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.88rem;color:#fff}
+.uoc:hover{background:rgba(255,255,255,.28)}
+.uob{padding:1.3rem}
+.dz{border:2px dashed var(--border);border-radius:10px;padding:2rem 1.4rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--card)}
+.dz:hover,.dz.dg{border-color:var(--blue);background:var(--blue-lt)}
+.di{font-size:1.9rem;margin-bottom:.55rem}
+.dt{font-family:'Calibri',sans-serif;font-weight:700;font-size:.9rem;margin-bottom:.22rem}
+.ds{font-size:.77rem;color:var(--muted);font-family:'Calibri',sans-serif}
+.ds span{color:var(--blue);font-weight:700;cursor:pointer}
+.fi2{display:none}
+.finfo{display:none;margin-top:.65rem;padding:.5rem .75rem;background:var(--gbg);border:1px solid var(--gbd);border-radius:7px;font-size:.79rem;color:var(--green);align-items:center;gap:.38rem;font-family:'Calibri',sans-serif}
+.uprog{display:none;margin-top:.85rem}
+.pw{height:5px;background:var(--cream);border-radius:4px;overflow:hidden;margin-bottom:.38rem}
+.pf{height:100%;background:var(--blue);border-radius:4px;width:0;transition:width .22s}
+.pl{font-size:.75rem;color:var(--muted);text-align:center;font-family:'Calibri',sans-serif}
+.ua{display:flex;gap:.5rem;margin-top:1rem}
+.uc{flex:1;background:var(--blue);color:#fff;border:none;border-radius:8px;padding:.55rem;font-family:'Calibri',sans-serif;font-weight:700;font-size:.87rem;cursor:pointer;transition:opacity .2s}
+.uc:hover{opacity:.88}
+.ux{flex:1;background:var(--cream);color:var(--ink);border:1.5px solid var(--border);border-radius:8px;padding:.55rem;font-family:'Calibri',sans-serif;font-size:.87rem;cursor:pointer}
+.ux:hover{background:var(--border)}
+
+/* toast */
+.toast{position:fixed;bottom:1.4rem;left:50%;transform:translateX(-50%) translateY(14px);background:var(--blue-dk);color:#fff;padding:.55rem 1.2rem;border-radius:8px;font-size:.81rem;font-weight:700;z-index:9999;opacity:0;transition:all .26s;pointer-events:none;white-space:nowrap;font-family:'Calibri',sans-serif}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.hidden{display:none!important}
+
+@media(max-width:900px){.pg{grid-template-columns:repeat(2,1fr)}.main{padding:1.2rem 1rem 2.5rem}.toolbar{padding:.62rem 1rem}header{padding:.85rem 1rem .8rem}}
+@media(max-width:560px){.pg{grid-template-columns:1fr}.tg{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- ROLE BAR -->
+<div class="role-bar">
+  <span class="role-label">View as:</span>
+  <div class="role-toggle">
+    <button class="role-btn active" onclick="setRole('user',this)">User</button>
+    <button class="role-btn" onclick="setRole('admin',this)">Admin</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="hdr-top">
+    <div class="logo">Train<span>Hub</span></div>
+    <div>
+      <button class="hdr-btn" id="upHdrBtn" onclick="openUpload()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        Upload Excel
+      </button>
+    </div>
+  </div>
+  <div class="hdr-summary">
+    <div class="sum-main">
+      <div class="sum-main-num" id="cntTotal">6</div>
+      <div class="sum-main-lbl">Training Providers</div>
+    </div>
+    <div class="sum-stats">
+      <div class="ss"><div class="ss-num g" id="cntA">3</div><div class="ss-lbl">Approved</div></div>
+      <div class="ss"><div class="ss-num y" id="cntC">2</div><div class="ss-lbl">In Consideration</div></div>
+      <div class="ss"><div class="ss-num r" id="cntB">1</div><div class="ss-lbl">Blacklisted</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="sw">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input class="si" id="si" type="text" placeholder="Search Training Provider, Trainers, or Course Title…" oninput="go()">
+  </div>
+  <div class="vt">
+    <button class="vtb active" onclick="setView('prov',this)">Training Providers</button>
+    <button class="vtb" onclick="setView('train',this)">Trainers / Speakers</button>
+  </div>
+  <div class="sf-wrap">
+    <span class="sf-lbl">Status:</span>
+    <select class="ss-sel" id="sfSel" onchange="go()">
+      <option value="all">All</option>
+      <option value="approved">Approved</option>
+      <option value="consideration">In Consideration</option>
+      <option value="blacklisted">Blacklisted</option>
+    </select>
+  </div>
+  <button class="sort-btn" onclick="toggleSort()">
+    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+    <span id="sortLbl">A → Z</span>
+  </button>
+  <button class="dl-btn" id="dlBtn" onclick="simDl()">
+    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+    Download
+  </button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="rl" id="rl">Showing 6 Training Providers</div>
+  <div class="pg" id="provGrid"></div>
+  <div class="tg hidden" id="trainGrid"></div>
+</div>
+
+<!-- ════════════════════════════════════
+     PROVIDER MODAL
+════════════════════════════════════ -->
+<div class="ov" id="provOv" onclick="if(event.target===this)closeP()">
+  <div class="pm">
+
+    <div class="mh">
+      <div><div class="mpn" id="mN">—</div><div class="mbd" id="mBd"></div></div>
+      <button class="mc" onclick="closeP()">✕</button>
+    </div>
+
+    <!-- Blacklist reason banner (visible to all when blacklisted) -->
+    <div class="bl-banner" id="blBanner">
+      <div class="bl-banner-title">🚫 Blacklisted — Reason on Record</div>
+      <div class="bl-banner-reason" id="blBannerText"></div>
+    </div>
+
+    <!-- Stat bubbles -->
+    <div class="mst" id="mStatRow">
+      <!-- Status bubble — admin clickable -->
+      <div class="msb" id="mStBub">
+        <div class="msb-n" id="mSt">—</div>
+        <div class="msb-l">Status</div>
+        <div class="msb-h hidden" id="mStHint"></div>
+      </div>
+      <div class="msb"><div class="msb-n" id="mYr">—</div><div class="msb-l">Year Started</div></div>
+      <div class="msb"><div class="msb-n" id="mCo">—</div><div class="msb-l">Total Courses</div></div>
+      <div class="msb" id="mPaBub">
+        <div class="msb-n" id="mPa">—</div>
+        <div class="msb-l">Total Participants</div>
+        <div class="msb-h hidden" id="mPaHint">Click to view →</div>
+      </div>
+    </div>
+
+    <!-- Actions row -->
+    <div class="ma">
+      <div class="mar">
+        <span style="font-size:.75rem;color:var(--muted);font-family:'Calibri',sans-serif">Filter year:</span>
+        <select class="ysel" id="ySel" onchange="renderHist()"><option value="all">All Years</option></select>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="mb2">
+      <div class="mst2">📋 Course History</div>
+      <div id="histC"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     PARTICIPANTS MODAL
+════════════════════════════════════ -->
+<div class="pov" id="partOv" onclick="if(event.target===this)closePart()">
+  <div class="pom">
+    <div class="poh">
+      <div><h3 id="partT">Participants</h3><p id="partS"></p></div>
+      <button class="poc" onclick="closePart()">✕</button>
+    </div>
+    <div class="pob">
+      <table class="ptbl">
+        <thead><tr><th>#</th><th>Name</th><th>Department</th><th>Venue</th><th>Assigned Trainer</th></tr></thead>
+        <tbody id="partBd"></tbody>
+      </table>
+    </div>
+    <div class="pof"><span class="pi" id="pgI"></span><div class="pbs" id="pgBs"></div></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     STATUS UPDATE MODAL (admin only)
+════════════════════════════════════ -->
+<div class="stov" id="stOv" onclick="if(event.target===this)closeStModal()">
+  <div class="stm">
+    <div class="stm-hdr">
+      <h3>Update Provider Status</h3>
+      <button class="stm-close" onclick="closeStModal()">✕</button>
+    </div>
+    <div class="stm-body">
+      <div class="stm-pname" id="stmProvName">—</div>
+      <div class="stm-label">Select new status</div>
+      <div class="stm-options">
+        <div class="sto" id="sto-a" onclick="selectStatus('Approved')">
+          <div class="sto-dot" id="dot-a"></div>
+          <div>
+            <div class="sto-label" style="color:var(--green)">Approved</div>
+            <div class="sto-desc">Provider meets all requirements and is cleared to deliver training.</div>
+          </div>
+        </div>
+        <div class="sto" id="sto-c" onclick="selectStatus('In Consideration')">
+          <div class="sto-dot" id="dot-c"></div>
+          <div>
+            <div class="sto-label" style="color:var(--yellow)">In Consideration</div>
+            <div class="sto-desc">Provider is under review. Default status for new registrations.</div>
+          </div>
+        </div>
+        <div class="sto" id="sto-b" onclick="selectStatus('Blacklisted')">
+          <div class="sto-dot" id="dot-b"></div>
+          <div>
+            <div class="sto-label" style="color:var(--red)">Blacklisted</div>
+            <div class="sto-desc">Provider is barred from all training activities. Reason required.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Blacklist reason field — only shown when Blacklisted selected -->
+      <div class="bl-reason-wrap" id="blReasonWrap">
+        <div class="bl-reason-label">Reason for Blacklisting <span style="color:var(--red)">*</span></div>
+        <textarea class="bl-reason-ta" id="blReasonTa" placeholder="Describe why this provider is being blacklisted (e.g. misconduct, fraud, repeated complaints)…" rows="4"></textarea>
+      </div>
+
+      <div class="stm-actions">
+        <button class="stm-cancel" onclick="closeStModal()">Cancel</button>
+        <button class="stm-confirm" onclick="confirmStatus()">Confirm Status</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     UPLOAD MODAL
+════════════════════════════════════ -->
+<div class="uov" id="upOv" onclick="if(event.target===this)closeUp()">
+  <div class="uom">
+    <div class="uoh"><h3>Upload Excel Database</h3><button class="uoc" onclick="closeUp()">✕</button></div>
+    <div class="uob">
+      <div class="dz" id="dz" onclick="document.getElementById('fi2').click()" ondragover="dgo(event)" ondragleave="dgl()" ondrop="ddr(event)">
+        <div class="di">📊</div>
+        <div class="dt">Drop your Excel file here</div>
+        <div class="ds">or <span onclick="event.stopPropagation();document.getElementById('fi2').click()">browse to upload</span></div>
+        <div style="margin-top:.45rem;font-size:.71rem;color:var(--muted);font-family:'Calibri',sans-serif">.xlsx · .xls · .csv</div>
+      </div>
+      <input type="file" id="fi2" class="fi2" accept=".xlsx,.xls,.csv" onchange="fsel(event)">
+      <div class="finfo" id="finfo"><span>📄</span><span id="fn"></span></div>
+      <div class="uprog" id="uprog"><div class="pw"><div class="pf" id="pf"></div></div><div class="pl" id="plbl">Uploading…</div></div>
+      <div class="ua"><button class="ux" onclick="closeUp()">Cancel</button><button class="uc" onclick="doUp()">Update Database</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════ DATA ═══════════════ */
+const D = [
+  { id:0, name:"ProManage Academy Sdn Bhd", abbr:"PM", type:"Accredited Training Organisation",
+    status:"Approved", blacklistReason:"", ys:2016, tc:12, tp:348, fl:false,
+    trainers:[
+      {n:"Ahmad Malik",  r:"PMP Certified · 14 yrs", av:"av1", in:"AM", rf:false},
+      {n:"Siti Yusof",   r:"Agile Coach",             av:"av2", in:"SY", rf:false}
+    ],
+    hist:{
+      2016:["PMP Prep Intensive","Project Lifecycle Fundamentals"],
+      2018:["Agile & Scrum Workshop","Risk Management Essentials"],
+      2021:["PMP Prep (Batch 7)","PMO Setup Masterclass"],
+      2023:["Certified PMP Prep","Advanced Stakeholder Management"],
+      2024:["PMP Prep (Batch 12)","Change Management in Projects"]
+    }
+  },
+  { id:1, name:"TechCraft Institute", abbr:"TC", type:"Technology Training Provider",
+    status:"In Consideration", blacklistReason:"", ys:2020, tc:5, tp:112, fl:false,
+    trainers:[
+      {n:"Ravi Kumar", r:"Senior Full-Stack Developer", av:"av2", in:"RK", rf:false}
+    ],
+    hist:{
+      2020:["Python for Beginners","Intro to Web Dev"],
+      2022:["React Fundamentals","Node.js Backend Dev"],
+      2024:["Full-Stack Web Development Bootcamp"]
+    }
+  },
+  { id:2, name:"SafetyFirst Solutions Sdn Bhd", abbr:"SF", type:"DOSH Registered Provider",
+    status:"Blacklisted",
+    blacklistReason:"Provider was found to have falsified trainer credentials and safety records during a 2023 audit. Multiple participant complaints regarding substandard course delivery were also recorded.",
+    ys:2015, tc:9, tp:520, fl:true,
+    trainers:[
+      {n:"Lee Hui Xian", r:"DOSH Accredited Inspector", av:"av3", in:"LH", rf:false},
+      {n:"Bala Rajan",   r:"OSH Practitioner",          av:"av1", in:"BR", rf:true}
+    ],
+    hist:{
+      2015:["OSHA Basic Awareness","Fire Safety & Evacuation"],
+      2017:["Chemical Hazard Handling","PPE Compliance"],
+      2019:["Workplace Safety Audit","Emergency Response"],
+      2022:["Workplace Safety & OSHA Compliance"],
+      2024:["OSHA Compliance Training"]
+    }
+  },
+  { id:3, name:"Elevate Learning Group", abbr:"EL", type:"Corporate Training Provider",
+    status:"Approved", blacklistReason:"", ys:2018, tc:8, tp:284, fl:false,
+    trainers:[
+      {n:"James Tan Wei Lun", r:"Executive Coach · MBA (INSEAD)", av:"av4", in:"JT", rf:false},
+      {n:"Nurul Diana",       r:"Organisational Psychologist",    av:"av2", in:"ND", rf:false},
+      {n:"Chong Wei Kiat",    r:"Strategy Consultant",            av:"av3", in:"CW", rf:false}
+    ],
+    hist:{
+      2018:["Leadership Foundations","Emotional Intelligence at Work"],
+      2020:["Managing Remote Teams","Strategic Planning Workshop"],
+      2022:["Executive Presence","Decision Making Under Pressure"],
+      2024:["Leadership Excellence & Strategic Thinking","Board-Level Communication"]
+    }
+  },
+  { id:4, name:"MindBridge Training Sdn Bhd", abbr:"MB", type:"Wellness & HR Training",
+    status:"Approved", blacklistReason:"", ys:2019, tc:6, tp:198, fl:false,
+    trainers:[
+      {n:"Aileen Lim", r:"Registered Counsellor (MBACP)", av:"av3", in:"AL", rf:false}
+    ],
+    hist:{
+      2019:["Stress Management Basics","Work-Life Balance Workshop"],
+      2021:["Mental Wellness in the Workplace","Resilience Building"],
+      2023:["Mental Health First Aid","Burnout Prevention"]
+    }
+  },
+  { id:5, name:"DataAxis Learning Hub", abbr:"DA", type:"Data & Analytics Training",
+    status:"In Consideration", blacklistReason:"", ys:2021, tc:4, tp:89, fl:false,
+    trainers:[
+      {n:"Daniel Wong",      r:"Microsoft Certified Trainer", av:"av1", in:"DW", rf:false},
+      {n:"Priya Subramaniam",r:"Power BI Expert",             av:"av4", in:"PS", rf:false}
+    ],
+    hist:{
+      2021:["Excel Essentials","Intro to Power BI"],
+      2023:["Data Storytelling","Advanced Dashboard Design"],
+      2024:["Advanced Excel & Power BI for Business Reporting"]
+    }
+  }
+];
+
+/* ── participant generation ── */
+const depts  = ["Finance","HR","Operations","IT","Marketing","Legal","Strategy","Procurement","Admin","Engineering"];
+const venues = ["Hilton Hotel, Kuching","Online / Zoom","Wisma Saberkas, Kuching","Pullman KL","Microsoft Teams","DataAxis Centre, Kuching"];
+const fN = ["Ali","Fatimah","Rajesh","Mei","John","Nurul","David","Sarah","Kevin","Amirah","Tan","Lim","Mohd","Zainab","Chris","Priya","Aaron","Yee","Hafiz","Chloe","Rina","Bobby","Siew","Hassan","Grace"];
+const lN = ["Abdullah","Kumar","Chen","Lee","Wong","Rahman","Tan","Singh","Lim","Hassan","Ng","Ahmad","Patel","Chong","Ibrahim","Subramaniam","Osman","Goh","Ismail","Chan","Yap","Rajan","Aziz","Kok","Rahim"];
+
+function genPart(pIdx, count, courseIdx) {
+  const tNames = D[pIdx].trainers.map(t => t.n);
+  // use courseIdx as extra seed so different courses give different participants
+  const seed = courseIdx !== null ? courseIdx : 0;
+  return Array.from({length: Math.min(count, 60)}, (_, i) => ({
+    name:    fN[(i + seed * 3) % fN.length] + " " + lN[(i + pIdx * 4 + seed) % lN.length],
+    dept:    depts[(i + pIdx + seed) % depts.length],
+    venue:   venues[pIdx % venues.length],
+    trainer: tNames[i % tNames.length]
+  }));
+}
+
+/* ═══════════════ STATE ═══════════════ */
+let view = 'prov', srt = 'az', adm = false;
+let curP = 0;                  // currently open provider idx
+let partPage = 1, allPt = [];
+let pendingStatus = '';        // selected status in status modal
+const PS = 10;
+
+/* ═══════════════ ROLE ═══════════════ */
+function setRole(r, b) {
+  adm = r === 'admin';
+  document.querySelectorAll('.role-btn').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  const d = adm ? 'flex' : 'none';
+  document.getElementById('upHdrBtn').style.display = d;
+  document.getElementById('dlBtn').style.display    = d;
+  document.querySelectorAll('.ftb').forEach(x => x.style.display = d);
+  showT(adm ? '🔐 Admin mode activated' : '👤 User mode activated');
+  go();   // re-render cards to reflect admin state
+}
+
+/* ═══════════════ VIEW TOGGLE ═══════════════ */
+function setView(v, b) {
+  view = v;
+  document.querySelectorAll('.vtb').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  document.getElementById('provGrid').classList.toggle('hidden', v !== 'prov');
+  document.getElementById('trainGrid').classList.toggle('hidden', v !== 'train');
+  const s = document.getElementById('sfSel');
+  s.innerHTML = '';
+  if (v === 'prov') {
+    [['all','All'],['approved','Approved'],['consideration','In Consideration'],['blacklisted','Blacklisted']]
+      .forEach(([val,lbl]) => { const o = document.createElement('option'); o.value = val; o.textContent = lbl; s.appendChild(o); });
+  } else {
+    [['all','All Trainers / Speakers'],['redflag','Red Flag Only']]
+      .forEach(([val,lbl]) => { const o = document.createElement('option'); o.value = val; o.textContent = lbl; s.appendChild(o); });
+  }
+  go();
+}
+
+/* ═══════════════ SORT ═══════════════ */
+function toggleSort() {
+  srt = srt === 'az' ? 'za' : 'az';
+  document.getElementById('sortLbl').textContent = srt === 'az' ? 'A → Z' : 'Z → A';
+  go();
+}
+function sArr(a, fn) {
+  return a.slice().sort((x, y) => {
+    const nx = fn(x).toLowerCase(), ny = fn(y).toLowerCase();
+    return srt === 'az' ? nx.localeCompare(ny) : ny.localeCompare(nx);
+  });
+}
+
+/* ═══════════════ FILTER / RENDER ═══════════════ */
+function go() {
+  const q  = document.getElementById('si').value.toLowerCase().trim();
+  const sf = document.getElementById('sfSel').value;
+  view === 'prov' ? rProv(q, sf) : rTrain(q, sf);
+}
+
+/* badge helpers */
+function bCls(s) { return s === 'Approved' ? 'b-a' : s === 'Blacklisted' ? 'b-b' : 'b-c'; }
+function bandCls(s) { return s === 'Approved' ? 'band-a' : s === 'Blacklisted' ? 'band-b' : 'band-c'; }
+
+/* ── PROVIDER CARDS ── */
+function rProv(q, sf) {
+  let list = D.slice();
+  const sm = { approved:'Approved', consideration:'In Consideration', blacklisted:'Blacklisted' };
+  if (sf !== 'all') list = list.filter(p => p.status === sm[sf]);
+  if (q) list = list.filter(p =>
+    p.name.toLowerCase().includes(q) ||
+    p.trainers.some(t => t.n.toLowerCase().includes(q))
+  );
+  list = sArr(list, p => p.name);
+
+  const g = document.getElementById('provGrid');
+  g.innerHTML = '';
+
+  if (!list.length) {
+    g.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted);font-size:.9rem;font-family:'Calibri',sans-serif">No results found.</div>`;
+    document.getElementById('rl').textContent = 'Showing 0 Training Providers';
+    updC(); return;
+  }
+
+  list.forEach((p, i) => {
+    const card = document.createElement('div');
+    card.className = 'pc';
+    card.style.animationDelay = (i * 0.04) + 's';
+
+    // trainer pills — only show red-flag badge if they have one, otherwise nothing
+    const trainerHTML = p.trainers.map(t => `
+      <div class="tp">
+        <div class="tav ${t.av}">${t.in}</div>
+        <div style="flex:1;min-width:0">
+          <div class="tn">${t.n}</div>
+          <div class="tr2">${t.r}</div>
+        </div>
+        ${t.rf ? '<span class="bdg b-rf">🚩 Red Flag</span>' : ''}
+      </div>`).join('');
+
+    card.innerHTML = `
+      <div class="pc-band ${bandCls(p.status)}"></div>
+      <div class="pc-body">
+        <div class="phr">
+          <div class="plo">${p.abbr}</div>
+          <div><div class="pn">${p.name}</div><div class="pt">${p.type}</div></div>
+        </div>
+        <div class="psr">
+          <span class="bdg ${bCls(p.status)}">${p.status}</span>
+        </div>
+        <div class="pdv"></div>
+        <div>
+          <div class="fl">Trainers / Speakers</div>
+          <div class="tpills">${trainerHTML}</div>
+        </div>
+      </div>
+      <div class="pc-foot">
+        <button class="vb" onclick="openP(${p.id})">View</button>
+      </div>`;
+    g.appendChild(card);
+  });
+
+  document.getElementById('rl').textContent = `Showing ${list.length} Training Provider${list.length !== 1 ? 's' : ''}`;
+  updC();
+}
+
+/* ── TRAINER CARDS ── */
+function rTrain(q, sf) {
+  let all = [];
+  D.forEach(p => p.trainers.forEach(t => all.push({...t, pn: p.name, pid: p.id, pst: p.status})));
+  if (sf === 'redflag') all = all.filter(t => t.rf);
+  if (q) all = all.filter(t =>
+    t.n.toLowerCase().includes(q) ||
+    t.pn.toLowerCase().includes(q) ||
+    t.r.toLowerCase().includes(q)
+  );
+  all = sArr(all, t => t.n);
+
+  const g = document.getElementById('trainGrid');
+  g.innerHTML = '';
+  if (!all.length) {
+    g.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted);font-size:.9rem;font-family:'Calibri',sans-serif">No trainers found.</div>`;
+    document.getElementById('rl').textContent = 'Showing 0 Trainers';
+    return;
+  }
+
+  all.forEach((t, i) => {
+    const card = document.createElement('div');
+    card.className = 'tc2';
+    card.style.animationDelay = (i * 0.04) + 's';
+    card.innerHTML = `
+      <div class="tc2-inner">
+        <div class="tctop">
+          <div class="tavlg ${t.av}">${t.in}</div>
+          <div style="flex:1;min-width:0"><div class="tfn">${t.n}</div><div class="tsp">${t.r}</div></div>
+          ${t.rf ? '<span class="bdg b-rf" style="flex-shrink:0;align-self:center">🚩 Red Flag</span>' : ''}
+        </div>
+        <div class="tcdv"></div>
+        <div class="tdr">🏢 <strong>Provider:</strong> ${t.pn}</div>
+        <div class="tdr">📂 <strong>Provider Status:</strong> <span class="bdg ${bCls(t.pst)}" style="font-size:.68rem">${t.pst}</span></div>
+      </div>
+      <div class="tc2-foot">
+        <span></span>
+        <button class="ftb${t.rf ? ' flagged' : ''}" style="display:${adm ? 'flex' : 'none'}" onclick="togTF(${t.pid},'${t.in}')">
+          🚩 ${t.rf ? 'Remove Flag' : 'Red Flag'}
+        </button>
+      </div>`;
+    g.appendChild(card);
+  });
+
+  document.getElementById('rl').textContent = `Showing ${all.length} Trainer${all.length !== 1 ? 's' : ''} / Speaker${all.length !== 1 ? 's' : ''}`;
+}
+
+/* ── COUNTS ── */
+function updC() {
+  document.getElementById('cntTotal').textContent = D.length;
+  document.getElementById('cntA').textContent = D.filter(p => p.status === 'Approved').length;
+  document.getElementById('cntC').textContent = D.filter(p => p.status === 'In Consideration').length;
+  document.getElementById('cntB').textContent = D.filter(p => p.status === 'Blacklisted').length;
+}
+
+/* ── FLAG TOGGLES ── */
+function togTF(pid, ini) {
+  const t = D[pid].trainers.find(x => x.in === ini);
+  if (!t) return;
+  t.rf = !t.rf;
+  showT(t.rf ? `🚩 ${t.n} red-flagged` : `Flag removed from ${t.n}`);
+  go();
+}
+
+/* ═══════════════════════════════════
+   PROVIDER MODAL — open
+═══════════════════════════════════ */
+function openP(id) {
+  curP = id;
+  const p = D[id];
+
+  document.getElementById('mN').textContent = p.name;
+
+  // blacklist banner
+  const banner = document.getElementById('blBanner');
+  if (p.status === 'Blacklisted' && p.blacklistReason) {
+    document.getElementById('blBannerText').textContent = p.blacklistReason;
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+
+  // status bubble
+  const stBub = document.getElementById('mStBub');
+  const stEl  = document.getElementById('mSt');
+  const stHint= document.getElementById('mStHint');
+  stEl.textContent = p.status;
+  stEl.style.color = p.status === 'Approved' ? 'var(--green)' : p.status === 'Blacklisted' ? 'var(--red)' : 'var(--yellow)';
+
+  // make status bubble clickable for admin, static for user
+  stBub.className = 'msb';
+  stHint.classList.add('hidden');
+  if (adm) {
+    const stClass = p.status === 'Approved' ? 'status-approved' : p.status === 'Blacklisted' ? 'status-blacklisted' : 'status-consideration';
+    const hintColor = p.status === 'Approved' ? 'green' : p.status === 'Blacklisted' ? 'red2' : 'amber';
+    stBub.className = `msb cl ${stClass}`;
+    stBub.onclick = () => openStModal();
+    stHint.textContent = 'Click to update →';
+    stHint.className = `msb-h ${hintColor}`;
+  } else {
+    stBub.onclick = null;
+  }
+
+  document.getElementById('mYr').textContent = p.ys;
+  document.getElementById('mCo').textContent = p.tc;
+  document.getElementById('mPa').textContent = p.tp.toLocaleString();
+
+  // badges row
+  document.getElementById('mBd').innerHTML =
+    `<span class="bdg ${bCls(p.status)}">${p.status}</span>`;
+
+  // participants bubble — admin clickable, user static
+  const paBub  = document.getElementById('mPaBub');
+  const paHint = document.getElementById('mPaHint');
+  if (adm) {
+    paBub.classList.add('cl');
+    paBub.onclick = () => openPart(null);
+    paHint.classList.remove('hidden');
+  } else {
+    paBub.classList.remove('cl');
+    paBub.onclick = null;
+    paHint.classList.add('hidden');
+  }
+
+  // year select
+  const ys = document.getElementById('ySel');
+  ys.innerHTML = '<option value="all">All Years</option>';
+  Object.keys(p.hist).sort((a, b) => b - a).forEach(yr => {
+    const o = document.createElement('option'); o.value = yr; o.textContent = yr; ys.appendChild(o);
+  });
+
+  renderHist();
+  document.getElementById('provOv').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeP() {
+  document.getElementById('provOv').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+/* ── HISTORY RENDER ── */
+function renderHist() {
+  const p   = D[curP];
+  const yr  = document.getElementById('ySel').value;
+  const c   = document.getElementById('histC');
+  c.innerHTML = '';
+
+  const years   = Object.keys(p.hist).map(Number).sort((a, b) => b - a);
+  const filtered = yr === 'all' ? years : years.filter(y => y == yr);
+
+  if (!filtered.length) {
+    c.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--muted);font-size:.87rem;font-family:'Calibri',sans-serif">No courses for this year.</div>`;
+    return;
+  }
+
+  filtered.forEach(year => {
+    const block = document.createElement('div');
+    block.className = 'yb';
+
+    const courseRows = p.hist[year].map((co, ci) => {
+      const pax = Math.floor(Math.random() * 30) + 8;
+      // admin gets a clickable pax link that opens participants for that specific course
+      const paxHTML = adm
+        ? `<button class="pax-btn admin-pax" onclick="openPart({pid:${p.id},courseIdx:${ci},courseName:'${co.replace(/'/g,"\\'")}',pax:${pax}})" title="View ${pax} participants for this course">👥 ${pax} pax</button>`
+        : `<span class="pax-btn">👥 ${pax} pax</span>`;
+
+      return `<div class="hr2">
+        <div class="ht">${co}</div>
+        <div class="hch">
+          <div class="hc">📅 ${year}</div>
+          <div class="hc">${paxHTML}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    block.innerHTML = `<div class="yh">${year}</div><div class="yr"></div>${courseRows}`;
+    c.appendChild(block);
+  });
+}
+
+/* ═══════════════════════════════════
+   STATUS UPDATE MODAL
+═══════════════════════════════════ */
+function openStModal() {
+  const p = D[curP];
+  pendingStatus = p.status;
+  document.getElementById('stmProvName').textContent = p.name;
+  document.getElementById('blReasonTa').value = p.blacklistReason || '';
+  renderStOptions(p.status);
+  document.getElementById('stOv').classList.add('open');
+}
+
+function closeStModal() {
+  document.getElementById('stOv').classList.remove('open');
+}
+
+function renderStOptions(selected) {
+  const stMap = { 'Approved': 'a', 'In Consideration': 'c', 'Blacklisted': 'b' };
+  ['Approved','In Consideration','Blacklisted'].forEach(s => {
+    const key = stMap[s];
+    const el  = document.getElementById(`sto-${key}`);
+    el.className = 'sto' + (s === selected ? ` sel-${key}` : '');
+  });
+  const wrap = document.getElementById('blReasonWrap');
+  wrap.classList.toggle('show', selected === 'Blacklisted');
+}
+
+function selectStatus(s) {
+  pendingStatus = s;
+  renderStOptions(s);
+}
+
+function confirmStatus() {
+  if (pendingStatus === 'Blacklisted') {
+    const reason = document.getElementById('blReasonTa').value.trim();
+    if (!reason) {
+      showT('⚠️ Please provide a reason for blacklisting.');
+      document.getElementById('blReasonTa').focus();
+      return;
+    }
+    D[curP].blacklistReason = reason;
+  } else {
+    D[curP].blacklistReason = '';
+  }
+  D[curP].status = pendingStatus;
+  closeStModal();
+  showT(`✓ Status updated to "${pendingStatus}"`);
+  openP(curP);   // refresh modal
+  go();
+}
+
+/* ═══════════════════════════════════
+   PARTICIPANTS MODAL
+═══════════════════════════════════ */
+// ctx: null = all participants for provider, or {pid, courseIdx, courseName, pax}
+function openPart(ctx) {
+  let title, subtitle;
+  if (ctx === null) {
+    // total participants for provider
+    const p = D[curP];
+    allPt  = genPart(curP, p.tp, 0);
+    title  = `Participants — ${p.name}`;
+    subtitle = `${allPt.length} total registered participants`;
+  } else {
+    // participants for a specific course
+    allPt  = genPart(ctx.pid, ctx.pax, ctx.courseIdx);
+    title  = `Participants — ${ctx.courseName}`;
+    subtitle = `${allPt.length} participants for this course`;
+  }
+  partPage = 1;
+  document.getElementById('partT').textContent = title;
+  document.getElementById('partS').textContent = subtitle;
+  rPart();
+  document.getElementById('partOv').classList.add('open');
+}
+
+function closePart() { document.getElementById('partOv').classList.remove('open'); }
+
+function rPart() {
+  const s = (partPage - 1) * PS, e = Math.min(s + PS, allPt.length);
+  document.getElementById('partBd').innerHTML = allPt.slice(s, e).map((pp, i) => `
+    <tr>
+      <td style="color:var(--muted);font-size:.75rem">${s + i + 1}</td>
+      <td><strong>${pp.name}</strong></td>
+      <td><span class="dtag">${pp.dept}</span></td>
+      <td style="font-size:.78rem;color:var(--muted)">${pp.venue}</td>
+      <td style="font-size:.78rem">${pp.trainer}</td>
+    </tr>`).join('');
+
+  document.getElementById('pgI').textContent = `Showing ${s + 1}–${e} of ${allPt.length}`;
+  const tot = Math.ceil(allPt.length / PS);
+  const bs  = document.getElementById('pgBs');
+  bs.innerHTML = '';
+
+  const pv = document.createElement('button'); pv.className = 'pb'; pv.textContent = '‹'; pv.disabled = partPage === 1;
+  pv.onclick = () => { if (partPage > 1) { partPage--; rPart(); } }; bs.appendChild(pv);
+
+  pgs(partPage, tot).forEach(p2 => {
+    const b = document.createElement('button');
+    b.className = 'pb' + (p2 === partPage ? ' active' : '');
+    b.textContent = p2;
+    if (p2 !== '…') b.onclick = () => { partPage = p2; rPart(); };
+    bs.appendChild(b);
+  });
+
+  const nx = document.createElement('button'); nx.className = 'pb'; nx.textContent = '›'; nx.disabled = partPage === tot;
+  nx.onclick = () => { if (partPage < tot) { partPage++; rPart(); } }; bs.appendChild(nx);
+}
+
+function pgs(c, t) {
+  if (t <= 7) return Array.from({length: t}, (_, i) => i + 1);
+  if (c <= 4) return [1,2,3,4,5,'…',t];
+  if (c >= t - 3) return [1,'…',t-4,t-3,t-2,t-1,t];
+  return [1,'…',c-1,c,c+1,'…',t];
+}
+
+/* ═══════════════════════════════════
+   UPLOAD
+═══════════════════════════════════ */
+function openUpload() { document.getElementById('upOv').classList.add('open'); document.body.style.overflow = 'hidden'; rUp(); }
+function closeUp()    { document.getElementById('upOv').classList.remove('open'); document.body.style.overflow = ''; }
+function dgo(e) { e.preventDefault(); document.getElementById('dz').classList.add('dg'); }
+function dgl()  { document.getElementById('dz').classList.remove('dg'); }
+function ddr(e) { e.preventDefault(); dgl(); const f = e.dataTransfer.files[0]; if (f) setF(f.name); }
+function fsel(e){ const f = e.target.files[0]; if (f) setF(f.name); }
+function setF(n){ const fi = document.getElementById('finfo'); document.getElementById('fn').textContent = n; fi.style.display = 'flex'; }
+function rUp()  { document.getElementById('finfo').style.display = 'none'; document.getElementById('uprog').style.display = 'none'; document.getElementById('pf').style.width = '0'; document.getElementById('fi2').value = ''; }
+function doUp() {
+  if (document.getElementById('finfo').style.display === 'none') { showT('⚠️ Select a file first'); return; }
+  const prog = document.getElementById('uprog'), fill = document.getElementById('pf'), lbl = document.getElementById('plbl');
+  prog.style.display = 'block'; let w = 0;
+  const iv = setInterval(() => {
+    w += Math.random() * 14 + 5;
+    if (w >= 100) { w = 100; clearInterval(iv); lbl.textContent = 'Upload complete ✓'; setTimeout(() => { closeUp(); showT('✅ Database updated successfully!'); }, 700); }
+    fill.style.width = w + '%'; lbl.textContent = w < 100 ? `Uploading… ${Math.round(w)}%` : 'Processing…';
+  }, 130);
+}
+function simDl() { showT('📥 Downloading database export…'); }
+
+/* ── TOAST ── */
+function showT(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ── INIT ── */
+updC(); go();
+</script>
+</body>
+</html>
