@@ -242,7 +242,7 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 .stm-cancel:hover{background:var(--border)}
 
 /* blacklist reason VIEW banner (for non-admin / read-only) */
-.bl-banner{display:none;margin:.9rem 1.7rem 0;padding:.75rem 1rem;background:var(--rbg);border:1px solid var(--rbd);border-radius:9px;border-left:4px solid var(--red)}
+.bl-banner{display:none;width:100%;box-sizing:border-box;margin:-1px 0 0;padding:.75rem 1rem;background:var(--rbg);border:1px solid var(--rbd);border-left:4px solid var(--red)}
 .bl-banner.show{display:block}
 .bl-banner-title{font-family:'Calibri',sans-serif;font-weight:700;font-size:.8rem;color:var(--red);margin-bottom:.25rem;display:flex;align-items:center;gap:.3rem}
 .bl-banner-reason{font-size:.85rem;color:var(--ink);font-family:'Calibri',sans-serif;line-height:1.5}

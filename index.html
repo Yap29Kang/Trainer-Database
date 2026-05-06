@@ -656,8 +656,11 @@ function openP(id) {
     expHint.classList.add('hidden');
   } else {
     expBub.classList.remove('cl');
-    expEl.textContent = expVal;
-    expBub.onclick = null;
+    expBub.innerHTML = `
+      <div class="msb-n">${expVal}</div>
+      <div class="msb-l">Area of Expertise</div>
+      <div class="msb-h hidden"></div>
+    `;
     expHint.classList.add('hidden');
   }
 
