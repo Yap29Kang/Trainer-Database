@@ -109,6 +109,11 @@
         <div class="msb-l">Total Participants</div>
         <div class="msb-h hidden" id="mPaHint">Click to view →</div>
       </div>
+      <div class="msb" id="mExpBub">
+        <div class="msb-n" id="mExp">—</div>
+        <div class="msb-l">Area of Expertise</div>
+        <div class="msb-h hidden" id="mExpHint"></div>
+      </div>
     </div>
 
     <!-- Actions row -->
@@ -186,7 +191,14 @@
       <!-- Blacklist reason field — only shown when Blacklisted selected -->
       <div class="bl-reason-wrap" id="blReasonWrap">
         <div class="bl-reason-label">Reason for Blacklisting <span style="color:var(--red)">*</span></div>
-        <textarea class="bl-reason-ta" id="blReasonTa" placeholder="Describe why this provider is being blacklisted (e.g. misconduct, fraud, repeated complaints)…" rows="4"></textarea>
+        <select class="bl-reason-ta" id="blReasonTa">
+          <option value="">Select a reason</option>
+          <option value="Fraud / falsified records">Fraud / falsified records</option>
+          <option value="Repeated complaints">Repeated complaints</option>
+          <option value="Misconduct / unethical behavior">Misconduct / unethical behavior</option>
+          <option value="Safety / compliance violations">Safety / compliance violations</option>
+          <option value="Poor course delivery / performance">Poor course delivery / performance</option>
+        </select>
       </div>
 
       <div class="stm-actions">
@@ -225,6 +237,7 @@
 const D = [
   { id:0, name:"ProManage Academy Sdn Bhd", abbr:"PM", type:"Accredited Training Organisation",
     status:"Approved", blacklistReason:"", ys:2016, tc:12, tp:348, fl:false,
+    expertise:"Project Management",
     trainers:[
       {n:"Ahmad Malik",  r:"PMP Certified · 14 yrs", av:"av1", in:"AM", rf:false},
       {n:"Siti Yusof",   r:"Agile Coach",             av:"av2", in:"SY", rf:false}
@@ -239,6 +252,7 @@ const D = [
   },
   { id:1, name:"TechCraft Institute", abbr:"TC", type:"Technology Training Provider",
     status:"In Consideration", blacklistReason:"", ys:2020, tc:5, tp:112, fl:false,
+    expertise:"Technology",
     trainers:[
       {n:"Ravi Kumar", r:"Senior Full-Stack Developer", av:"av2", in:"RK", rf:false}
     ],
@@ -250,8 +264,9 @@ const D = [
   },
   { id:2, name:"SafetyFirst Solutions Sdn Bhd", abbr:"SF", type:"DOSH Registered Provider",
     status:"Blacklisted",
-    blacklistReason:"Provider was found to have falsified trainer credentials and safety records during a 2023 audit. Multiple participant complaints regarding substandard course delivery were also recorded.",
+    blacklistReason:"Fraud / falsified records",
     ys:2015, tc:9, tp:520, fl:true,
+    expertise:"Safety & Compliance",
     trainers:[
       {n:"Lee Hui Xian", r:"DOSH Accredited Inspector", av:"av3", in:"LH", rf:false},
       {n:"Bala Rajan",   r:"OSH Practitioner",          av:"av1", in:"BR", rf:true}
@@ -266,6 +281,7 @@ const D = [
   },
   { id:3, name:"Elevate Learning Group", abbr:"EL", type:"Corporate Training Provider",
     status:"Approved", blacklistReason:"", ys:2018, tc:8, tp:284, fl:false,
+    expertise:"Leadership",
     trainers:[
       {n:"James Tan Wei Lun", r:"Executive Coach · MBA (INSEAD)", av:"av4", in:"JT", rf:false},
       {n:"Nurul Diana",       r:"Organisational Psychologist",    av:"av2", in:"ND", rf:false},
@@ -280,6 +296,7 @@ const D = [
   },
   { id:4, name:"MindBridge Training Sdn Bhd", abbr:"MB", type:"Wellness & HR Training",
     status:"Approved", blacklistReason:"", ys:2019, tc:6, tp:198, fl:false,
+    expertise:"Wellness & HR",
     trainers:[
       {n:"Aileen Lim", r:"Registered Counsellor (MBACP)", av:"av3", in:"AL", rf:false}
     ],
@@ -291,6 +308,7 @@ const D = [
   },
   { id:5, name:"DataAxis Learning Hub", abbr:"DA", type:"Data & Analytics Training",
     status:"In Consideration", blacklistReason:"", ys:2021, tc:4, tp:89, fl:false,
+    expertise:"Data & Analytics",
     trainers:[
       {n:"Daniel Wong",      r:"Microsoft Certified Trainer", av:"av1", in:"DW", rf:false},
       {n:"Priya Subramaniam",r:"Power BI Expert",             av:"av4", in:"PS", rf:false}
@@ -310,14 +328,20 @@ const fN = ["Ali","Fatimah","Rajesh","Mei","John","Nurul","David","Sarah","Kevin
 const lN = ["Abdullah","Kumar","Chen","Lee","Wong","Rahman","Tan","Singh","Lim","Hassan","Ng","Ahmad","Patel","Chong","Ibrahim","Subramaniam","Osman","Goh","Ismail","Chan","Yap","Rajan","Aziz","Kok","Rahim"];
 
 function genPart(pIdx, count, courseIdx) {
-  const tNames = D[pIdx].trainers.map(t => t.n);
+  const provider = D[pIdx];
+  const tNames = provider.trainers.map(t => t.n);
+  const courseNames = Object.entries(provider.hist).flatMap(([year, courses]) =>
+    courses.map(course => ({course, year: Number(year)}))
+  );
   // use courseIdx as extra seed so different courses give different participants
   const seed = courseIdx !== null ? courseIdx : 0;
   return Array.from({length: Math.min(count, 60)}, (_, i) => ({
     name:    fN[(i + seed * 3) % fN.length] + " " + lN[(i + pIdx * 4 + seed) % lN.length],
     dept:    depts[(i + pIdx + seed) % depts.length],
     venue:   venues[pIdx % venues.length],
-    trainer: tNames[i % tNames.length]
+    trainer: tNames[i % tNames.length],
+    course:  courseNames.length ? courseNames[(i + seed) % courseNames.length].course : 'N/A',
+    completionYear: courseNames.length ? courseNames[(i + seed) % courseNames.length].year : 'N/A'
   }));
 }
 
@@ -325,6 +349,7 @@ function genPart(pIdx, count, courseIdx) {
 let view = 'prov', srt = 'az', adm = false;
 let curP = 0;                  // currently open provider idx
 let partPage = 1, allPt = [];
+let partMode = 'provider';     // provider total view or course-specific
 let pendingStatus = '';        // selected status in status modal
 const PS = 10;
 
@@ -568,6 +593,74 @@ function openP(id) {
     paHint.classList.add('hidden');
   }
 
+  // expertise bubble — show select for admin, static for user
+  const expBub = document.getElementById('mExpBub');
+  const expHint= document.getElementById('mExpHint');
+  const expVal = p.expertise || '—';
+  if (adm) {
+    expBub.classList.add('cl');
+    const renderExpertiseBubble = (editing) => {
+      const val = D[curP].expertise || '—';
+      if (editing) {
+        expBub.classList.add('exp-open');
+        expBub.innerHTML = `
+          <div class="exp-pop-inside" id="mExpPopInside">
+            <select class="ysel" id="mExpSelInside">
+              <option value=""></option>
+              <option value="Project Management">Project Management</option>
+              <option value="Data & Analytics">Data & Analytics</option>
+              <option value="Leadership">Leadership</option>
+              <option value="Wellness & HR">Wellness & HR</option>
+              <option value="Technology">Technology</option>
+              <option value="Safety & Compliance">Safety & Compliance</option>
+              <option value="Executive Coaching">Executive Coaching</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="exp-actions">
+              <button class="ux" id="mExpCancel">Cancel</button>
+              <button class="uc" id="mExpSave">Save</button>
+            </div>
+          </div>`;
+        const sel = document.getElementById('mExpSelInside');
+        sel.value = val === '—' ? '' : val;
+        document.getElementById('mExpCancel').onclick = (e) => { e.stopPropagation(); renderExpertiseBubble(false); };
+        document.getElementById('mExpSave').onclick = (e) => {
+          e.stopPropagation();
+          let nextVal = sel.value;
+          if (nextVal === 'Other') {
+            const other = prompt('Enter custom Area of Expertise:');
+            if (!other) return;
+            nextVal = other;
+          }
+          D[curP].expertise = nextVal;
+          showT(`✓ Area of Expertise updated to "${nextVal}"`);
+          renderExpertiseBubble(false);
+        };
+        setTimeout(() => sel.focus(), 0);
+      } else {
+        expBub.classList.remove('exp-open');
+        expBub.innerHTML = `
+          <div style="display:flex;align-items:center;gap:.4rem;justify-content:space-between">
+            <div id="mExpDisplay" class="exp-display">${val}</div>
+            <button id="mExpEdit" class="exp-edit" aria-label="Edit expertise">✎</button>
+          </div>
+          <div class="msb-l">Area of Expertise</div>
+          <div class="msb-h hidden" id="mExpHint"></div>
+        `;
+        document.getElementById('mExpEdit').onclick = () => renderExpertiseBubble(true);
+        document.getElementById('mExpDisplay').onclick = () => renderExpertiseBubble(true);
+      }
+    };
+    renderExpertiseBubble(false);
+    // keep hint hidden — editing via pencil/popover
+    expHint.classList.add('hidden');
+  } else {
+    expBub.classList.remove('cl');
+    expEl.textContent = expVal;
+    expBub.onclick = null;
+    expHint.classList.add('hidden');
+  }
+
   // year select
   const ys = document.getElementById('ySel');
   ys.innerHTML = '<option value="all">All Years</option>';
@@ -686,11 +779,13 @@ function openPart(ctx) {
     // total participants for provider
     const p = D[curP];
     allPt  = genPart(curP, p.tp, 0);
+    partMode = 'provider';
     title  = `Participants — ${p.name}`;
     subtitle = `${allPt.length} total registered participants`;
   } else {
     // participants for a specific course
     allPt  = genPart(ctx.pid, ctx.pax, ctx.courseIdx);
+    partMode = 'course';
     title  = `Participants — ${ctx.courseName}`;
     subtitle = `${allPt.length} participants for this course`;
   }
@@ -704,18 +799,27 @@ function openPart(ctx) {
 function closePart() { document.getElementById('partOv').classList.remove('open'); }
 
 function rPart() {
-  const s = (partPage - 1) * PS, e = Math.min(s + PS, allPt.length);
-  document.getElementById('partBd').innerHTML = allPt.slice(s, e).map((pp, i) => `
+  const rows = partMode === 'provider'
+    ? allPt.slice().sort((a, b) => a.name.localeCompare(b.name))
+    : allPt;
+  const s = (partPage - 1) * PS, e = Math.min(s + PS, rows.length);
+  const headVenue = 'Course';
+  const headTrainer = 'Completion Year';
+  document.getElementById('partBd').innerHTML = rows.slice(s, e).map((pp, i) => `
     <tr>
       <td style="color:var(--muted);font-size:.75rem">${s + i + 1}</td>
       <td><strong>${pp.name}</strong></td>
       <td><span class="dtag">${pp.dept}</span></td>
-      <td style="font-size:.78rem;color:var(--muted)">${pp.venue}</td>
-      <td style="font-size:.78rem">${pp.trainer}</td>
+      <td style="font-size:.78rem;color:var(--muted)">${pp.course}</td>
+      <td style="font-size:.78rem">${pp.completionYear}</td>
     </tr>`).join('');
 
-  document.getElementById('pgI').textContent = `Showing ${s + 1}–${e} of ${allPt.length}`;
-  const tot = Math.ceil(allPt.length / PS);
+  const partHeaders = document.querySelectorAll('.ptbl th');
+  partHeaders[3].textContent = headVenue;
+  partHeaders[4].textContent = headTrainer;
+
+  document.getElementById('pgI').textContent = `Showing ${s + 1}–${e} of ${rows.length}`;
+  const tot = Math.ceil(rows.length / PS);
   const bs  = document.getElementById('pgBs');
   bs.innerHTML = '';
 
