@@ -300,7 +300,7 @@ const D = [
     expertise:"Safety & Compliance",
     trainers:[
       {n:"Lee Hui Xian", r:"DOSH Accredited Inspector", av:"av3", in:"LH", rf:false, rfReason:""},
-      {n:"Bala Rajan",   r:"OSH Practitioner",          av:"av1", in:"BR", rf:true, rfReason:""}
+      {n:"Bala Rajan",   r:"OSH Practitioner",          av:"av1", in:"BR", rf:true, rfReason:"Student complaints"}
     ],
     hist:{
       2015:["OSHA Basic Awareness","Fire Safety & Evacuation"],
@@ -474,7 +474,7 @@ function rProv(q, sf) {
           <div class="tn">${t.n}</div>
           <div class="tr2">${t.r}</div>
         </div>
-        ${t.rf ? '<span class="bdg b-rf">🚩 Red Flag</span>' : ''}
+        ${t.rf ? `<span class="bdg b-rf tip-reason" data-tip="${adm && t.rfReason ? t.rfReason : ''}">🚩 Red Flag</span>` : ''}
       </div>`).join('');
 
     card.innerHTML = `
@@ -485,7 +485,7 @@ function rProv(q, sf) {
           <div><div class="pn">${p.name}</div><div class="pt">${p.type}</div></div>
         </div>
         <div class="psr">
-          <span class="bdg ${bCls(p.status)}">${p.status}</span>
+          <span class="bdg ${bCls(p.status)} tip-reason" data-tip="${adm && p.status === 'Blacklisted' && p.blacklistReason ? p.blacklistReason : ''}">${p.status}</span>
         </div>
         <div class="pdv"></div>
         <div>
@@ -532,11 +532,11 @@ function rTrain(q, sf) {
         <div class="tctop">
           <div class="tavlg ${t.av}">${t.in}</div>
           <div style="flex:1;min-width:0"><div class="tfn">${t.n}</div><div class="tsp">${t.r}</div></div>
-          ${t.rf ? '<span class="bdg b-rf" style="flex-shrink:0;align-self:center">🚩 Red Flag</span>' : ''}
+          ${t.rf ? `<span class="bdg b-rf tip-reason" style="flex-shrink:0;align-self:center" data-tip="${adm && t.rfReason ? t.rfReason : ''}">🚩 Red Flag</span>` : ''}
         </div>
         <div class="tcdv"></div>
         <div class="tdr">🏢 <strong>Provider:</strong> ${t.pn}</div>
-        <div class="tdr">📂 <strong>Provider Status:</strong> <span class="bdg ${bCls(t.pst)}" style="font-size:.68rem">${t.pst}</span></div>
+        <div class="tdr">📂 <strong>Provider Status:</strong> <span class="bdg ${bCls(t.pst)} tip-reason" style="font-size:.68rem" data-tip="${adm && t.pst === 'Blacklisted' && D[t.pid] && D[t.pid].blacklistReason ? D[t.pid].blacklistReason : ''}">${t.pst}</span></div>
       </div>
       <div class="tc2-foot">
         <span></span>
@@ -646,7 +646,7 @@ function openP(id) {
 
   // blacklist banner
   const banner = document.getElementById('blBanner');
-  if (p.status === 'Blacklisted' && p.blacklistReason) {
+  if (adm && p.status === 'Blacklisted' && p.blacklistReason) {
     document.getElementById('blBannerText').textContent = p.blacklistReason;
     banner.classList.add('show');
   } else {
@@ -668,10 +668,12 @@ function openP(id) {
     const hintColor = p.status === 'Approved' ? 'green' : p.status === 'Blacklisted' ? 'red2' : 'amber';
     stBub.className = `msb cl ${stClass}`;
     stBub.onclick = () => openStModal();
+    stBub.title = p.status === 'Blacklisted' && p.blacklistReason ? p.blacklistReason : '';
     stHint.textContent = 'Click to update →';
     stHint.className = `msb-h ${hintColor}`;
   } else {
     stBub.onclick = null;
+    stBub.title = '';
   }
 
   document.getElementById('mYr').textContent = p.ys;
@@ -781,12 +783,12 @@ function closeP() {
   document.body.style.overflow = '';
 }
 
-function fmtCourseDate(year, courseIdx, courseName) {
+function fmtCourseDateParts(year, courseIdx, courseName) {
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const seed = year + courseIdx * 11 + courseName.length;
   const day = (seed % 28) + 1;
   const month = months[seed % 12];
-  return `${day} ${month}`;
+  return { day, month };
 }
 
 /* ── HISTORY RENDER ── */
@@ -809,7 +811,7 @@ function renderHist() {
     block.className = 'yb';
 
     const courseRows = p.hist[year].map((co, ci) => {
-      const dateLabel = fmtCourseDate(year, ci, co);
+      const dateParts = fmtCourseDateParts(year, ci, co);
       const pax = Math.floor(Math.random() * 30) + 8;
       // admin gets a clickable pax link that opens participants for that specific course
       const paxHTML = adm
@@ -819,7 +821,7 @@ function renderHist() {
       return `<div class="hr2">
         <div class="ht">${co}</div>
         <div class="hch">
-          <div class="hc hc-date"><span class="hci">📅</span><span class="hct">${dateLabel}</span></div>
+          <div class="hc hc-date"><span class="hci">📅</span><span class="hct hct-day">${dateParts.day}</span><span class="hct hct-month">${dateParts.month}</span></div>
           <div class="hc hc-pax">${paxHTML}</div>
         </div>
       </div>`;
