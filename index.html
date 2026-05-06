@@ -781,6 +781,14 @@ function closeP() {
   document.body.style.overflow = '';
 }
 
+function fmtCourseDate(year, courseIdx, courseName) {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const seed = year + courseIdx * 11 + courseName.length;
+  const day = (seed % 28) + 1;
+  const month = months[seed % 12];
+  return `${day} ${month}`;
+}
+
 /* ── HISTORY RENDER ── */
 function renderHist() {
   const p   = D[curP];
@@ -801,17 +809,18 @@ function renderHist() {
     block.className = 'yb';
 
     const courseRows = p.hist[year].map((co, ci) => {
+      const dateLabel = fmtCourseDate(year, ci, co);
       const pax = Math.floor(Math.random() * 30) + 8;
       // admin gets a clickable pax link that opens participants for that specific course
       const paxHTML = adm
-        ? `<button class="pax-btn admin-pax" onclick="openPart({pid:${p.id},courseIdx:${ci},courseName:'${co.replace(/'/g,"\\'")}',pax:${pax}})" title="View ${pax} participants for this course">👥 ${pax} pax</button>`
-        : `<span class="pax-btn">👥 ${pax} pax</span>`;
+        ? `<button class="pax-btn admin-pax" onclick="openPart({pid:${p.id},courseIdx:${ci},courseName:'${co.replace(/'/g,"\\'")}',pax:${pax}})" title="View ${pax} participants for this course"><span class="hci">👥</span><span class="hct">${pax} pax</span></button>`
+        : `<span class="pax-btn"><span class="hci">👥</span><span class="hct">${pax} pax</span></span>`;
 
       return `<div class="hr2">
         <div class="ht">${co}</div>
         <div class="hch">
-          <div class="hc">📅 ${year}</div>
-          <div class="hc">${paxHTML}</div>
+          <div class="hc hc-date"><span class="hci">📅</span><span class="hct">${dateLabel}</span></div>
+          <div class="hc hc-pax">${paxHTML}</div>
         </div>
       </div>`;
     }).join('');
@@ -895,7 +904,9 @@ function openPart(ctx) {
   partPage = 1;
   partSearch = '';
   document.getElementById('partT').textContent = title;
-  document.getElementById('partS').textContent = subtitle;
+  const partSubtitleEl = document.getElementById('partS');
+  partSubtitleEl.textContent = subtitle;
+  partSubtitleEl.style.display = ctx === null ? 'none' : '';
   document.getElementById('partSearch').value = '';
   rPart();
   document.getElementById('partOv').classList.add('open');

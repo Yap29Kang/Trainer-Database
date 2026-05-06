@@ -175,15 +175,25 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 .yh{font-family:'Calibri',sans-serif;font-weight:700;font-size:1.4rem;margin-bottom:.45rem}
 .yr{height:2px;background:var(--border);margin-bottom:.8rem;position:relative}
 .yr::before{content:'';position:absolute;left:0;top:0;height:2px;width:34px;background:var(--accent)}
-.hr2{background:var(--cream);border:1px solid var(--border);border-radius:9px;padding:.7rem .95rem;margin-bottom:.45rem;display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
+.hr2{background:var(--cream);border:1px solid var(--border);border-radius:9px;padding:.7rem .9rem .7rem .95rem;margin-bottom:.45rem;display:flex;align-items:center;gap:.8rem;flex-wrap:wrap}
 .ht{font-weight:700;font-size:.86rem;flex:1;min-width:140px;font-family:'Calibri',sans-serif}
-.hch{display:flex;gap:.7rem;align-items:center}
-.hc{font-size:.75rem;color:var(--muted);display:flex;align-items:center;gap:.26rem;font-family:'Calibri',sans-serif}
+.hch{display:grid;grid-template-columns:58px 64px;column-gap:.06rem;align-items:center;justify-content:end;justify-items:end;flex:0 0 auto}
+.hc{font-size:.75rem;color:var(--muted);display:flex;align-items:center;justify-content:flex-end;gap:.15rem;font-family:'Calibri',sans-serif;white-space:nowrap}
+.hc-date{width:100%;display:grid;grid-template-columns:12px 40px;column-gap:.15rem;align-items:center;justify-content:start}
+.hc-date .hct{text-align:left}
+.hc-pax{width:100%;justify-content:flex-end}
+.hci{display:inline-flex;align-items:center;justify-content:center;width:12px;line-height:1}
+.hct{display:inline-block;min-width:0}
 .hc strong{color:var(--ink)}
 /* pax button in history row — admin clickable */
-.pax-btn{display:inline-flex;align-items:center;gap:.28rem;font-size:.75rem;font-family:'Calibri',sans-serif;font-weight:700;color:var(--muted);background:transparent;border:none;cursor:default;padding:0}
+.pax-btn{display:grid;grid-template-columns:12px 40px;column-gap:.15rem;align-items:center;justify-content:start;width:52px;font-size:.75rem;font-family:'Calibri',sans-serif;font-weight:700;color:var(--muted);background:transparent;border:none;cursor:default;padding:0}
+.pax-btn .hct{text-align:left}
 .pax-btn.admin-pax{color:var(--accent);text-decoration:underline;text-underline-offset:2px;cursor:pointer}
 .pax-btn.admin-pax:hover{color:var(--red)}
+
+@media (max-width:640px){
+  .hch{grid-template-columns:58px 64px;column-gap:.06rem}
+}
 
 /* ── PARTICIPANTS MODAL ── */
 .pov{position:fixed;inset:0;background:rgba(0,64,110,.55);backdrop-filter:blur(4px);z-index:600;display:none;align-items:center;justify-content:center;padding:1.5rem}
