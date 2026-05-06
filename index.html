@@ -142,6 +142,10 @@
       <div><h3 id="partT">Participants</h3><p id="partS"></p></div>
       <button class="poc" onclick="closePart()">✕</button>
     </div>
+    <div class="pos">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input class="psi" id="partSearch" type="text" placeholder="Search participants by name or department…" oninput="filterPart()">
+    </div>
     <div class="pob">
       <table class="ptbl">
         <thead><tr><th>#</th><th>Name</th><th>Department</th><th>Venue</th><th>Assigned Trainer</th></tr></thead>
@@ -210,6 +214,33 @@
 </div>
 
 <!-- ════════════════════════════════════
+     RED FLAG REASON MODAL
+════════════════════════════════════ -->
+<div class="stov" id="rfOv" onclick="if(event.target===this)closeRFModal()">
+  <div class="stm">
+    <div class="stm-hdr">
+      <h3>Red Flag Trainer</h3>
+      <button class="stm-close" onclick="closeRFModal()">✕</button>
+    </div>
+    <div class="stm-body">
+      <div class="stm-pname" id="rfmTrainerName">—</div>
+      <div class="stm-label">Reason for Red Flag</div>
+      <select class="bl-reason-ta" id="rfReasonSel">
+        <option value="">Select a reason</option>
+        <option value="Unverified credentials">Unverified credentials</option>
+        <option value="Student complaints">Student complaints</option>
+        <option value="Poor performance feedback">Poor performance feedback</option>
+        <option value="Attendance issues">Attendance issues</option>
+        <option value="Conduct concerns">Conduct concerns</option>
+      </select>
+      <div class="stm-actions" id="rfActions" style="margin-top:1.5rem">
+        <!-- Buttons populated dynamically by togTF() -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
      UPLOAD MODAL
 ════════════════════════════════════ -->
 <div class="uov" id="upOv" onclick="if(event.target===this)closeUp()">
@@ -239,8 +270,8 @@ const D = [
     status:"Approved", blacklistReason:"", ys:2016, tc:12, tp:348, fl:false,
     expertise:"Project Management",
     trainers:[
-      {n:"Ahmad Malik",  r:"PMP Certified · 14 yrs", av:"av1", in:"AM", rf:false},
-      {n:"Siti Yusof",   r:"Agile Coach",             av:"av2", in:"SY", rf:false}
+      {n:"Ahmad Malik",  r:"PMP Certified · 14 yrs", av:"av1", in:"AM", rf:false, rfReason:""},
+      {n:"Siti Yusof",   r:"Agile Coach",             av:"av2", in:"SY", rf:false, rfReason:""}
     ],
     hist:{
       2016:["PMP Prep Intensive","Project Lifecycle Fundamentals"],
@@ -254,7 +285,7 @@ const D = [
     status:"In Consideration", blacklistReason:"", ys:2020, tc:5, tp:112, fl:false,
     expertise:"Technology",
     trainers:[
-      {n:"Ravi Kumar", r:"Senior Full-Stack Developer", av:"av2", in:"RK", rf:false}
+      {n:"Ravi Kumar", r:"Senior Full-Stack Developer", av:"av2", in:"RK", rf:false, rfReason:""}
     ],
     hist:{
       2020:["Python for Beginners","Intro to Web Dev"],
@@ -268,8 +299,8 @@ const D = [
     ys:2015, tc:9, tp:520, fl:true,
     expertise:"Safety & Compliance",
     trainers:[
-      {n:"Lee Hui Xian", r:"DOSH Accredited Inspector", av:"av3", in:"LH", rf:false},
-      {n:"Bala Rajan",   r:"OSH Practitioner",          av:"av1", in:"BR", rf:true}
+      {n:"Lee Hui Xian", r:"DOSH Accredited Inspector", av:"av3", in:"LH", rf:false, rfReason:""},
+      {n:"Bala Rajan",   r:"OSH Practitioner",          av:"av1", in:"BR", rf:true, rfReason:""}
     ],
     hist:{
       2015:["OSHA Basic Awareness","Fire Safety & Evacuation"],
@@ -283,9 +314,9 @@ const D = [
     status:"Approved", blacklistReason:"", ys:2018, tc:8, tp:284, fl:false,
     expertise:"Leadership",
     trainers:[
-      {n:"James Tan Wei Lun", r:"Executive Coach · MBA (INSEAD)", av:"av4", in:"JT", rf:false},
-      {n:"Nurul Diana",       r:"Organisational Psychologist",    av:"av2", in:"ND", rf:false},
-      {n:"Chong Wei Kiat",    r:"Strategy Consultant",            av:"av3", in:"CW", rf:false}
+      {n:"James Tan Wei Lun", r:"Executive Coach · MBA (INSEAD)", av:"av4", in:"JT", rf:false, rfReason:""},
+      {n:"Nurul Diana",       r:"Organisational Psychologist",    av:"av2", in:"ND", rf:false, rfReason:""},
+      {n:"Chong Wei Kiat",    r:"Strategy Consultant",            av:"av3", in:"CW", rf:false, rfReason:""}
     ],
     hist:{
       2018:["Leadership Foundations","Emotional Intelligence at Work"],
@@ -298,7 +329,7 @@ const D = [
     status:"Approved", blacklistReason:"", ys:2019, tc:6, tp:198, fl:false,
     expertise:"Wellness & HR",
     trainers:[
-      {n:"Aileen Lim", r:"Registered Counsellor (MBACP)", av:"av3", in:"AL", rf:false}
+      {n:"Aileen Lim", r:"Registered Counsellor (MBACP)", av:"av3", in:"AL", rf:false, rfReason:""}
     ],
     hist:{
       2019:["Stress Management Basics","Work-Life Balance Workshop"],
@@ -310,8 +341,8 @@ const D = [
     status:"In Consideration", blacklistReason:"", ys:2021, tc:4, tp:89, fl:false,
     expertise:"Data & Analytics",
     trainers:[
-      {n:"Daniel Wong",      r:"Microsoft Certified Trainer", av:"av1", in:"DW", rf:false},
-      {n:"Priya Subramaniam",r:"Power BI Expert",             av:"av4", in:"PS", rf:false}
+      {n:"Daniel Wong",      r:"Microsoft Certified Trainer", av:"av1", in:"DW", rf:false, rfReason:""},
+      {n:"Priya Subramaniam",r:"Power BI Expert",             av:"av4", in:"PS", rf:false, rfReason:""}
     ],
     hist:{
       2021:["Excel Essentials","Intro to Power BI"],
@@ -348,7 +379,8 @@ function genPart(pIdx, count, courseIdx) {
 /* ═══════════════ STATE ═══════════════ */
 let view = 'prov', srt = 'az', adm = false;
 let curP = 0;                  // currently open provider idx
-let partPage = 1, allPt = [];
+let curRFTrainer = null;       // currently flagged trainer {pid, ini, trainer}
+let partPage = 1, allPt = [], partSearch = '';
 let partMode = 'provider';     // provider total view or course-specific
 let pendingStatus = '';        // selected status in status modal
 const PS = 10;
@@ -509,7 +541,7 @@ function rTrain(q, sf) {
       <div class="tc2-foot">
         <span></span>
         <button class="ftb${t.rf ? ' flagged' : ''}" style="display:${adm ? 'flex' : 'none'}" onclick="togTF(${t.pid},'${t.in}')">
-          🚩 ${t.rf ? 'Remove Flag' : 'Red Flag'}
+          🚩 ${t.rf ? 'Manage Flag' : 'Red Flag'}
         </button>
       </div>`;
     g.appendChild(card);
@@ -528,10 +560,78 @@ function updC() {
 
 /* ── FLAG TOGGLES ── */
 function togTF(pid, ini) {
-  const t = D[pid].trainers.find(x => x.in === ini);
+  const p = D[pid];
+  const t = p.trainers.find(x => x.in === ini);
   if (!t) return;
-  t.rf = !t.rf;
-  showT(t.rf ? `🚩 ${t.n} red-flagged` : `Flag removed from ${t.n}`);
+  curRFTrainer = {pid, ini, trainer: t};
+  document.getElementById('rfmTrainerName').textContent = t.n;
+  document.getElementById('rfReasonSel').value = t.rfReason || '';
+  
+  // Populate action buttons based on flag status
+  const btnContainer = document.getElementById('rfActions');
+  btnContainer.innerHTML = '';
+  
+  if (t.rf) {
+    // Already flagged - show "Update Flag" and "Remove Flag"
+    const updateBtn = document.createElement('button');
+    updateBtn.className = 'stm-confirm';
+    updateBtn.textContent = 'Update Flag';
+    updateBtn.onclick = confirmRF;
+    btnContainer.appendChild(updateBtn);
+    
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'stm-cancel';
+    removeBtn.textContent = 'Remove Flag';
+    removeBtn.onclick = removeRF;
+    btnContainer.appendChild(removeBtn);
+  } else {
+    // Not flagged yet - show "Confirm" and "Cancel"
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'stm-confirm';
+    confirmBtn.textContent = 'Confirm';
+    confirmBtn.onclick = confirmRF;
+    btnContainer.appendChild(confirmBtn);
+    
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'stm-cancel';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.onclick = closeRFModal;
+    btnContainer.appendChild(cancelBtn);
+  }
+  
+  document.getElementById('rfOv').classList.add('open');
+}
+
+function closeRFModal() {
+  document.getElementById('rfOv').classList.remove('open');
+}
+
+function confirmRF() {
+  if (!curRFTrainer) return;
+  const trainer = curRFTrainer.trainer;
+  const selectedValue = document.getElementById('rfReasonSel').value;
+  
+  if (!selectedValue) {
+    showT('⚠️ Please select a reason for the red flag.');
+    return;
+  }
+  
+  trainer.rf = true;
+  trainer.rfReason = selectedValue;
+  closeRFModal();
+  showT(`🚩 ${trainer.n} red flag ${curRFTrainer.trainer.rf ? 'updated' : 'added'}`);
+  curRFTrainer = null;
+  go();
+}
+
+function removeRF() {
+  if (!curRFTrainer) return;
+  const trainer = curRFTrainer.trainer;
+  trainer.rf = false;
+  trainer.rfReason = '';
+  closeRFModal();
+  showT(`✓ Flag removed from ${trainer.n}`);
+  curRFTrainer = null;
   go();
 }
 
@@ -793,18 +893,37 @@ function openPart(ctx) {
     subtitle = `${allPt.length} participants for this course`;
   }
   partPage = 1;
+  partSearch = '';
   document.getElementById('partT').textContent = title;
   document.getElementById('partS').textContent = subtitle;
+  document.getElementById('partSearch').value = '';
   rPart();
   document.getElementById('partOv').classList.add('open');
 }
 
-function closePart() { document.getElementById('partOv').classList.remove('open'); }
+function closePart() { 
+  partSearch = '';
+  document.getElementById('partOv').classList.remove('open'); 
+}
+
+function filterPart() {
+  partSearch = document.getElementById('partSearch').value.toLowerCase().trim();
+  partPage = 1;
+  rPart();
+}
 
 function rPart() {
-  const rows = partMode === 'provider'
+  let rows = partMode === 'provider'
     ? allPt.slice().sort((a, b) => a.name.localeCompare(b.name))
     : allPt;
+  
+  // Apply search filter
+  if (partSearch) {
+    rows = rows.filter(pp => 
+      pp.name.toLowerCase().includes(partSearch) || 
+      pp.dept.toLowerCase().includes(partSearch)
+    );
+  }
   const s = (partPage - 1) * PS, e = Math.min(s + PS, rows.length);
   const headVenue = 'Course';
   const headTrainer = 'Completion Year';

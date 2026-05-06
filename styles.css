@@ -40,8 +40,8 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 /* ── TOOLBAR ── */
 .toolbar{background:var(--cream);border-bottom:1px solid var(--border);padding:.7rem 2rem;display:flex;align-items:center;gap:.65rem;flex-wrap:wrap}
 .sw{position:relative;flex:1;min-width:200px}
-.sw svg{position:absolute;left:.65rem;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
-.si{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:.46rem .7rem .46rem 2.1rem;font-family:'Calibri',sans-serif;font-size:.9rem;background:var(--card);outline:none;transition:border-color .2s;color:var(--ink)}
+.sw svg{position:absolute;left:.52rem;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;width:16px;height:16px}
+.si{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:.46rem .7rem .46rem 1.95rem;font-family:'Calibri',sans-serif;font-size:.9rem;background:var(--card);outline:none;transition:border-color .2s;color:var(--ink)}
 .si:focus{border-color:var(--blue)}.si::placeholder{color:#8aaabb}
 .vt{display:flex;background:rgba(0,128,198,.08);border-radius:8px;padding:3px;gap:2px}
 .vtb{border:none;background:transparent;color:var(--muted);padding:.3rem .8rem;border-radius:6px;font-family:'Calibri',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .18s;white-space:nowrap}
@@ -205,6 +205,10 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 .pbs{display:flex;gap:.32rem}
 .pb{width:29px;height:29px;border:1.5px solid var(--border);border-radius:6px;background:var(--card);font-family:'Calibri',sans-serif;font-weight:700;font-size:.77rem;cursor:pointer;transition:all .15s;color:var(--ink);display:flex;align-items:center;justify-content:center}
 .pb:hover{border-color:var(--blue);color:var(--blue)}.pb.active{background:var(--blue);border-color:var(--blue);color:#fff}.pb:disabled{opacity:.3;cursor:default;pointer-events:none}
+.pos{position:relative;padding:.65rem 1.45rem;border-bottom:1px solid var(--border);background:var(--cream);flex-shrink:0}
+.pos svg{position:absolute;left:1.9rem;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;width:14px;height:14px}
+.psi{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:.42rem .65rem .42rem 2.35rem;font-family:'Calibri',sans-serif;font-size:.85rem;background:var(--card);outline:none;transition:border-color .2s;color:var(--ink)}
+.psi:focus{border-color:var(--blue);}.psi::placeholder{color:#8aaabb}
 
 /* ── STATUS UPDATE MODAL ── */
 .stov{position:fixed;inset:0;background:rgba(0,64,110,.6);backdrop-filter:blur(4px);z-index:700;display:none;align-items:center;justify-content:center;padding:1.5rem}
