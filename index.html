@@ -1000,20 +1000,14 @@ function openP(id) {
       } else {
         expBub.classList.remove('exp-open');
         expBub.innerHTML = `
-          <div style="display:flex;align-items:center;gap:.4rem;justify-content:space-between">
-            <div id="mExpDisplay" class="exp-display">${val}</div>
-            <button id="mExpEdit" class="exp-edit" aria-label="Edit expertise">✎</button>
-          </div>
+          <div class="msb-n">${val}</div>
           <div class="msb-l">Area of Expertise</div>
-          <div class="msb-h hidden" id="mExpHint"></div>
+          <div class="msb-h" id="mExpHint">Click to update →</div>
         `;
-        document.getElementById('mExpEdit').onclick = () => renderExpertiseBubble(true);
-        document.getElementById('mExpDisplay').onclick = () => renderExpertiseBubble(true);
+        expBub.onclick = () => renderExpertiseBubble(true);
       }
     };
     renderExpertiseBubble(false);
-    // keep hint hidden — editing via pencil/popover
-    if (expHint) expHint.classList.add('hidden');
   } else {
     expBub.classList.remove('cl');
     expBub.innerHTML = `
@@ -1024,9 +1018,67 @@ function openP(id) {
     if (expHint) expHint.classList.add('hidden');
   }
 
-  // secondary expertise (non-editable)
-  const exp2El = document.getElementById('mExp2');
-  if (exp2El) exp2El.textContent = p.expertise2 || '—';
+  // secondary expertise bubble
+  const exp2Bub = document.getElementById('mExp2Bub');
+  if (adm) {
+    exp2Bub.classList.add('cl');
+    const renderExpertise2Bubble = (editing) => {
+      const val = D[curP].expertise2 || '—';
+      if (editing) {
+        exp2Bub.classList.add('exp-open');
+        exp2Bub.innerHTML = `
+          <div class="exp-pop-inside" id="mExp2PopInside">
+            <select class="ysel" id="mExp2SelInside">
+              <option value=""></option>
+              <option value="Project Management">Project Management</option>
+              <option value="Data & Analytics">Data & Analytics</option>
+              <option value="Leadership">Leadership</option>
+              <option value="Wellness & HR">Wellness & HR</option>
+              <option value="Technology">Technology</option>
+              <option value="Safety & Compliance">Safety & Compliance</option>
+              <option value="Executive Coaching">Executive Coaching</option>
+              <option value="Other">Other</option>
+            </select>
+            <div class="exp-actions">
+              <button class="ux" id="mExp2Cancel">Cancel</button>
+              <button class="uc" id="mExp2Save">Save</button>
+            </div>
+          </div>`;
+        const sel = document.getElementById('mExp2SelInside');
+        sel.value = val === '—' ? '' : val;
+        document.getElementById('mExp2Cancel').onclick = (e) => { e.stopPropagation(); renderExpertise2Bubble(false); };
+        document.getElementById('mExp2Save').onclick = (e) => {
+          e.stopPropagation();
+          let nextVal = sel.value;
+          if (nextVal === 'Other') {
+            const other = prompt('Enter custom Area of Expertise:');
+            if (!other) return;
+            nextVal = other;
+          }
+          D[curP].expertise2 = nextVal;
+          showT(`✓ Area of Expertise (Secondary) updated to "${nextVal}"`);
+          renderExpertise2Bubble(false);
+        };
+        setTimeout(() => sel.focus(), 0);
+      } else {
+        exp2Bub.classList.remove('exp-open');
+        exp2Bub.innerHTML = `
+          <div class="msb-n">${val}</div>
+          <div class="msb-l">Area of Expertise</div>
+          <div class="msb-h">Click to update →</div>
+        `;
+        exp2Bub.onclick = () => renderExpertise2Bubble(true);
+      }
+    };
+    renderExpertise2Bubble(false);
+  } else {
+    exp2Bub.classList.remove('cl');
+    exp2Bub.onclick = null;
+    exp2Bub.innerHTML = `
+      <div class="msb-n">${p.expertise2 || '—'}</div>
+      <div class="msb-l">Area of Expertise</div>
+    `;
+  }
 
   // year select
   const ys = document.getElementById('ySel');
