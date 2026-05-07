@@ -104,7 +104,6 @@
         <div class="msb-l">Status</div>
         <div class="msb-h hidden" id="mStHint"></div>
       </div>
-      <div class="msb"><div class="msb-n" id="mCo">—</div><div class="msb-l">Total Courses</div></div>
       <div class="msb" id="mPaBub">
         <div class="msb-n" id="mPa">—</div>
         <div class="msb-l">Total Participants</div>
@@ -114,6 +113,10 @@
         <div class="msb-n" id="mExp">—</div>
         <div class="msb-l">Area of Expertise</div>
         <div class="msb-h hidden" id="mExpHint"></div>
+      </div>
+      <div class="msb" id="mExp2Bub">
+        <div class="msb-n" id="mExp2">—</div>
+        <div class="msb-l">Area of Expertise</div>
       </div>
     </div>
 
@@ -270,6 +273,7 @@ const D = [
   { id:0, name:"ProManage Academy Sdn Bhd", abbr:"PM", type:"Accredited Training Organisation",
     status:"Approved", blacklistReason:"", ys:2016, tc:12, tp:348, fl:false,
     expertise:"Project Management",
+    expertise2:"Leadership",
     trainers:[
       {n:"Ahmad Malik",  r:"PMP Certified · 14 yrs", av:"av1", in:"AM", rf:false, rfReason:""},
       {n:"Siti Yusof",   r:"Agile Coach",             av:"av2", in:"SY", rf:false, rfReason:""}
@@ -285,6 +289,7 @@ const D = [
   { id:1, name:"TechCraft Institute", abbr:"TC", type:"Technology Training Provider",
     status:"In Consideration", blacklistReason:"", ys:2020, tc:5, tp:112, fl:false,
     expertise:"Technology",
+    expertise2:"Web Development",
     trainers:[
       {n:"Ravi Kumar", r:"Senior Full-Stack Developer", av:"av2", in:"RK", rf:false, rfReason:""}
     ],
@@ -299,6 +304,7 @@ const D = [
     blacklistReason:"Fraud / falsified records",
     ys:2015, tc:9, tp:520, fl:true,
     expertise:"Safety & Compliance",
+    expertise2:"Risk Management",
     trainers:[
       {n:"Lee Hui Xian", r:"DOSH Accredited Inspector", av:"av3", in:"LH", rf:false, rfReason:""},
       {n:"Bala Rajan",   r:"OSH Practitioner",          av:"av1", in:"BR", rf:true, rfReason:"Student complaints"}
@@ -314,6 +320,7 @@ const D = [
   { id:3, name:"Elevate Learning Group", abbr:"EL", type:"Corporate Training Provider",
     status:"Approved", blacklistReason:"", ys:2018, tc:8, tp:284, fl:false,
     expertise:"Leadership",
+    expertise2:"Strategy",
     trainers:[
       {n:"James Tan Wei Lun", r:"Executive Coach · MBA (INSEAD)", av:"av4", in:"JT", rf:false, rfReason:""},
       {n:"Nurul Diana",       r:"Organisational Psychologist",    av:"av2", in:"ND", rf:false, rfReason:""},
@@ -329,6 +336,7 @@ const D = [
   { id:4, name:"MindBridge Training Sdn Bhd", abbr:"MB", type:"Wellness & HR Training",
     status:"Approved", blacklistReason:"", ys:2019, tc:6, tp:198, fl:false,
     expertise:"Wellness & HR",
+    expertise2:"Employee Wellness",
     trainers:[
       {n:"Aileen Lim", r:"Registered Counsellor (MBACP)", av:"av3", in:"AL", rf:false, rfReason:""}
     ],
@@ -341,6 +349,7 @@ const D = [
   { id:5, name:"DataAxis Learning Hub", abbr:"DA", type:"Data & Analytics Training",
     status:"In Consideration", blacklistReason:"", ys:2021, tc:4, tp:89, fl:false,
     expertise:"Data & Analytics",
+    expertise2:"Business Intelligence",
     trainers:[
       {n:"Daniel Wong",      r:"Microsoft Certified Trainer", av:"av1", in:"DW", rf:false, rfReason:""},
       {n:"Priya Subramaniam",r:"Power BI Expert",             av:"av4", in:"PS", rf:false, rfReason:""}
@@ -354,6 +363,7 @@ const D = [
   { id:6, name:"Global Skills Academy", abbr:"GSA", type:"International Training Partner",
     status:"Approved", blacklistReason:"", ys:2017, tc:14, tp:412, fl:false,
     expertise:"International Standards",
+    expertise2:"Quality Management",
     trainers:[
       {n:"Michael Chen", r:"ISO 9001 Auditor", av:"av2", in:"MC", rf:false, rfReason:""},
       {n:"Patricia Rodriguez", r:"Quality Management Specialist", av:"av4", in:"PR", rf:false, rfReason:""}
@@ -367,6 +377,7 @@ const D = [
   { id:7, name:"FinanceHub Training", abbr:"FH", type:"Financial Services Trainer",
     status:"Approved", blacklistReason:"", ys:2018, tc:8, tp:256, fl:false,
     expertise:"Finance & Banking",
+    expertise2:"Risk & Compliance",
     trainers:[
       {n:"Dr. Richard Thompson", r:"CFA Level III", av:"av1", in:"RT", rf:false, rfReason:""},
       {n:"Jennifer Wong", r:"Financial Analyst", av:"av3", in:"JW", rf:false, rfReason:""}
@@ -380,6 +391,7 @@ const D = [
   { id:8, name:"Digital Transformation Labs", abbr:"DTL", type:"Tech Innovation Center",
     status:"In Consideration", blacklistReason:"", ys:2022, tc:6, tp:145, fl:false,
     expertise:"Digital Innovation",
+    expertise2:"AI & ML",
     trainers:[
       {n:"Alex Kumar", r:"Digital Strategy Consultant", av:"av4", in:"AK", rf:false, rfReason:""},
       {n:"Sarah Kim", r:"AI/ML Specialist", av:"av2", in:"SK", rf:true, rfReason:"Course quality concerns"}
@@ -392,6 +404,7 @@ const D = [
   { id:9, name:"Heritage & Culture Institute", abbr:"HCI", type:"Cultural Education Provider",
     status:"Approved", blacklistReason:"", ys:2019, tc:5, tp:178, fl:false,
     expertise:"Cultural & Heritage",
+    expertise2:"Museum Curation",
     trainers:[
       {n:"Professor Aisha Khan", r:"Cultural Heritage Expert", av:"av3", in:"AK", rf:false, rfReason:""}
     ],
@@ -403,6 +416,7 @@ const D = [
   { id:10, name:"Supply Chain Academy", abbr:"SCA", type:"Logistics & SCM Training",
     status:"Approved", blacklistReason:"", ys:2016, tc:11, tp:328, fl:false,
     expertise:"Supply Chain Management",
+    expertise2:"Procurement Strategy",
     trainers:[
       {n:"Marcus Johnson", r:"APICS CSCP Certified", av:"av1", in:"MJ", rf:false, rfReason:""},
       {n:"Emily Foster", r:"Procurement Specialist", av:"av4", in:"EF", rf:false, rfReason:""}
@@ -416,6 +430,7 @@ const D = [
   { id:11, name:"Green Energy Training", abbr:"GET", type:"Renewable Energy Provider",
     status:"In Consideration", blacklistReason:"", ys:2021, tc:7, tp:203, fl:false,
     expertise:"Renewable Energy",
+    expertise2:"Energy Efficiency",
     trainers:[
       {n:"Dr. Vincent Lee", r:"Renewable Energy Specialist", av:"av2", in:"VL", rf:false, rfReason:""}
     ],
@@ -427,6 +442,7 @@ const D = [
   { id:12, name:"Customer Experience Institute", abbr:"CEI", type:"Service Excellence Center",
     status:"Approved", blacklistReason:"", ys:2018, tc:9, tp:287, fl:false,
     expertise:"Customer Service",
+    expertise2:"CX Analytics",
     trainers:[
       {n:"Lisa Anderson", r:"CX Strategy Expert", av:"av4", in:"LA", rf:false, rfReason:""},
       {n:"Robert Brown", r:"Service Design Consultant", av:"av1", in:"RB", rf:false, rfReason:""}
@@ -440,6 +456,7 @@ const D = [
   { id:13, name:"Manufacturing Excellence", abbr:"MEX", type:"Operational Excellence Firm",
     status:"Approved", blacklistReason:"", ys:2015, tc:13, tp:456, fl:false,
     expertise:"Operations Management",
+    expertise2:"Lean Manufacturing",
     trainers:[
       {n:"Thomas Mueller", r:"Machine Operation Specialist", av:"av3", in:"TM", rf:false, rfReason:""},
       {n:"Catherine Zhang", r:"Continuous Improvement Lead", av:"av2", in:"CZ", rf:false, rfReason:""}
@@ -453,6 +470,7 @@ const D = [
   { id:14, name:"Legal Compliance Academy", abbr:"LCA", type:"Legal Training Organization",
     status:"In Consideration", blacklistReason:"", ys:2020, tc:4, tp:98, fl:false,
     expertise:"Legal & Compliance",
+    expertise2:"Regulatory Affairs",
     trainers:[
       {n:"Attorney David Morrison", r:"Corporate Lawyer", av:"av1", in:"DM", rf:false, rfReason:""}
     ],
@@ -464,6 +482,7 @@ const D = [
   { id:15, name:"Marketing Mastery Hub", abbr:"MMH", type:"Marketing Training Center",
     status:"Approved", blacklistReason:"", ys:2017, tc:8, tp:234, fl:false,
     expertise:"Marketing & Branding",
+    expertise2:"Digital Campaigns",
     trainers:[
       {n:"Nicole Cooper", r:"Digital Marketing Expert", av:"av4", in:"NC", rf:false, rfReason:""},
       {n:"Steven Park", r:"Brand Strategy Specialist", av:"av3", in:"SP", rf:false, rfReason:""}
@@ -477,6 +496,7 @@ const D = [
   { id:16, name:"Quality Engineering Academy", abbr:"QEA", type:"QA/QC Training Provider",
     status:"Approved", blacklistReason:"", ys:2019, tc:6, tp:189, fl:false,
     expertise:"Quality Assurance",
+    expertise2:"Test Automation",
     trainers:[
       {n:"Frank Wilson", r:"QA Engineer", av:"av2", in:"FW", rf:false, rfReason:""},
       {n:"Helen Moore", r:"Test Automation Expert", av:"av1", in:"HM", rf:false, rfReason:""}
@@ -489,6 +509,7 @@ const D = [
   { id:17, name:"Innovation Lab Asia", abbr:"ILA", type:"Innovation Consulting Firm",
     status:"In Consideration", blacklistReason:"", ys:2021, tc:5, tp:112, fl:false,
     expertise:"Innovation & Entrepreneurship",
+    expertise2:"Startup Coaching",
     trainers:[
       {n:"Dr. Sophia Ng", r:"Innovation Strategy Consultant", av:"av4", in:"SN", rf:true, rfReason:"Limited delivery experience"}
     ],
@@ -500,6 +521,7 @@ const D = [
   { id:18, name:"Analytics & Data Science", abbr:"ADS", type:"Data Science Institute",
     status:"Approved", blacklistReason:"", ys:2020, tc:7, tp:267, fl:false,
     expertise:"Data Science & Analytics",
+    expertise2:"Machine Learning",
     trainers:[
       {n:"Prof. Raymond Lee", r:"Data Science PhD", av:"av3", in:"RL", rf:false, rfReason:""},
       {n:"Jessica Martinez", r:"ML Engineer", av:"av2", in:"JM", rf:false, rfReason:""}
@@ -513,6 +535,7 @@ const D = [
   { id:19, name:"Construction Management Institute", abbr:"CMI", type:"Built Environment Trainer",
     status:"Approved", blacklistReason:"", ys:2016, tc:10, tp:378, fl:false,
     expertise:"Construction & Engineering",
+    expertise2:"Project Controls",
     trainers:[
       {n:"George Richardson", r:"PMP & PRINCE2", av:"av1", in:"GR", rf:false, rfReason:""},
       {n:"Olivia Chen", r:"BIM Specialist", av:"av4", in:"OC", rf:false, rfReason:""}
@@ -526,6 +549,7 @@ const D = [
   { id:20, name:"Healthcare Excellence Center", abbr:"HEC", type:"Medical Training Provider",
     status:"Approved", blacklistReason:"", ys:2018, tc:9, tp:312, fl:false,
     expertise:"Healthcare & Wellness",
+    expertise2:"Clinical Training",
     trainers:[
       {n:"Dr. Margaret White", r:"Healthcare Administrator", av:"av3", in:"MW", rf:false, rfReason:""},
       {n:"Kevin Santos", r:"Clinical Trainer", av:"av2", in:"KS", rf:false, rfReason:""}
@@ -912,7 +936,6 @@ function openP(id) {
     stBub.title = '';
   }
 
-  document.getElementById('mCo').textContent = p.tc;
   document.getElementById('mPa').textContent = p.tp.toLocaleString();
 
   // badges row (top badge removed — status shown in the stat bubble below)
@@ -1000,6 +1023,10 @@ function openP(id) {
     `;
     if (expHint) expHint.classList.add('hidden');
   }
+
+  // secondary expertise (non-editable)
+  const exp2El = document.getElementById('mExp2');
+  if (exp2El) exp2El.textContent = p.expertise2 || '—';
 
   // year select
   const ys = document.getElementById('ySel');
