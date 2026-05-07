@@ -997,6 +997,8 @@ function openP(id) {
           renderExpertiseBubble(false);
         };
         setTimeout(() => sel.focus(), 0);
+        // prevent clicks inside the popover from bubbling and re-triggering handlers
+        expBub.onclick = (e) => { e.stopPropagation(); };
       } else {
         expBub.classList.remove('exp-open');
         expBub.innerHTML = `
@@ -1060,6 +1062,8 @@ function openP(id) {
           renderExpertise2Bubble(false);
         };
         setTimeout(() => sel.focus(), 0);
+        // prevent clicks inside the popover from bubbling and re-triggering handlers
+        exp2Bub.onclick = (e) => { e.stopPropagation(); };
       } else {
         exp2Bub.classList.remove('exp-open');
         exp2Bub.innerHTML = `
