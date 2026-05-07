@@ -45,7 +45,7 @@
 <div class="toolbar">
   <div class="sw">
     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-    <input class="si" id="si" type="text" placeholder="Search Training Provider, Trainers, or Course Title…" oninput="go()">
+    <input class="si" id="si" type="text" placeholder="Search Training Provider or Trainers" oninput="go()">
   </div>
   <div class="vt">
     <button class="vtb active" onclick="setView('prov',this)">Training Providers</button>
@@ -74,7 +74,9 @@
 <div class="main">
   <div class="rl" id="rl">Showing 6 Training Providers</div>
   <div class="pg" id="provGrid"></div>
+  <div id="prov-pag"></div>
   <div class="tg hidden" id="trainGrid"></div>
+  <div id="train-pag"></div>
 </div>
 
 <!-- ════════════════════════════════════
@@ -102,7 +104,6 @@
         <div class="msb-l">Status</div>
         <div class="msb-h hidden" id="mStHint"></div>
       </div>
-      <div class="msb"><div class="msb-n" id="mYr">—</div><div class="msb-l">Year Started</div></div>
       <div class="msb"><div class="msb-n" id="mCo">—</div><div class="msb-l">Total Courses</div></div>
       <div class="msb" id="mPaBub">
         <div class="msb-n" id="mPa">—</div>
@@ -349,6 +350,191 @@ const D = [
       2023:["Data Storytelling","Advanced Dashboard Design"],
       2024:["Advanced Excel & Power BI for Business Reporting"]
     }
+  },
+  { id:6, name:"Global Skills Academy", abbr:"GSA", type:"International Training Partner",
+    status:"Approved", blacklistReason:"", ys:2017, tc:14, tp:412, fl:false,
+    expertise:"International Standards",
+    trainers:[
+      {n:"Michael Chen", r:"ISO 9001 Auditor", av:"av2", in:"MC", rf:false, rfReason:""},
+      {n:"Patricia Rodriguez", r:"Quality Management Specialist", av:"av4", in:"PR", rf:false, rfReason:""}
+    ],
+    hist:{
+      2022:["ISO 9001:2015 Foundation","Quality Management Systems"],
+      2023:["ISO 14001 Environmental Management","Risk Management"],
+      2024:["ISO 45001 Occupational Health & Safety"]
+    }
+  },
+  { id:7, name:"FinanceHub Training", abbr:"FH", type:"Financial Services Trainer",
+    status:"Approved", blacklistReason:"", ys:2018, tc:8, tp:256, fl:false,
+    expertise:"Finance & Banking",
+    trainers:[
+      {n:"Dr. Richard Thompson", r:"CFA Level III", av:"av1", in:"RT", rf:false, rfReason:""},
+      {n:"Jennifer Wong", r:"Financial Analyst", av:"av3", in:"JW", rf:false, rfReason:""}
+    ],
+    hist:{
+      2022:["Investment Fundamentals","Corporate Finance"],
+      2023:["Risk Management in Finance","Regulatory Compliance"],
+      2024:["Financial Analysis & Valuation"]
+    }
+  },
+  { id:8, name:"Digital Transformation Labs", abbr:"DTL", type:"Tech Innovation Center",
+    status:"In Consideration", blacklistReason:"", ys:2022, tc:6, tp:145, fl:false,
+    expertise:"Digital Innovation",
+    trainers:[
+      {n:"Alex Kumar", r:"Digital Strategy Consultant", av:"av4", in:"AK", rf:false, rfReason:""},
+      {n:"Sarah Kim", r:"AI/ML Specialist", av:"av2", in:"SK", rf:true, rfReason:"Course quality concerns"}
+    ],
+    hist:{
+      2023:["Digital Transformation Roadmap","AI for Business"],
+      2024:["Machine Learning Basics","Cloud Architecture"]
+    }
+  },
+  { id:9, name:"Heritage & Culture Institute", abbr:"HCI", type:"Cultural Education Provider",
+    status:"Approved", blacklistReason:"", ys:2019, tc:5, tp:178, fl:false,
+    expertise:"Cultural & Heritage",
+    trainers:[
+      {n:"Professor Aisha Khan", r:"Cultural Heritage Expert", av:"av3", in:"AK", rf:false, rfReason:""}
+    ],
+    hist:{
+      2022:["Southeast Asian Cultural Heritage","Museum Studies"],
+      2024:["Cultural Preservation & Documentation"]
+    }
+  },
+  { id:10, name:"Supply Chain Academy", abbr:"SCA", type:"Logistics & SCM Training",
+    status:"Approved", blacklistReason:"", ys:2016, tc:11, tp:328, fl:false,
+    expertise:"Supply Chain Management",
+    trainers:[
+      {n:"Marcus Johnson", r:"APICS CSCP Certified", av:"av1", in:"MJ", rf:false, rfReason:""},
+      {n:"Emily Foster", r:"Procurement Specialist", av:"av4", in:"EF", rf:false, rfReason:""}
+    ],
+    hist:{
+      2022:["Supply Chain Fundamentals","Procurement Strategy"],
+      2023:["Logistics Optimization","Inventory Management"],
+      2024:["Supply Chain Risk Management"]
+    }
+  },
+  { id:11, name:"Green Energy Training", abbr:"GET", type:"Renewable Energy Provider",
+    status:"In Consideration", blacklistReason:"", ys:2021, tc:7, tp:203, fl:false,
+    expertise:"Renewable Energy",
+    trainers:[
+      {n:"Dr. Vincent Lee", r:"Renewable Energy Specialist", av:"av2", in:"VL", rf:false, rfReason:""}
+    ],
+    hist:{
+      2023:["Solar Energy Systems","Wind Energy Basics"],
+      2024:["Energy Efficiency & Sustainability"]
+    }
+  },
+  { id:12, name:"Customer Experience Institute", abbr:"CEI", type:"Service Excellence Center",
+    status:"Approved", blacklistReason:"", ys:2018, tc:9, tp:287, fl:false,
+    expertise:"Customer Service",
+    trainers:[
+      {n:"Lisa Anderson", r:"CX Strategy Expert", av:"av4", in:"LA", rf:false, rfReason:""},
+      {n:"Robert Brown", r:"Service Design Consultant", av:"av1", in:"RB", rf:false, rfReason:""}
+    ],
+    hist:{
+      2022:["Customer Journey Mapping","Service Design"],
+      2023:["NPS & Customer Loyalty","CX Analytics"],
+      2024:["Omnichannel Customer Experience"]
+    }
+  },
+  { id:13, name:"Manufacturing Excellence", abbr:"MEX", type:"Operational Excellence Firm",
+    status:"Approved", blacklistReason:"", ys:2015, tc:13, tp:456, fl:false,
+    expertise:"Operations Management",
+    trainers:[
+      {n:"Thomas Mueller", r:"Machine Operation Specialist", av:"av3", in:"TM", rf:false, rfReason:""},
+      {n:"Catherine Zhang", r:"Continuous Improvement Lead", av:"av2", in:"CZ", rf:false, rfReason:""}
+    ],
+    hist:{
+      2022:["Lean Manufacturing","Six Sigma Green Belt"],
+      2023:["Total Productive Maintenance","Process Optimization"],
+      2024:["Advanced Lean & Six Sigma"]
+    }
+  },
+  { id:14, name:"Legal Compliance Academy", abbr:"LCA", type:"Legal Training Organization",
+    status:"In Consideration", blacklistReason:"", ys:2020, tc:4, tp:98, fl:false,
+    expertise:"Legal & Compliance",
+    trainers:[
+      {n:"Attorney David Morrison", r:"Corporate Lawyer", av:"av1", in:"DM", rf:false, rfReason:""}
+    ],
+    hist:{
+      2023:["Corporate Law Basics","Contract Management"],
+      2024:["Compliance & Risk Management"]
+    }
+  },
+  { id:15, name:"Marketing Mastery Hub", abbr:"MMH", type:"Marketing Training Center",
+    status:"Approved", blacklistReason:"", ys:2017, tc:8, tp:234, fl:false,
+    expertise:"Marketing & Branding",
+    trainers:[
+      {n:"Nicole Cooper", r:"Digital Marketing Expert", av:"av4", in:"NC", rf:false, rfReason:""},
+      {n:"Steven Park", r:"Brand Strategy Specialist", av:"av3", in:"SP", rf:false, rfReason:""}
+    ],
+    hist:{
+      2022:["Digital Marketing Strategy","Social Media Marketing"],
+      2023:["Content Marketing","SEO & SEM"],
+      2024:["Marketing Analytics & Attribution"]
+    }
+  },
+  { id:16, name:"Quality Engineering Academy", abbr:"QEA", type:"QA/QC Training Provider",
+    status:"Approved", blacklistReason:"", ys:2019, tc:6, tp:189, fl:false,
+    expertise:"Quality Assurance",
+    trainers:[
+      {n:"Frank Wilson", r:"QA Engineer", av:"av2", in:"FW", rf:false, rfReason:""},
+      {n:"Helen Moore", r:"Test Automation Expert", av:"av1", in:"HM", rf:false, rfReason:""}
+    ],
+    hist:{
+      2023:["Quality Assurance Fundamentals","Test Automation"],
+      2024:["Agile QA Practices","Performance Testing"]
+    }
+  },
+  { id:17, name:"Innovation Lab Asia", abbr:"ILA", type:"Innovation Consulting Firm",
+    status:"In Consideration", blacklistReason:"", ys:2021, tc:5, tp:112, fl:false,
+    expertise:"Innovation & Entrepreneurship",
+    trainers:[
+      {n:"Dr. Sophia Ng", r:"Innovation Strategy Consultant", av:"av4", in:"SN", rf:true, rfReason:"Limited delivery experience"}
+    ],
+    hist:{
+      2023:["Innovation Thinking","Startup Fundamentals"],
+      2024:["Business Model Canvas"]
+    }
+  },
+  { id:18, name:"Analytics & Data Science", abbr:"ADS", type:"Data Science Institute",
+    status:"Approved", blacklistReason:"", ys:2020, tc:7, tp:267, fl:false,
+    expertise:"Data Science & Analytics",
+    trainers:[
+      {n:"Prof. Raymond Lee", r:"Data Science PhD", av:"av3", in:"RL", rf:false, rfReason:""},
+      {n:"Jessica Martinez", r:"ML Engineer", av:"av2", in:"JM", rf:false, rfReason:""}
+    ],
+    hist:{
+      2022:["Python for Data Science","Statistics Fundamentals"],
+      2023:["Machine Learning","Advanced Analytics"],
+      2024:["Deep Learning & Neural Networks"]
+    }
+  },
+  { id:19, name:"Construction Management Institute", abbr:"CMI", type:"Built Environment Trainer",
+    status:"Approved", blacklistReason:"", ys:2016, tc:10, tp:378, fl:false,
+    expertise:"Construction & Engineering",
+    trainers:[
+      {n:"George Richardson", r:"PMP & PRINCE2", av:"av1", in:"GR", rf:false, rfReason:""},
+      {n:"Olivia Chen", r:"BIM Specialist", av:"av4", in:"OC", rf:false, rfReason:""}
+    ],
+    hist:{
+      2022:["Construction Management Basics","Building Information Modeling"],
+      2023:["Project Planning & Control","Safety Management"],
+      2024:["Sustainable Building Design"]
+    }
+  },
+  { id:20, name:"Healthcare Excellence Center", abbr:"HEC", type:"Medical Training Provider",
+    status:"Approved", blacklistReason:"", ys:2018, tc:9, tp:312, fl:false,
+    expertise:"Healthcare & Wellness",
+    trainers:[
+      {n:"Dr. Margaret White", r:"Healthcare Administrator", av:"av3", in:"MW", rf:false, rfReason:""},
+      {n:"Kevin Santos", r:"Clinical Trainer", av:"av2", in:"KS", rf:false, rfReason:""}
+    ],
+    hist:{
+      2022:["Healthcare Management","Patient Care Excellence"],
+      2023:["Clinical Best Practices","Healthcare Leadership"],
+      2024:["Digital Health & Telemedicine"]
+    }
   }
 ];
 
@@ -378,6 +564,8 @@ function genPart(pIdx, count, courseIdx) {
 
 /* ═══════════════ STATE ═══════════════ */
 let view = 'prov', srt = 'az', adm = false;
+let provPage = 1, trainPage = 1;
+const ITEMS_PER_PAGE = 15;
 let curP = 0;                  // currently open provider idx
 let curRFTrainer = null;       // currently flagged trainer {pid, ini, trainer}
 let partPage = 1, allPt = [], partSearch = '';
@@ -401,10 +589,14 @@ function setRole(r, b) {
 /* ═══════════════ VIEW TOGGLE ═══════════════ */
 function setView(v, b) {
   view = v;
+  provPage = 1;
+  trainPage = 1;
   document.querySelectorAll('.vtb').forEach(x => x.classList.remove('active'));
   b.classList.add('active');
   document.getElementById('provGrid').classList.toggle('hidden', v !== 'prov');
   document.getElementById('trainGrid').classList.toggle('hidden', v !== 'train');
+  document.getElementById('prov-pag').innerHTML = '';
+  document.getElementById('train-pag').innerHTML = '';
   const s = document.getElementById('sfSel');
   s.innerHTML = '';
   if (v === 'prov') {
@@ -452,16 +644,27 @@ function rProv(q, sf) {
   );
   list = sArr(list, p => p.name);
 
+  // Reset page if needed
+  if (list.length === 0) provPage = 1;
+  else if (provPage > Math.ceil(list.length / ITEMS_PER_PAGE)) provPage = Math.ceil(list.length / ITEMS_PER_PAGE);
+
   const g = document.getElementById('provGrid');
   g.innerHTML = '';
 
   if (!list.length) {
     g.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted);font-size:.9rem;font-family:'Calibri',sans-serif">No results found.</div>`;
     document.getElementById('rl').textContent = 'Showing 0 Training Providers';
+    document.getElementById('prov-pag').innerHTML = '';
     updC(); return;
   }
 
-  list.forEach((p, i) => {
+  // Pagination
+  const totalPages = Math.ceil(list.length / ITEMS_PER_PAGE);
+  const start = (provPage - 1) * ITEMS_PER_PAGE;
+  const end = start + ITEMS_PER_PAGE;
+  const pageList = list.slice(start, end);
+
+  pageList.forEach((p, i) => {
     const card = document.createElement('div');
     card.className = 'pc';
     card.style.animationDelay = (i * 0.04) + 's';
@@ -499,7 +702,18 @@ function rProv(q, sf) {
     g.appendChild(card);
   });
 
-  document.getElementById('rl').textContent = `Showing ${list.length} Training Provider${list.length !== 1 ? 's' : ''}`;
+  // Show pagination if needed
+  const pagHtml = totalPages > 1 ? `
+    <div class="pg-ctrl">
+      <button class="pg-btn" ${provPage === 1 ? 'disabled' : ''} onclick="provPage=Math.max(1,provPage-1);rProv('${q}','${sf}')">← Previous</button>
+      <span class="pg-info">${provPage} / ${totalPages}</span>
+      <button class="pg-btn" ${provPage === totalPages ? 'disabled' : ''} onclick="provPage=Math.min(${totalPages},provPage+1);rProv('${q}','${sf}')">Next →</button>
+    </div>
+  ` : '';
+  document.getElementById('prov-pag').innerHTML = pagHtml;
+
+  const showing = Math.min(ITEMS_PER_PAGE, list.length - start);
+  document.getElementById('rl').textContent = `Showing ${showing} of ${list.length} Training Provider${list.length !== 1 ? 's' : ''}`;
   updC();
 }
 
@@ -515,15 +729,26 @@ function rTrain(q, sf) {
   );
   all = sArr(all, t => t.n);
 
+  // Reset page if needed
+  if (all.length === 0) trainPage = 1;
+  else if (trainPage > Math.ceil(all.length / ITEMS_PER_PAGE)) trainPage = Math.ceil(all.length / ITEMS_PER_PAGE);
+
   const g = document.getElementById('trainGrid');
   g.innerHTML = '';
   if (!all.length) {
     g.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:3rem;color:var(--muted);font-size:.9rem;font-family:'Calibri',sans-serif">No trainers found.</div>`;
     document.getElementById('rl').textContent = 'Showing 0 Trainers';
+    document.getElementById('train-pag').innerHTML = '';
     return;
   }
 
-  all.forEach((t, i) => {
+  // Pagination
+  const totalPages = Math.ceil(all.length / ITEMS_PER_PAGE);
+  const start = (trainPage - 1) * ITEMS_PER_PAGE;
+  const end = start + ITEMS_PER_PAGE;
+  const pageList = all.slice(start, end);
+
+  pageList.forEach((t, i) => {
     const card = document.createElement('div');
     card.className = 'tc2';
     card.style.animationDelay = (i * 0.04) + 's';
@@ -547,7 +772,18 @@ function rTrain(q, sf) {
     g.appendChild(card);
   });
 
-  document.getElementById('rl').textContent = `Showing ${all.length} Trainer${all.length !== 1 ? 's' : ''} / Speaker${all.length !== 1 ? 's' : ''}`;
+  // Show pagination if needed
+  const pagHtml = totalPages > 1 ? `
+    <div class="pg-ctrl">
+      <button class="pg-btn" ${trainPage === 1 ? 'disabled' : ''} onclick="trainPage=Math.max(1,trainPage-1);rTrain('${q}','${sf}')">← Previous</button>
+      <span class="pg-info">${trainPage} / ${totalPages}</span>
+      <button class="pg-btn" ${trainPage === totalPages ? 'disabled' : ''} onclick="trainPage=Math.min(${totalPages},trainPage+1);rTrain('${q}','${sf}')">Next →</button>
+    </div>
+  ` : '';
+  document.getElementById('train-pag').innerHTML = pagHtml;
+
+  const showing = Math.min(ITEMS_PER_PAGE, all.length - start);
+  document.getElementById('rl').textContent = `Showing ${showing} of ${all.length} Trainer${all.length !== 1 ? 's' : ''} / Speaker${all.length !== 1 ? 's' : ''}`;
 }
 
 /* ── COUNTS ── */
@@ -676,7 +912,6 @@ function openP(id) {
     stBub.title = '';
   }
 
-  document.getElementById('mYr').textContent = p.ys;
   document.getElementById('mCo').textContent = p.tc;
   document.getElementById('mPa').textContent = p.tp.toLocaleString();
 
@@ -755,7 +990,7 @@ function openP(id) {
     };
     renderExpertiseBubble(false);
     // keep hint hidden — editing via pencil/popover
-    expHint.classList.add('hidden');
+    if (expHint) expHint.classList.add('hidden');
   } else {
     expBub.classList.remove('cl');
     expBub.innerHTML = `
@@ -763,7 +998,7 @@ function openP(id) {
       <div class="msb-l">Area of Expertise</div>
       <div class="msb-h hidden"></div>
     `;
-    expHint.classList.add('hidden');
+    if (expHint) expHint.classList.add('hidden');
   }
 
   // year select
