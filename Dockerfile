@@ -31,6 +31,9 @@ RUN chown -R www-data:www-data /var/www/html
 # Enable Apache modules
 RUN a2enmod rewrite
 
+# Suppress Apache FQDN warning in container logs
+RUN echo 'ServerName localhost' > /etc/apache2/conf-available/servername.conf && a2enconf servername
+
 EXPOSE 80
 
 CMD ["apache2-foreground"]
