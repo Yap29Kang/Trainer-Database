@@ -2,23 +2,37 @@
 /**
  * Database Configuration (env-driven)
  * Supported drivers: mysql, pgsql
- * Provide environment variables: DB_DRIVER, DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, APP_ENCRYPTION_KEY
+ * Provide environment variables: DB_DRIVER, DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, DB_SSLMODE, DATABASE_URL, APP_ENCRYPTION_KEY
  */
 
 $driver = getenv('DB_DRIVER') ?: 'mysql';
+$databaseUrl = getenv('DATABASE_URL') ?: '';
 $dbHost = getenv('DB_HOST') ?: 'localhost';
 $dbPort = getenv('DB_PORT') ?: null;
 $dbName = getenv('DB_NAME') ?: 'training_management';
 $dbUser = getenv('DB_USER') ?: 'root';
 $dbPass = getenv('DB_PASS') ?: '';
+$dbSslMode = getenv('DB_SSLMODE') ?: 'require';
 $appEncryptionKey = getenv('APP_ENCRYPTION_KEY') ?: '';
 
 define('APP_ENCRYPTION_KEY', $appEncryptionKey);
 
 // Build DSN
+if ($databaseUrl !== '') {
+    $parts = parse_url($databaseUrl);
+    if ($parts !== false) {
+        $driver = $parts['scheme'] ?? $driver;
+        $dbHost = $parts['host'] ?? $dbHost;
+        $dbPort = $parts['port'] ?? $dbPort;
+        $dbName = isset($parts['path']) ? ltrim($parts['path'], '/') : $dbName;
+        $dbUser = $parts['user'] ?? $dbUser;
+        $dbPass = $parts['pass'] ?? $dbPass;
+    }
+}
+
 if ($driver === 'pgsql') {
     $port = $dbPort ?: 5432;
-    $dsn = sprintf('pgsql:host=%s;port=%d;dbname=%s', $dbHost, $port, $dbName);
+    $dsn = sprintf('pgsql:host=%s;port=%d;dbname=%s;sslmode=%s', $dbHost, $port, $dbName, $dbSslMode);
 } else {
     $port = $dbPort ?: 3306;
     $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $dbHost, $port, $dbName);
