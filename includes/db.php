@@ -1,6 +1,70 @@
 <?php
 require_once __DIR__ . '/../config.php';
 
+function getEncryptionKeyBytes() {
+    $key = defined('APP_ENCRYPTION_KEY') ? (string)APP_ENCRYPTION_KEY : '';
+    if ($key === '') {
+        return null;
+    }
+
+    return hash('sha256', $key, true);
+}
+
+function encryptParticipantName($plainText) {
+    $keyBytes = getEncryptionKeyBytes();
+    if ($keyBytes === null) {
+        throw new RuntimeException('APP_ENCRYPTION_KEY is not configured');
+    }
+
+    $iv = random_bytes(12);
+    $tag = '';
+    $cipherText = openssl_encrypt($plainText, 'aes-256-gcm', $keyBytes, OPENSSL_RAW_DATA, $iv, $tag);
+    if ($cipherText === false) {
+        throw new RuntimeException('Failed to encrypt participant name');
+    }
+
+    return base64_encode($iv . $tag . $cipherText);
+}
+
+function decryptParticipantName($payload) {
+    $keyBytes = getEncryptionKeyBytes();
+    if ($keyBytes === null) {
+        return null;
+    }
+
+    $decoded = base64_decode((string)$payload, true);
+    if ($decoded === false || strlen($decoded) < 29) {
+        return null;
+    }
+
+    $iv = substr($decoded, 0, 12);
+    $tag = substr($decoded, 12, 16);
+    $cipherText = substr($decoded, 28);
+    $plainText = openssl_decrypt($cipherText, 'aes-256-gcm', $keyBytes, OPENSSL_RAW_DATA, $iv, $tag);
+
+    return $plainText === false ? null : $plainText;
+}
+
+function participantNameHash($plainText) {
+    $keyBytes = getEncryptionKeyBytes();
+    if ($keyBytes === null) {
+        throw new RuntimeException('APP_ENCRYPTION_KEY is not configured');
+    }
+
+    $normalized = trim((string)$plainText);
+    if (function_exists('mb_strtolower')) {
+        $normalized = mb_strtolower($normalized, 'UTF-8');
+    } else {
+        $normalized = strtolower($normalized);
+    }
+
+    return hash_hmac('sha256', $normalized, $keyBytes);
+}
+
+function generateParticipantToken() {
+    return 'ptk_' . bin2hex(random_bytes(16));
+}
+
 function normalizeProviderStatusLabel($status) {
     $status = trim((string)$status);
 

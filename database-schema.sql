@@ -103,7 +103,9 @@ CREATE TABLE IF NOT EXISTS Item (
 
 CREATE TABLE IF NOT EXISTS Participant (
     Participant_ID SERIAL PRIMARY KEY,
-    Participant_Name VARCHAR(255) NOT NULL,
+    Participant_Token VARCHAR(64) NOT NULL UNIQUE,
+    Participant_Name_Hash CHAR(64) NOT NULL UNIQUE,
+    Participant_Name_Encrypted TEXT NOT NULL,
     Participant_Department VARCHAR(255)
 );
 

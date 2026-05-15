@@ -16,6 +16,7 @@
   DB_NAME = ""
   DB_USER = ""
   DB_PASS = ""
+  APP_ENCRYPTION_KEY = ""
 
 [experimental]
   allowed_public_ports = [80]

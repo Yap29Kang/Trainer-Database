@@ -18,3 +18,5 @@ services:
         value: "<YOUR_DB_USER>"
       - key: DB_PASS
         value: "<YOUR_DB_PASS>"
+      - key: APP_ENCRYPTION_KEY
+        value: "<LONG_RANDOM_SECRET>"

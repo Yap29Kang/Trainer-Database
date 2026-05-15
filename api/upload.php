@@ -441,25 +441,29 @@ function processUploadData($data) {
                     $item_id = $item_map[$item_key];
                     
                     // Check if participant exists
-                    $sql = "SELECT Participant_ID FROM Participant WHERE Participant_Name = ?";
+                    $participantHash = participantNameHash($row['Participant_Name']);
+                    $sql = "SELECT Participant_ID FROM Participant WHERE Participant_Name_Hash = ?";
                     $stmt = $pdo->prepare($sql);
-                    $stmt->execute([$row['Participant_Name']]);
+                    $stmt->execute([$participantHash]);
                     $participant = $stmt->fetch();
 
                     $department = trim((string)($row['Participant_Department'] ?? ''));
                     $department = $department === '' ? null : $department;
-                    
+
                     if (!$participant) {
+                        $participantToken = generateParticipantToken();
+                        $participantEncrypted = encryptParticipantName($row['Participant_Name']);
+
                         // Create participant (use RETURNING on Postgres)
                         if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
-                            $sql = "INSERT INTO Participant (Participant_Name, Participant_Department) VALUES (?, ?) RETURNING Participant_ID";
+                            $sql = "INSERT INTO Participant (Participant_Token, Participant_Name_Hash, Participant_Name_Encrypted, Participant_Department) VALUES (?, ?, ?, ?) RETURNING Participant_ID";
                             $stmt = $pdo->prepare($sql);
-                            $stmt->execute([$row['Participant_Name'], $department]);
+                            $stmt->execute([$participantToken, $participantHash, $participantEncrypted, $department]);
                             $participant_id = (int)$stmt->fetchColumn();
                         } else {
-                            $sql = "INSERT INTO Participant (Participant_Name, Participant_Department) VALUES (?, ?)";
+                            $sql = "INSERT INTO Participant (Participant_Token, Participant_Name_Hash, Participant_Name_Encrypted, Participant_Department) VALUES (?, ?, ?, ?)";
                             $stmt = $pdo->prepare($sql);
-                            $stmt->execute([$row['Participant_Name'], $department]);
+                            $stmt->execute([$participantToken, $participantHash, $participantEncrypted, $department]);
                             $participant_id = $pdo->lastInsertId();
                         }
                         $participants_added++;

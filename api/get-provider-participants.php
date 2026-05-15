@@ -47,16 +47,17 @@ try {
         $sql = "
             SELECT
                 p.Participant_ID,
-                p.Participant_Name,
+                p.Participant_Token,
+                p.Participant_Name_Encrypted,
                 p.Participant_Department,
                 i.Item_Name AS Course_Name,
                 e.Completion_Date AS Completion_Date,
-                YEAR(e.Completion_Date) AS Completion_Year
+                EXTRACT(YEAR FROM e.Completion_Date) AS Completion_Year
             FROM Enrollment e
             INNER JOIN Participant p ON e.Participant_ID = p.Participant_ID
             INNER JOIN Item i ON e.Item_ID = i.Item_ID
             WHERE i.TP_ID = ? AND i.Item_ID = ?
-            ORDER BY Completion_Year DESC, p.Participant_Name ASC, i.Item_Name ASC
+            ORDER BY Completion_Year DESC, p.Participant_ID ASC, i.Item_Name ASC
         ";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$id, $item_id]);
@@ -68,25 +69,38 @@ try {
         $sql = "
             SELECT
                 p.Participant_ID,
-                p.Participant_Name,
+                p.Participant_Token,
+                p.Participant_Name_Encrypted,
                 p.Participant_Department,
                 i.Item_Name AS Course_Name,
                 e.Completion_Date AS Completion_Date,
-                YEAR(e.Completion_Date) AS Completion_Year
+                EXTRACT(YEAR FROM e.Completion_Date) AS Completion_Year
             FROM Enrollment e
             INNER JOIN Participant p ON e.Participant_ID = p.Participant_ID
             INNER JOIN Item i ON e.Item_ID = i.Item_ID
             WHERE i.TP_ID = ?
-            ORDER BY Completion_Year DESC, p.Participant_Name ASC, i.Item_Name ASC
+            ORDER BY Completion_Year DESC, p.Participant_ID ASC, i.Item_Name ASC
         ";
         $stmt = $pdo->prepare($sql);
         $stmt->execute([$id]);
     }
 
+    $participants = [];
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+        $decryptedName = decryptParticipantName($row['Participant_Name_Encrypted'] ?? '');
+        $row['Participant_Name'] = $decryptedName ?: ($row['Participant_Token'] ?? 'Participant');
+        unset($row['Participant_Name_Encrypted']);
+        $participants[] = $row;
+    }
+
+    usort($participants, function ($a, $b) {
+        return strcasecmp($a['Participant_Name'] ?? '', $b['Participant_Name'] ?? '');
+    });
+
     $result = [
         'provider_name' => $provider['TP_Name'],
         'participant_count' => $participantCount,
-        'participants' => $stmt->fetchAll(PDO::FETCH_ASSOC)
+        'participants' => $participants
     ];
     if (!empty($course_name)) $result['course_name'] = $course_name;
     echo json_encode($result);

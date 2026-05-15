@@ -7,7 +7,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     zip \
     unzip \
     git \
- && docker-php-ext-install pdo pdo_mysql pdo_pgsql zip \
+    libpng-dev \
+    libjpeg-dev \
+    libfreetype6-dev \
+ && docker-php-ext-configure gd --with-jpeg --with-freetype \
+ && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql pdo_pgsql zip \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
@@ -19,7 +23,7 @@ WORKDIR /var/www/html
 COPY . /var/www/html
 
 # Install PHP dependencies (will use composer.lock if present)
-RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader || true
+RUN composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
 
 # Ensure proper permissions
 RUN chown -R www-data:www-data /var/www/html

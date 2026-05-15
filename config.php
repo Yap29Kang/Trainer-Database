@@ -2,7 +2,7 @@
 /**
  * Database Configuration (env-driven)
  * Supported drivers: mysql, pgsql
- * Provide environment variables: DB_DRIVER, DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS
+ * Provide environment variables: DB_DRIVER, DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS, APP_ENCRYPTION_KEY
  */
 
 $driver = getenv('DB_DRIVER') ?: 'mysql';
@@ -11,6 +11,9 @@ $dbPort = getenv('DB_PORT') ?: null;
 $dbName = getenv('DB_NAME') ?: 'training_management';
 $dbUser = getenv('DB_USER') ?: 'root';
 $dbPass = getenv('DB_PASS') ?: '';
+$appEncryptionKey = getenv('APP_ENCRYPTION_KEY') ?: '';
+
+define('APP_ENCRYPTION_KEY', $appEncryptionKey);
 
 // Build DSN
 if ($driver === 'pgsql') {

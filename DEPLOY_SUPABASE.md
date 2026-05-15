@@ -35,8 +35,10 @@ DB_PORT=5432
 DB_NAME=<DB_NAME>
 DB_USER=<DB_USER>
 DB_PASS=<DB_PASSWORD>
+APP_ENCRYPTION_KEY=<LONG_RANDOM_SECRET>
 ```
 
 5. Notes
    - Supabase provides a `postgres` user by default; for security, create a dedicated DB user with limited privileges for your app.
    - Avoid exposing the `service_role` key in the frontend. Use server-side secrets only.
+   - Keep `APP_ENCRYPTION_KEY` private; it is required to decrypt participant names on the server.
