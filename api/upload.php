@@ -330,20 +330,22 @@ function processUploadData($data) {
     $provider_ids = [];
     foreach ($providers_map as $key => $provider) {
         try {
-            $sql = "
-                INSERT INTO TrainingProvider (TP_Name)
-                VALUES (?)
-            ";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$provider['name']]);
-            $provider_ids[$key] = $pdo->lastInsertId();
+            // Insert provider and obtain ID (use RETURNING for Postgres)
+            if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
+                $sql = "INSERT INTO TrainingProvider (TP_Name) VALUES (?) RETURNING TP_ID";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([$provider['name']]);
+                $provider_ids[$key] = (int)$stmt->fetchColumn();
+            } else {
+                $sql = "INSERT INTO TrainingProvider (TP_Name) VALUES (?)";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([$provider['name']]);
+                $provider_ids[$key] = $pdo->lastInsertId();
+            }
             $providers_added++;
 
             // New providers default to a blank status in history.
-            $statusSql = "
-                INSERT INTO TrainingProviderStatus (TP_ID, TP_Status, TP_StatusStartDate)
-                VALUES (?, '', CURDATE())
-            ";
+            $statusSql = "INSERT INTO TrainingProviderStatus (TP_ID, TP_Status, TP_StatusStartDate) VALUES (?, '', CURRENT_DATE)";
             $statusStmt = $pdo->prepare($statusSql);
             $statusStmt->execute([$provider_ids[$key]]);
         } catch (Exception $e) {
@@ -355,13 +357,18 @@ function processUploadData($data) {
     $trainer_ids = [];
     foreach ($trainers_map as $key => $trainer) {
         try {
-            $sql = "
-                INSERT INTO Trainer (Trainer_Name, Trainer_Status)
-                VALUES (?, ?)
-            ";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute([$trainer['name'], $trainer['status']]);
-            $trainer_ids[$key] = $pdo->lastInsertId();
+            // Insert trainer and obtain ID
+            if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
+                $sql = "INSERT INTO Trainer (Trainer_Name, Trainer_Status) VALUES (?, ?) RETURNING Trainer_ID";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([$trainer['name'], $trainer['status']]);
+                $trainer_ids[$key] = (int)$stmt->fetchColumn();
+            } else {
+                $sql = "INSERT INTO Trainer (Trainer_Name, Trainer_Status) VALUES (?, ?)";
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute([$trainer['name'], $trainer['status']]);
+                $trainer_ids[$key] = $pdo->lastInsertId();
+            }
             $trainers_added++;
         } catch (Exception $e) {
             $errors[] = "Trainer '{$trainer['name']}': " . $e->getMessage();
@@ -387,35 +394,47 @@ function processUploadData($data) {
             }
             
             // Insert assignment if not exists
-            try {
-                $sql = "
-                    INSERT IGNORE INTO Assignment (TP_ID, Trainer_ID)
-                    VALUES (?, ?)
-                ";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([$tp_id, $trainer_id]);
-            } catch (Exception $e) {
-                // Assignment might already exist, continue
-            }
+                try {
+                    if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
+                        $sql = "INSERT INTO Assignment (TP_ID, Trainer_ID) VALUES (?, ?) ON CONFLICT (TP_ID, Trainer_ID) DO NOTHING";
+                        $stmt = $pdo->prepare($sql);
+                        $stmt->execute([$tp_id, $trainer_id]);
+                    } else {
+                        $sql = "INSERT IGNORE INTO Assignment (TP_ID, Trainer_ID) VALUES (?, ?)";
+                        $stmt = $pdo->prepare($sql);
+                        $stmt->execute([$tp_id, $trainer_id]);
+                    }
+                } catch (Exception $e) {
+                    // Assignment might already exist, continue
+                }
             
             // Insert item/course if provided
             if (!empty($row['Item_Name'])) {
                 $item_key = $tp_id . '|' . $trainer_id . '|' . $row['Item_Name'];
-                if (!isset($item_map[$item_key])) {
-                    $sql = "
-                        INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category)
-                        VALUES (?, ?, ?, ?)
-                    ";
-                    $stmt = $pdo->prepare($sql);
-                    $stmt->execute([
-                        $tp_id,
-                        $trainer_id,
-                        $row['Item_Name'],
-                        $row['Item_Category'] ?? null
-                    ]);
-                    $item_map[$item_key] = $pdo->lastInsertId();
-                    $courses_added++;
-                }
+                    if (!isset($item_map[$item_key])) {
+                        if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
+                            $sql = "INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category) VALUES (?, ?, ?, ?) RETURNING Item_ID";
+                            $stmt = $pdo->prepare($sql);
+                            $stmt->execute([
+                                $tp_id,
+                                $trainer_id,
+                                $row['Item_Name'],
+                                $row['Item_Category'] ?? null
+                            ]);
+                            $item_map[$item_key] = (int)$stmt->fetchColumn();
+                        } else {
+                            $sql = "INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category) VALUES (?, ?, ?, ?)";
+                            $stmt = $pdo->prepare($sql);
+                            $stmt->execute([
+                                $tp_id,
+                                $trainer_id,
+                                $row['Item_Name'],
+                                $row['Item_Category'] ?? null
+                            ]);
+                            $item_map[$item_key] = $pdo->lastInsertId();
+                        }
+                        $courses_added++;
+                    }
                 
                 // Insert participants if provided
                 if (!empty($row['Participant_Name']) && isset($item_map[$item_key])) {
@@ -431,11 +450,18 @@ function processUploadData($data) {
                     $department = $department === '' ? null : $department;
                     
                     if (!$participant) {
-                        // Create participant
-                        $sql = "INSERT INTO Participant (Participant_Name, Participant_Department) VALUES (?, ?)";
-                        $stmt = $pdo->prepare($sql);
-                        $stmt->execute([$row['Participant_Name'], $department]);
-                        $participant_id = $pdo->lastInsertId();
+                        // Create participant (use RETURNING on Postgres)
+                        if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
+                            $sql = "INSERT INTO Participant (Participant_Name, Participant_Department) VALUES (?, ?) RETURNING Participant_ID";
+                            $stmt = $pdo->prepare($sql);
+                            $stmt->execute([$row['Participant_Name'], $department]);
+                            $participant_id = (int)$stmt->fetchColumn();
+                        } else {
+                            $sql = "INSERT INTO Participant (Participant_Name, Participant_Department) VALUES (?, ?)";
+                            $stmt = $pdo->prepare($sql);
+                            $stmt->execute([$row['Participant_Name'], $department]);
+                            $participant_id = $pdo->lastInsertId();
+                        }
                         $participants_added++;
                     } else {
                         $participant_id = $participant['Participant_ID'];
@@ -448,20 +474,27 @@ function processUploadData($data) {
                     }
                     
                     // Insert enrollment
-                    try {
-                        $sql = "
-                            INSERT IGNORE INTO Enrollment (Item_ID, Participant_ID, Completion_Date)
-                            VALUES (?, ?, ?)
-                        ";
-                        $stmt = $pdo->prepare($sql);
-                        $stmt->execute([
-                            $item_id,
-                            $participant_id,
-                            normalizeDate($row['Completion_Date'] ?? null)
-                        ]);
-                    } catch (Exception $e) {
-                        // Enrollment might already exist
-                    }
+                        try {
+                            if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
+                                $sql = "INSERT INTO Enrollment (Item_ID, Participant_ID, Completion_Date) VALUES (?, ?, ?) ON CONFLICT (Item_ID, Participant_ID) DO NOTHING";
+                                $stmt = $pdo->prepare($sql);
+                                $stmt->execute([
+                                    $item_id,
+                                    $participant_id,
+                                    normalizeDate($row['Completion_Date'] ?? null)
+                                ]);
+                            } else {
+                                $sql = "INSERT IGNORE INTO Enrollment (Item_ID, Participant_ID, Completion_Date) VALUES (?, ?, ?)";
+                                $stmt = $pdo->prepare($sql);
+                                $stmt->execute([
+                                    $item_id,
+                                    $participant_id,
+                                    normalizeDate($row['Completion_Date'] ?? null)
+                                ]);
+                            }
+                        } catch (Exception $e) {
+                            // Enrollment might already exist
+                        }
                 }
             }
         } catch (Exception $e) {

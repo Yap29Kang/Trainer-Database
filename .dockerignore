@@ -1,0 +1,8 @@
+vendor
+.git
+node_modules
+.env
+*.log
+tests
+/.github
+/.vscode

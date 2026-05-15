@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: trainer-database
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    # Do not store secrets here. Configure environment variables in Render dashboard or via CLI.
+    envVars:
+      - key: DB_DRIVER
+        value: "pgsql"
+      - key: DB_HOST
+        value: "<YOUR_DB_HOST>"
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        value: "<YOUR_DB_NAME>"
+      - key: DB_USER
+        value: "<YOUR_DB_USER>"
+      - key: DB_PASS
+        value: "<YOUR_DB_PASS>"

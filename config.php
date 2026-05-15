@@ -1,24 +1,31 @@
 <?php
 /**
- * Database Configuration
- * Update these values with your actual database credentials
+ * Database Configuration (env-driven)
+ * Supported drivers: mysql, pgsql
+ * Provide environment variables: DB_DRIVER, DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS
  */
 
-define('DB_HOST', 'localhost');
-define('DB_USER', 'root');
-define('DB_PASS', '');
-define('DB_NAME', 'training_management');
+$driver = getenv('DB_DRIVER') ?: 'mysql';
+$dbHost = getenv('DB_HOST') ?: 'localhost';
+$dbPort = getenv('DB_PORT') ?: null;
+$dbName = getenv('DB_NAME') ?: 'training_management';
+$dbUser = getenv('DB_USER') ?: 'root';
+$dbPass = getenv('DB_PASS') ?: '';
+
+// Build DSN
+if ($driver === 'pgsql') {
+    $port = $dbPort ?: 5432;
+    $dsn = sprintf('pgsql:host=%s;port=%d;dbname=%s', $dbHost, $port, $dbName);
+} else {
+    $port = $dbPort ?: 3306;
+    $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $dbHost, $port, $dbName);
+}
 
 // Database connection
 try {
-    $pdo = new PDO(
-        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME,
-        DB_USER,
-        DB_PASS,
-        array(PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION)
-    );
+    $pdo = new PDO($dsn, $dbUser, $dbPass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 } catch (PDOException $e) {
-    // Do not terminate execution — allow the app to run without DB for local/dev.
+    // Allow the app to run without DB for local/dev; log the error for debugging
     error_log('Database connection failed: ' . $e->getMessage());
     $pdo = null;
     $DB_CONN_ERROR = $e->getMessage();

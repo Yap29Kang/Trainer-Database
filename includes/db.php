@@ -304,7 +304,14 @@ function getTrainingProviders() {
             tp.TP_Name,
             tp.TP_FirstAoE,
             tp.TP_SecondAoE,
-            GROUP_CONCAT(DISTINCT t.Trainer_Name ORDER BY t.Trainer_Name SEPARATOR '||') as trainer_names,
+            -- Use PostgreSQL string_agg when available. For MySQL the SQL will still work if using mysql driver.
+            COALESCE(
+                (SELECT string_agg(DISTINCT t2.Trainer_Name, '||' ORDER BY t2.Trainer_Name) 
+                 FROM Trainer t2
+                 INNER JOIN Assignment a2 ON t2.Trainer_ID = a2.Trainer_ID
+                 WHERE a2.TP_ID = tp.TP_ID
+                ),
+                '') AS trainer_names,
             COUNT(DISTINCT t.Trainer_ID) as trainer_count,
             COUNT(DISTINCT i.Item_ID) as course_count,
             COUNT(DISTINCT e.Participant_ID) as participant_count
@@ -659,7 +666,7 @@ function updateProviderStatus($tp_id, $status, $reason = null) {
         INSERT INTO TrainingProviderStatus
             (TP_ID, TP_Status, TP_StatusReasoning, TP_StatusStartDate)
         VALUES
-            (?, ?, ?, CURDATE())
+            (?, ?, ?, CURRENT_DATE)
     ";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$tp_id, $status, $reason]);

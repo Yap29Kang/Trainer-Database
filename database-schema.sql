@@ -1,11 +1,8 @@
-CREATE DATABASE IF NOT EXISTS training_management;
-USE training_management;
+-- Postgres schema for Trainer Database
 
--- =====================================
 -- TRAINING PROVIDER TABLE
--- =====================================
 CREATE TABLE IF NOT EXISTS TrainingProvider (
-    TP_ID INT AUTO_INCREMENT PRIMARY KEY,
+    TP_ID SERIAL PRIMARY KEY,
     TP_Name VARCHAR(255) NOT NULL,
 
     -- Areas of Expertise
@@ -13,11 +10,8 @@ CREATE TABLE IF NOT EXISTS TrainingProvider (
     TP_SecondAoE VARCHAR(255)
 );
 
--- =====================================
--- TRAINING PROVIDER STATUS TABLE
--- =====================================
 CREATE TABLE IF NOT EXISTS TrainingProviderStatus (
-    TP_Status_ID INT AUTO_INCREMENT PRIMARY KEY,
+    TP_Status_ID SERIAL PRIMARY KEY,
     TP_ID INT NOT NULL,
 
     TP_Status VARCHAR(100) NOT NULL DEFAULT 'Active',
@@ -31,15 +25,12 @@ CREATE TABLE IF NOT EXISTS TrainingProviderStatus (
         ON UPDATE CASCADE
 );
 
--- =====================================
--- TRAINING PROVIDER REMARK TABLE
--- =====================================
 CREATE TABLE IF NOT EXISTS TrainingProviderRemark (
-    TP_Remark_ID INT AUTO_INCREMENT PRIMARY KEY,
+    TP_Remark_ID SERIAL PRIMARY KEY,
     TP_ID INT NOT NULL,
 
     Remark_Text TEXT,
-    Remark_Date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Remark_Date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (TP_ID)
         REFERENCES TrainingProvider(TP_ID)
@@ -47,24 +38,18 @@ CREATE TABLE IF NOT EXISTS TrainingProviderRemark (
         ON UPDATE CASCADE
 );
 
--- =====================================
--- TRAINER TABLE
--- =====================================
 CREATE TABLE IF NOT EXISTS Trainer (
-    Trainer_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Trainer_ID SERIAL PRIMARY KEY,
     Trainer_Name VARCHAR(255) NOT NULL,
     Trainer_Status VARCHAR(100)
 );
 
--- =====================================
--- TRAINER REMARK TABLE
--- =====================================
 CREATE TABLE IF NOT EXISTS TrainerRemark (
-    Trainer_Remark_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Trainer_Remark_ID SERIAL PRIMARY KEY,
     Trainer_ID INT NOT NULL,
 
     Remark_Text TEXT,
-    Remark_Date DATETIME DEFAULT CURRENT_TIMESTAMP,
+    Remark_Date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     FOREIGN KEY (Trainer_ID)
         REFERENCES Trainer(Trainer_ID)
@@ -72,15 +57,9 @@ CREATE TABLE IF NOT EXISTS TrainerRemark (
         ON UPDATE CASCADE
 );
 
--- =====================================
--- ASSIGNMENT TABLE
--- MANY-TO-MANY:
--- TRAINER <-> TRAINING PROVIDER
--- =====================================
 CREATE TABLE IF NOT EXISTS Assignment (
     TP_ID INT,
     Trainer_ID INT,
-
     PRIMARY KEY (TP_ID, Trainer_ID),
 
     FOREIGN KEY (TP_ID)
@@ -94,11 +73,8 @@ CREATE TABLE IF NOT EXISTS Assignment (
         ON UPDATE CASCADE
 );
 
--- =====================================
--- ITEM / COURSE TABLE
--- =====================================
 CREATE TABLE IF NOT EXISTS Item (
-    Item_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Item_ID SERIAL PRIMARY KEY,
 
     TP_ID INT NOT NULL,
     Trainer_ID INT NOT NULL,
@@ -125,24 +101,15 @@ CREATE TABLE IF NOT EXISTS Item (
         ON UPDATE CASCADE
 );
 
--- =====================================
--- PARTICIPANT TABLE
--- =====================================
 CREATE TABLE IF NOT EXISTS Participant (
-    Participant_ID INT AUTO_INCREMENT PRIMARY KEY,
+    Participant_ID SERIAL PRIMARY KEY,
     Participant_Name VARCHAR(255) NOT NULL,
     Participant_Department VARCHAR(255)
 );
 
--- =====================================
--- ENROLLMENT TABLE
--- MANY-TO-MANY:
--- PARTICIPANT <-> ITEM
--- =====================================
 CREATE TABLE IF NOT EXISTS Enrollment (
     Item_ID INT,
     Participant_ID INT,
-
     Completion_Date DATE,
 
     PRIMARY KEY (Item_ID, Participant_ID),

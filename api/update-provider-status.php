@@ -43,12 +43,12 @@ try {
     $pdo->beginTransaction();
 
     // Close latest open status window (if any) before writing a new one.
-    $closeStmt = $pdo->prepare(
-        "UPDATE TrainingProviderStatus
-         SET TP_StatusEndDate = CURDATE()
-         WHERE TP_ID = ?
-           AND (TP_StatusEndDate IS NULL OR TP_StatusEndDate > CURDATE())"
-    );
+        $closeStmt = $pdo->prepare(
+                "UPDATE TrainingProviderStatus
+                 SET TP_StatusEndDate = CURRENT_DATE
+                 WHERE TP_ID = ?
+                     AND (TP_StatusEndDate IS NULL OR TP_StatusEndDate > CURRENT_DATE)"
+        );
     $closeStmt->execute([$id]);
 
     $reason = isset($payload['reason']) ? trim((string)$payload['reason']) : null;
@@ -92,7 +92,7 @@ try {
     }
 
     $insertStmt = $pdo->prepare(
-        'INSERT INTO TrainingProviderStatus (TP_ID, TP_Status, TP_StatusReasoning, TP_StatusStartDate, TP_StatusEndDate) VALUES (?, ?, ?, CURDATE(), ?)'
+        'INSERT INTO TrainingProviderStatus (TP_ID, TP_Status, TP_StatusReasoning, TP_StatusStartDate, TP_StatusEndDate) VALUES (?, ?, ?, CURRENT_DATE, ?)'
     );
     $insertStmt->execute([$id, $status, $reason, $statusEndDate]);
 
