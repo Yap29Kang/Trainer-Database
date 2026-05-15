@@ -78,7 +78,7 @@
 
   <script>
     const params = new URLSearchParams(window.location.search);
-    const defaultBackend = 'https://YOUR-PHP-BACKEND.example.com/';
+    const defaultBackend = 'https://trainer-database.onrender.com/';
     const backendUrl = (params.get('backend') || defaultBackend).replace(/\/$/, '') + '/';
     const frame = document.getElementById('appFrame');
     const link = document.getElementById('openBackend');
@@ -87,11 +87,7 @@
     frame.src = backendUrl;
     link.href = backendUrl;
 
-    if (backendUrl.includes('YOUR-PHP-BACKEND.example.com')) {
-      statusText.textContent = 'Set ?backend=https://your-backend/ to load the app.';
-    } else {
-      statusText.textContent = backendUrl;
-    }
+    statusText.textContent = backendUrl;
   </script>
 </body>
 </html>
