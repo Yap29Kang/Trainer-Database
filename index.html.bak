@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trainer Database</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ROLE BAR -->
+<div class="role-bar">
+  <span class="role-label">View as:</span>
+  <div class="role-toggle">
+    <button class="role-btn active" onclick="setRole('user',this)">User</button>
+    <button class="role-btn" onclick="setRole('admin',this)">Admin</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="hdr-top">
+    <div class="logo">Trainer<span> Database</span></div>
+    <div>
+      <button class="hdr-btn" id="upHdrBtn" onclick="openUpload()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        Upload Excel
+      </button>
+    </div>
+  </div>
+  <div class="hdr-summary">
+    <div class="sum-main">
+      <div class="sum-main-num" id="cntTotal">6</div>
+      <div class="sum-main-lbl">Training Providers</div>
+    </div>
+    <div class="sum-stats">
+      <div class="ss"><div class="ss-num g" id="cntA">3</div><div class="ss-lbl">Approved</div></div>
+      <div class="ss"><div class="ss-num y" id="cntC">2</div><div class="ss-lbl">In Consideration</div></div>
+      <div class="ss"><div class="ss-num r" id="cntB">1</div><div class="ss-lbl">Blacklisted</div></div>
+    </div>
+  </div>
+</header>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="sw">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input class="si" id="si" type="text" placeholder="Search Training Provider or Trainers" oninput="go()">
+  </div>
+  <div class="vt">
+    <button class="vtb active" onclick="setView('prov',this)">Training Providers</button>
+    <button class="vtb" onclick="setView('train',this)">Trainers / Speakers</button>
+  </div>
+  <div class="sf-wrap">
+    <span class="sf-lbl">Status:</span>
+    <select class="ss-sel" id="sfSel" onchange="go()">
+      <option value="all">All</option>
+      <option value="approved">Approved</option>
+      <option value="consideration">In Consideration</option>
+      <option value="blacklisted">Blacklisted</option>
+    </select>
+  </div>
+  <button class="sort-btn" onclick="toggleSort()">
+    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
+    <span id="sortLbl">A → Z</span>
+  </button>
+  <button class="dl-btn" id="dlBtn" onclick="simDl()">
+    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+    Download
+  </button>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="rl" id="rl">Showing 6 Training Providers</div>
+  <div class="pg" id="provGrid"></div>
+  <div id="prov-pag"></div>
+  <div class="tg hidden" id="trainGrid"></div>
+  <div id="train-pag"></div>
+</div>
+
+<!-- (file truncated for backup) -->
+</body>
+</html>
