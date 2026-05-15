@@ -31,12 +31,16 @@ export PGPASSWORD="hunter2"
 ```
 DB_DRIVER=pgsql
 DB_HOST=<DB_HOST>
+DB_HOSTADDR=<IPv4_ADDRESS_OF_DB_HOST>
 DB_PORT=5432
 DB_NAME=<DB_NAME>
 DB_USER=<DB_USER>
 DB_PASS=<DB_PASSWORD>
+DB_SSLMODE=require
 APP_ENCRYPTION_KEY=<LONG_RANDOM_SECRET>
 ```
+
+If your host resolves to IPv6 and the container cannot reach it, set `DB_HOSTADDR` to the IPv4 A-record of the same hostname. As an alternative, use Supabase's transaction pooler host/port in `DB_HOST` and `DB_PORT`.
 
 5. Notes
    - Supabase provides a `postgres` user by default; for security, create a dedicated DB user with limited privileges for your app.

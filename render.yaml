@@ -10,6 +10,8 @@ services:
         value: "pgsql"
       - key: DB_HOST
         value: "<YOUR_DB_HOST>"
+      - key: DB_HOSTADDR
+        value: "<YOUR_DB_IPV4_ADDRESS>"
       - key: DB_PORT
         value: "5432"
       - key: DB_NAME
@@ -18,5 +20,7 @@ services:
         value: "<YOUR_DB_USER>"
       - key: DB_PASS
         value: "<YOUR_DB_PASS>"
+      - key: DB_SSLMODE
+        value: "require"
       - key: APP_ENCRYPTION_KEY
         value: "<LONG_RANDOM_SECRET>"
