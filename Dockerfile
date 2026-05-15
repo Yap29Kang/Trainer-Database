@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg-dev \
     libfreetype6-dev \
  && docker-php-ext-configure gd --with-jpeg --with-freetype \
- && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql pdo_pgsql zip \
+ && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql pdo_pgsql pgsql zip \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
