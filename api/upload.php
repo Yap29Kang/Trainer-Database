@@ -48,6 +48,15 @@ if (isset($_GET['preview']) && ($_GET['preview'] === '1' || $_GET['preview'] ===
 try {
     if (!$isPreview) {
         // Begin transaction only for actual import
+        if (!isset($pdo) || $pdo === null) {
+            http_response_code(503);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Database connection is not available. Check DB_HOST, DB_NAME, DB_USER, DB_PASS, and DB_DRIVER on the backend host.'
+            ]);
+            exit;
+        }
+
         $pdo->beginTransaction();
     }
 
@@ -110,7 +119,7 @@ try {
         'stats' => $result['stats']
     ]);
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     if (!$isPreview && isset($pdo)) $pdo->rollBack();
     http_response_code(500);
     echo json_encode([
