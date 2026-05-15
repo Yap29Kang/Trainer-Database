@@ -2,11 +2,10 @@
 /**
  * Database Configuration (env-driven)
  * Supported drivers: mysql, pgsql
- * Provide environment variables: DB_DRIVER, DB_HOST, DB_HOSTADDR, DB_PORT, DB_NAME, DB_USER, DB_PASS, DATABASE_URL, APP_ENCRYPTION_KEY
+ * Provide environment variables: DB_DRIVER, DB_HOST, DB_HOSTADDR, DB_PORT, DB_NAME, DB_USER, DB_PASS, APP_ENCRYPTION_KEY
  */
 
 $driver = getenv('DB_DRIVER') ?: 'mysql';
-$databaseUrl = getenv('DATABASE_URL') ?: '';
 $dbHost = getenv('DB_HOST') ?: 'localhost';
 $dbHostAddr = getenv('DB_HOSTADDR') ?: '';
 $dbPort = getenv('DB_PORT') ?: null;
@@ -16,19 +15,6 @@ $dbPass = getenv('DB_PASS') ?: '';
 $appEncryptionKey = getenv('APP_ENCRYPTION_KEY') ?: '';
 
 define('APP_ENCRYPTION_KEY', $appEncryptionKey);
-
-// Build DSN
-if ($databaseUrl !== '') {
-    $parts = parse_url($databaseUrl);
-    if ($parts !== false) {
-        $driver = $parts['scheme'] ?? $driver;
-        $dbHost = $parts['host'] ?? $dbHost;
-        $dbPort = $parts['port'] ?? $dbPort;
-        $dbName = isset($parts['path']) ? ltrim($parts['path'], '/') : $dbName;
-        $dbUser = $parts['user'] ?? $dbUser;
-        $dbPass = $parts['pass'] ?? $dbPass;
-    }
-}
 
 function resolveIpv4Address($host) {
     if (!function_exists('dns_get_record')) {

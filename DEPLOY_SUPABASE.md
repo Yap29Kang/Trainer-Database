@@ -42,8 +42,6 @@ APP_ENCRYPTION_KEY=<LONG_RANDOM_SECRET>
 
 If your host resolves to IPv6 and the container cannot reach it, set `DB_HOSTADDR` to the IPv4 A-record of the same hostname. As an alternative, use Supabase's transaction pooler host/port in `DB_HOST` and `DB_PORT`.
 
-If you prefer `DATABASE_URL`, make sure the password is URL-encoded. For example, `@` must become `%40`, `:` must become `%3A`, and `/` must become `%2F`. A raw string like `postgres://user:pa@ss@host:5432/db` is invalid and will fail to parse.
-
 5. Notes
    - Supabase provides a `postgres` user by default; for security, create a dedicated DB user with limited privileges for your app.
    - Avoid exposing the `service_role` key in the frontend. Use server-side secrets only.
