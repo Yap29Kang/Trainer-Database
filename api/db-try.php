@@ -10,7 +10,10 @@ $ssl  = getenv("DB_SSLMODE") ?: "require";
 $dsn = "pgsql:host=$host;port=$port;dbname=$db;sslmode=$ssl";
 
 try {
-    $pdo = new PDO($dsn, $user, $pass);
+    $pdo = new PDO($dsn, $user, $pass, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_EMULATE_PREPARES => true,
+    ]);
 
     echo json_encode([
         "ok" => true

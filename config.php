@@ -19,7 +19,10 @@ $dsn = "pgsql:host=$host;port=$port;dbname=$db;sslmode=$ssl";
 
 // Database connection
 try {
-    $pdo = new PDO($dsn, $user, $pass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $pdo = new PDO($dsn, $user, $pass, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_EMULATE_PREPARES => true,
+    ]);
 } catch (PDOException $e) {
     error_log('Database connection failed: ' . $e->getMessage());
     $pdo = null;
