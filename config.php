@@ -38,28 +38,92 @@ $dbSslMode = normalizeEnvValue($dbSslMode);
 $databaseUrl = normalizeEnvValue($databaseUrl);
 
 function parseDatabaseUrl($databaseUrl) {
-    $parts = @parse_url($databaseUrl);
-    if (!is_array($parts)) {
+    $databaseUrl = trim((string)$databaseUrl);
+    if ($databaseUrl === '') {
         return [];
     }
 
-    $query = [];
-    if (!empty($parts['query'])) {
-        parse_str($parts['query'], $query);
+    $parts = [
+        'scheme' => '',
+        'host' => '',
+        'port' => '',
+        'dbname' => '',
+        'user' => '',
+        'pass' => '',
+        'sslmode' => ''
+    ];
+
+    $schemeSeparator = strpos($databaseUrl, '://');
+    if ($schemeSeparator === false) {
+        return [];
     }
 
-    return [
-        'scheme' => $parts['scheme'] ?? '',
-        'host' => $parts['host'] ?? '',
-        'port' => isset($parts['port']) ? (string)$parts['port'] : '',
-        'dbname' => isset($parts['path']) ? ltrim($parts['path'], '/') : '',
-        'user' => $parts['user'] ?? '',
-        'pass' => $parts['pass'] ?? '',
-        'sslmode' => $query['sslmode'] ?? ''
-    ];
+    $parts['scheme'] = strtolower(substr($databaseUrl, 0, $schemeSeparator));
+    $remainder = substr($databaseUrl, $schemeSeparator + 3);
+
+    $querySeparator = strpos($remainder, '?');
+    if ($querySeparator !== false) {
+        $queryString = substr($remainder, $querySeparator + 1);
+        parse_str($queryString, $query);
+        $parts['sslmode'] = $query['sslmode'] ?? '';
+        $remainder = substr($remainder, 0, $querySeparator);
+    }
+
+    $pathSeparator = strpos($remainder, '/');
+    if ($pathSeparator !== false) {
+        $parts['dbname'] = ltrim(substr($remainder, $pathSeparator), '/');
+        $authority = substr($remainder, 0, $pathSeparator);
+    } else {
+        $authority = $remainder;
+    }
+
+    $atSeparator = strrpos($authority, '@');
+    if ($atSeparator !== false) {
+        $userInfo = substr($authority, 0, $atSeparator);
+        $authority = substr($authority, $atSeparator + 1);
+
+        $colonSeparator = strpos($userInfo, ':');
+        if ($colonSeparator !== false) {
+            $parts['user'] = rawurldecode(substr($userInfo, 0, $colonSeparator));
+            $parts['pass'] = rawurldecode(substr($userInfo, $colonSeparator + 1));
+        } else {
+            $parts['user'] = rawurldecode($userInfo);
+        }
+    }
+
+    $colonSeparator = strrpos($authority, ':');
+    if ($colonSeparator !== false) {
+        $parts['host'] = substr($authority, 0, $colonSeparator);
+        $parts['port'] = substr($authority, $colonSeparator + 1);
+    } else {
+        $parts['host'] = $authority;
+    }
+
+    $parts['host'] = trim($parts['host']);
+    $parts['port'] = trim($parts['port']);
+    $parts['dbname'] = trim($parts['dbname']);
+
+    if ($parts['scheme'] === '' || $parts['host'] === '') {
+        return [];
+    }
+
+    return $parts;
+}
+
+function looksLikeDatabaseUrl($value) {
+    return is_string($value) && preg_match('#^[a-z][a-z0-9+.-]*://#i', trim($value)) === 1;
 }
 
 $databaseUrlParts = $databaseUrl !== '' ? parseDatabaseUrl($databaseUrl) : [];
+$dbHostParts = looksLikeDatabaseUrl($dbHost) ? parseDatabaseUrl($dbHost) : [];
+
+if ($driver === '' && !empty($dbHostParts['scheme'])) {
+    if (in_array($dbHostParts['scheme'], ['postgres', 'postgresql'], true)) {
+        $driver = 'pgsql';
+    } elseif (in_array($dbHostParts['scheme'], ['mysql', 'mariadb'], true)) {
+        $driver = 'mysql';
+    }
+}
 
 if ($driver === '' && !empty($databaseUrlParts['scheme'])) {
     if (in_array($databaseUrlParts['scheme'], ['postgres', 'postgresql'], true)) {
@@ -77,24 +141,48 @@ if ($dbHost === '' && !empty($databaseUrlParts['host'])) {
     $dbHost = $databaseUrlParts['host'];
 }
 
+if (!empty($dbHostParts['host'])) {
+    $dbHost = $dbHostParts['host'];
+}
+
 if ($dbPort === '' && !empty($databaseUrlParts['port'])) {
     $dbPort = $databaseUrlParts['port'];
+}
+
+if (!empty($dbHostParts['port'])) {
+    $dbPort = $dbHostParts['port'];
 }
 
 if ($dbName === '' && !empty($databaseUrlParts['dbname'])) {
     $dbName = $databaseUrlParts['dbname'];
 }
 
+if (!empty($dbHostParts['dbname'])) {
+    $dbName = $dbHostParts['dbname'];
+}
+
 if ($dbUser === '' && !empty($databaseUrlParts['user'])) {
     $dbUser = $databaseUrlParts['user'];
+}
+
+if (!empty($dbHostParts['user'])) {
+    $dbUser = $dbHostParts['user'];
 }
 
 if ($dbPass === '' && array_key_exists('pass', $databaseUrlParts) && $databaseUrlParts['pass'] !== '') {
     $dbPass = $databaseUrlParts['pass'];
 }
 
+if (array_key_exists('pass', $dbHostParts) && $dbHostParts['pass'] !== '') {
+    $dbPass = $dbHostParts['pass'];
+}
+
 if ($dbSslMode === '' && !empty($databaseUrlParts['sslmode'])) {
     $dbSslMode = $databaseUrlParts['sslmode'];
+}
+
+if ($dbSslMode === '' && !empty($dbHostParts['sslmode'])) {
+    $dbSslMode = $dbHostParts['sslmode'];
 }
 
 if ($dbPort === '') {
