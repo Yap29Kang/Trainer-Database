@@ -44,32 +44,7 @@ function resolveIpv4Address($host) {
 
     return null;
 }
-
-if ($driver === 'pgsql') {
-    $host = $dbHostAddr !== '' ? $dbHostAddr : (resolveIpv4Address($dbHost) ?: $dbHost);
-    $port = (int)$dbPort;
-    $db = $dbName;
-    $user = $dbUser;
-    $pass = $dbPass;
-
-    $dsn = "pgsql:host=$host;port=$port;dbname=$db";
-    if ($dbSslMode !== '') {
-        $dsn .= ';sslmode=' . $dbSslMode;
-    }
-} else {
-    $port = (int)$dbPort;
-    $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=utf8mb4', $dbHost, $port, $dbName);
-}
-
-// Database connection
-try {
-    $pdo = new PDO($dsn, $dbUser, $dbPass, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
-} catch (PDOException $e) {
-    // Allow the app to run without DB for local/dev; log the error for debugging
-    error_log('Database connection failed: ' . $e->getMessage());
-    $pdo = null;
-    $DB_CONN_ERROR = $e->getMessage();
-}
+// (Legacy URL-parsing code removed) The app now uses the explicit DB_* env vars.
 
 // Set default timezone
 date_default_timezone_set('Asia/Kuala_Lumpur');
