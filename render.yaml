@@ -4,23 +4,24 @@ services:
     env: docker
     dockerfilePath: Dockerfile
     plan: free
-    # Do not store secrets here. Configure environment variables in Render dashboard or via CLI.
+    # Do not store secrets or placeholder connection values here.
+    # Set real environment variables in the Render dashboard or via CLI.
     envVars:
       - key: DB_DRIVER
         value: "pgsql"
       - key: DB_HOST
-        value: "<YOUR_DB_HOST>"
+        value: "<REPLACE_WITH_REAL_HOST_OR_LEAVE_EMPTY_IF_USING_DATABASE_URL>"
       - key: DB_HOSTADDR
-        value: "<YOUR_DB_IPV4_ADDRESS>"
+        value: "<REPLACE_WITH_IPV4_IF_NEEDED>"
       - key: DB_PORT
         value: "5432"
       - key: DB_NAME
-        value: "<YOUR_DB_NAME>"
+        value: "<REPLACE_WITH_REAL_DB_NAME>"
       - key: DB_USER
-        value: "<YOUR_DB_USER>"
+        value: "<REPLACE_WITH_REAL_DB_USER>"
       - key: DB_PASS
-        value: "<YOUR_DB_PASS>"
+        value: "<REPLACE_WITH_REAL_DB_PASS>"
       - key: DB_SSLMODE
         value: "require"
       - key: APP_ENCRYPTION_KEY
-        value: "<LONG_RANDOM_SECRET>"
+        value: "<REPLACE_WITH_RANDOM_SECRET>"

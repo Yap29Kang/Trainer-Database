@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && docker-php-ext-install -j$(nproc) gd pdo pdo_mysql pdo_pgsql pgsql zip \
  && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Ensure PDO and PostgreSQL extensions are explicitly installed
+RUN docker-php-ext-install pdo pdo_pgsql pgsql || true
+
 # Install Composer
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
