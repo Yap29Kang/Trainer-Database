@@ -8,7 +8,7 @@ $appEncryptionKey = getenv('APP_ENCRYPTION_KEY') ?: '';
 define('APP_ENCRYPTION_KEY', $appEncryptionKey);
 
 // Use only the explicit environment variables requested.
-$host = getenv('DB_HOST');
+$hostName = getenv('DB_HOST');
 $hostAddr = getenv('DB_HOSTADDR');
 $port = getenv('DB_PORT');
 $db   = getenv('DB_NAME');
@@ -16,8 +16,15 @@ $user = getenv('DB_USER');
 $pass = getenv('DB_PASS');
 $ssl  = getenv('DB_SSLMODE') ?: 'require';
 
-$host = $hostAddr ?: $host;
-$dsn = "pgsql:host=$host;port=$port;dbname=$db;sslmode=$ssl";
+// Build DSN preserving hostname (for SNI) and optionally specifying hostaddr (IPv4) to force IPv4 connect
+$dsn = 'pgsql:';
+if ($hostName !== '' && $hostName !== null) {
+    $dsn .= 'host=' . $hostName . ';';
+}
+if ($hostAddr !== '' && $hostAddr !== null) {
+    $dsn .= 'hostaddr=' . $hostAddr . ';';
+}
+$dsn .= 'port=' . $port . ';dbname=' . $db . ';sslmode=' . $ssl;
 
 // Database connection
 try {
