@@ -9,12 +9,14 @@ define('APP_ENCRYPTION_KEY', $appEncryptionKey);
 
 // Use only the explicit environment variables requested.
 $host = getenv('DB_HOST');
+$hostAddr = getenv('DB_HOSTADDR');
 $port = getenv('DB_PORT');
 $db   = getenv('DB_NAME');
 $user = getenv('DB_USER');
 $pass = getenv('DB_PASS');
 $ssl  = getenv('DB_SSLMODE') ?: 'require';
 
+$host = $hostAddr ?: $host;
 $dsn = "pgsql:host=$host;port=$port;dbname=$db;sslmode=$ssl";
 
 // Database connection
