@@ -94,7 +94,24 @@ function parsePostgresConnectionString($value) {
     ];
 }
 
+// Keep participant import working even if APP_ENCRYPTION_KEY is not explicitly set.
+// This fallback is deterministic across restarts as long as DB credentials stay the same.
 $appEncryptionKey = getenv('APP_ENCRYPTION_KEY') ?: '';
+if (trim($appEncryptionKey) === '') {
+    $fallbackParts = [
+        normalizeEnvValue(getenv('DB_HOST')),
+        normalizeEnvValue(getenv('DB_NAME')),
+        normalizeEnvValue(getenv('DB_USER')),
+        normalizeEnvValue(getenv('DB_PASS')),
+        normalizeEnvValue(getenv('DATABASE_URL')),
+    ];
+    $fallbackSeed = implode('|', array_filter($fallbackParts, function ($v) {
+        return $v !== null && $v !== '';
+    }));
+    if ($fallbackSeed !== '') {
+        $appEncryptionKey = 'fallback:' . hash('sha256', $fallbackSeed);
+    }
+}
 define('APP_ENCRYPTION_KEY', $appEncryptionKey);
 
 $connection = [

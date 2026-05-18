@@ -229,7 +229,7 @@ function canonicalizeRow($row) {
     $aliases = [
         'TP_Name' => ['TP_Name', 'Training Provider'],
         'Trainer_Name' => ['Trainer_Name', 'Trainers/Speaker Name', 'Trainer/Speaker Name', 'Trainer', 'Speaker Name'],
-        'Trainer_Status' => ['Trainer_Status', 'Trainer Status', 'Status', 'Red Flag Status', 'Red Flag'],
+        'Trainer_Status' => ['Trainer_Status', 'Trainer Status', 'Status', 'Red Flag Status', 'Red Flag', 'Trainer Red Flag Status', 'Trainer Red Flag', 'Trainer_Status/Red Flag'],
         'Item_Name' => ['Item_Name', 'Item Title', 'Course Name', 'Training Title'],
         'Item_Category' => ['Item_Category', 'Category'],
         'Item_Venue' => ['Item_Venue', 'Item Venue', 'Venue', 'Course Venue', 'Training Venue', 'Venue Name'],
@@ -374,7 +374,20 @@ function processUploadData($data) {
             $statusStmt = $pdo->prepare($statusSql);
             $statusStmt->execute([$provider_ids[$key]]);
         } catch (Exception $e) {
-            $errors[] = "Provider '{$provider['name']}': " . $e->getMessage();
+            // Fallback: provider may already exist.
+            try {
+                $sel = $pdo->prepare('SELECT TP_ID FROM TrainingProvider WHERE TP_Name = ? ORDER BY TP_ID ASC LIMIT 1');
+                $sel->execute([$provider['name']]);
+                $existing = normalizeAssocRow($sel->fetch(PDO::FETCH_ASSOC));
+                $existingId = $existing['TP_ID'] ?? null;
+                if ($existingId !== null) {
+                    $provider_ids[$key] = (int)$existingId;
+                } else {
+                    $errors[] = "Provider '{$provider['name']}': " . $e->getMessage();
+                }
+            } catch (Exception $inner) {
+                $errors[] = "Provider '{$provider['name']}': " . $e->getMessage();
+            }
         }
     }
     
@@ -396,7 +409,27 @@ function processUploadData($data) {
             }
             $trainers_added++;
         } catch (Exception $e) {
-            $errors[] = "Trainer '{$trainer['name']}': " . $e->getMessage();
+                // Fallback: trainer may already exist. Resolve ID and update status if provided.
+                try {
+                    $sel = $pdo->prepare('SELECT Trainer_ID, Trainer_Status FROM Trainer WHERE Trainer_Name = ? ORDER BY Trainer_ID ASC LIMIT 1');
+                    $sel->execute([$trainer['name']]);
+                    $existing = normalizeAssocRow($sel->fetch(PDO::FETCH_ASSOC));
+                    $existingId = $existing['TRAINER_ID'] ?? null;
+                    if ($existingId !== null) {
+                        $trainer_ids[$key] = (int)$existingId;
+
+                        $existingStatus = trim((string)($existing['TRAINER_STATUS'] ?? ''));
+                        $incomingStatus = trim((string)($trainer['status'] ?? ''));
+                        if ($incomingStatus !== '' && $existingStatus === '') {
+                            $upd = $pdo->prepare('UPDATE Trainer SET Trainer_Status = ? WHERE Trainer_ID = ?');
+                            $upd->execute([$incomingStatus, $trainer_ids[$key]]);
+                        }
+                    } else {
+                        $errors[] = "Trainer '{$trainer['name']}': " . $e->getMessage();
+                    }
+                } catch (Exception $inner) {
+                    $errors[] = "Trainer '{$trainer['name']}': " . $e->getMessage();
+                }
         }
     }
     
