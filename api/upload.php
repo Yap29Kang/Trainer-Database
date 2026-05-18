@@ -340,13 +340,13 @@ function processUploadData($data) {
         // Trainer
         $trainer_key = $row['Trainer_Name'];
         $trainerStatus = trim((string)($row['Trainer_Status'] ?? ''));
-        $trainerStatus = $trainerStatus === '' ? null : $trainerStatus;
+        $trainerStatus = $trainerStatus === '' ? 'Active' : $trainerStatus;
         if (!isset($trainers_map[$trainer_key])) {
             $trainers_map[$trainer_key] = [
                 'name' => $row['Trainer_Name'],
                 'status' => $trainerStatus
             ];
-        } elseif ($trainers_map[$trainer_key]['status'] === null && $trainerStatus !== null) {
+        } elseif (trim((string)($trainers_map[$trainer_key]['status'] ?? '')) === '' && $trainerStatus !== '') {
             $trainers_map[$trainer_key]['status'] = $trainerStatus;
         }
     }
@@ -369,8 +369,8 @@ function processUploadData($data) {
             }
             $providers_added++;
 
-            // New providers default to a blank status in history.
-            $statusSql = "INSERT INTO TrainingProviderStatus (TP_ID, TP_Status, TP_StatusStartDate) VALUES (?, '', CURRENT_DATE)";
+            // New providers default to Active status history.
+            $statusSql = "INSERT INTO TrainingProviderStatus (TP_ID, TP_Status, TP_StatusStartDate) VALUES (?, 'Active', CURRENT_DATE)";
             $statusStmt = $pdo->prepare($statusSql);
             $statusStmt->execute([$provider_ids[$key]]);
         } catch (Exception $e) {

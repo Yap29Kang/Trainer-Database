@@ -26,7 +26,7 @@ if (!isset($pdo) || $pdo === null) {
 try {
     $providerStmt = $pdo->prepare('SELECT TP_Name FROM TrainingProvider WHERE TP_ID = ?');
     $providerStmt->execute([$id]);
-    $provider = $providerStmt->fetch(PDO::FETCH_ASSOC);
+    $provider = normalizeAssocRow($providerStmt->fetch(PDO::FETCH_ASSOC));
 
     if (!$provider) {
         http_response_code(404);
@@ -98,7 +98,7 @@ try {
     });
 
     $result = [
-        'provider_name' => $provider['TP_Name'],
+        'provider_name' => $provider['TP_Name'] ?? '—',
         'participant_count' => $participantCount,
         'participants' => $participants
     ];
