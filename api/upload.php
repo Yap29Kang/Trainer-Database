@@ -222,22 +222,34 @@ function normalizeHeaders($headers) {
  * Map alternate incoming column names to canonical keys used by the importer.
  */
 function canonicalizeRow($row) {
+    $normalizeKey = function ($value) {
+        return strtolower(preg_replace('/[^a-z0-9]/', '', (string)$value));
+    };
+
     $aliases = [
         'TP_Name' => ['TP_Name', 'Training Provider'],
         'Trainer_Name' => ['Trainer_Name', 'Trainers/Speaker Name', 'Trainer/Speaker Name', 'Trainer', 'Speaker Name'],
+        'Trainer_Status' => ['Trainer_Status', 'Trainer Status', 'Status', 'Red Flag Status', 'Red Flag'],
         'Item_Name' => ['Item_Name', 'Item Title', 'Course Name', 'Training Title'],
         'Item_Category' => ['Item_Category', 'Category'],
-        'Participant_Name' => ['Participant_Name', 'Full Name', 'Participant'],
-        'Participant_Department' => ['Participant_Department', 'Department'],
-        'Completion_Date' => ['Completion_Date', 'Completion Date']
+        'Item_Venue' => ['Item_Venue', 'Item Venue', 'Venue', 'Course Venue', 'Training Venue', 'Venue Name'],
+        'Participant_Name' => ['Participant_Name', 'Participant Name', 'Full Name', 'Participant'],
+        'Participant_Department' => ['Participant_Department', 'Department', 'Participant Department'],
+        'Completion_Date' => ['Completion_Date', 'Completion Date', 'Course Completion Date', 'Date Completed']
     ];
+
+    $lookup = [];
+    foreach ($row as $key => $value) {
+        $lookup[$normalizeKey($key)] = trim((string)$value);
+    }
 
     $normalized = [];
     foreach ($aliases as $target => $candidates) {
         $normalized[$target] = '';
         foreach ($candidates as $candidate) {
-            if (array_key_exists($candidate, $row) && trim((string)$row[$candidate]) !== '') {
-                $normalized[$target] = trim((string)$row[$candidate]);
+            $candidateKey = $normalizeKey($candidate);
+            if (array_key_exists($candidateKey, $lookup) && $lookup[$candidateKey] !== '') {
+                $normalized[$target] = $lookup[$candidateKey];
                 break;
             }
         }
@@ -327,11 +339,15 @@ function processUploadData($data) {
         
         // Trainer
         $trainer_key = $row['Trainer_Name'];
+        $trainerStatus = trim((string)($row['Trainer_Status'] ?? ''));
+        $trainerStatus = $trainerStatus === '' ? null : $trainerStatus;
         if (!isset($trainers_map[$trainer_key])) {
             $trainers_map[$trainer_key] = [
                 'name' => $row['Trainer_Name'],
-                'status' => null // Default NULL (not red flag)
+                'status' => $trainerStatus
             ];
+        } elseif ($trainers_map[$trainer_key]['status'] === null && $trainerStatus !== null) {
+            $trainers_map[$trainer_key]['status'] = $trainerStatus;
         }
     }
     
@@ -422,23 +438,25 @@ function processUploadData($data) {
                 $item_key = $tp_id . '|' . $trainer_id . '|' . $row['Item_Name'];
                     if (!isset($item_map[$item_key])) {
                         if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
-                            $sql = "INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category) VALUES (?, ?, ?, ?) RETURNING Item_ID";
+                            $sql = "INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES (?, ?, ?, ?, ?) RETURNING Item_ID";
                             $stmt = $pdo->prepare($sql);
                             $stmt->execute([
                                 $tp_id,
                                 $trainer_id,
                                 $row['Item_Name'],
-                                $row['Item_Category'] ?? null
+                                $row['Item_Category'] ?? null,
+                                $row['Item_Venue'] ?? null
                             ]);
                             $item_map[$item_key] = (int)$stmt->fetchColumn();
                         } else {
-                            $sql = "INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category) VALUES (?, ?, ?, ?)";
+                            $sql = "INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES (?, ?, ?, ?, ?)";
                             $stmt = $pdo->prepare($sql);
                             $stmt->execute([
                                 $tp_id,
                                 $trainer_id,
                                 $row['Item_Name'],
-                                $row['Item_Category'] ?? null
+                                $row['Item_Category'] ?? null,
+                                $row['Item_Venue'] ?? null
                             ]);
                             $item_map[$item_key] = $pdo->lastInsertId();
                         }
@@ -454,7 +472,7 @@ function processUploadData($data) {
                     $sql = "SELECT Participant_ID FROM Participant WHERE Participant_Name_Hash = ?";
                     $stmt = $pdo->prepare($sql);
                     $stmt->execute([$participantHash]);
-                    $participant = $stmt->fetch();
+                    $participant = normalizeAssocRow($stmt->fetch(PDO::FETCH_ASSOC));
 
                     $department = trim((string)($row['Participant_Department'] ?? ''));
                     $department = $department === '' ? null : $department;
@@ -477,13 +495,18 @@ function processUploadData($data) {
                         }
                         $participants_added++;
                     } else {
-                        $participant_id = $participant['Participant_ID'];
+                        $participant_id = $participant['Participant_ID'] ?? null;
 
                         // Fill/update department whenever upload includes it.
-                        if ($department !== null) {
+                        if ($participant_id !== null && $department !== null) {
                             $upd = $pdo->prepare('UPDATE Participant SET Participant_Department = ? WHERE Participant_ID = ?');
                             $upd->execute([$department, $participant_id]);
                         }
+                    }
+
+                    if ($participant_id === null) {
+                        $errors[] = "Row " . ($idx + 2) . ": Unable to resolve participant ID for enrollment";
+                        continue;
                     }
                     
                     // Insert enrollment
