@@ -46,7 +46,7 @@ try {
     ";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$id]);
-    $provider['participant_count'] = $stmt->fetch()['count'] ?? 0;
+    $provider['participant_count'] = normalizeAssocRow($stmt->fetch())['COUNT'] ?? 0;
     
     echo json_encode($provider);
 } catch (Exception $e) {

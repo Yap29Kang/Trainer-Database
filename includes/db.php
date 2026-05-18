@@ -70,7 +70,51 @@ function normalizeAssocRow($row) {
         return $row;
     }
 
-    return array_change_key_case($row, CASE_UPPER);
+    $normalized = array_change_key_case($row, CASE_UPPER);
+
+    $aliases = [
+        'TP_ID' => 'TP_ID',
+        'TP_NAME' => 'TP_Name',
+        'TP_FIRSTAOE' => 'TP_FirstAoE',
+        'TP_SECONDAOE' => 'TP_SecondAoE',
+        'TP_STATUS_ID' => 'TP_Status_ID',
+        'TP_STATUS' => 'TP_Status',
+        'TP_STATUSREASONING' => 'TP_StatusReasoning',
+        'TP_STATUSSTARTDATE' => 'TP_StatusStartDate',
+        'TP_STATUSENDDATE' => 'TP_StatusEndDate',
+        'TP_REMARK_ID' => 'TP_Remark_ID',
+        'TRAINER_ID' => 'Trainer_ID',
+        'TRAINER_NAME' => 'Trainer_Name',
+        'TRAINER_STATUS' => 'Trainer_Status',
+        'TRAINER_REMARK_ID' => 'Trainer_Remark_ID',
+        'ITEM_ID' => 'Item_ID',
+        'ITEM_NAME' => 'Item_Name',
+        'ITEM_CATEGORY' => 'Item_Category',
+        'ITEM_VENUE' => 'Item_Venue',
+        'PARTICIPANT_ID' => 'Participant_ID',
+        'PARTICIPANT_TOKEN' => 'Participant_Token',
+        'PARTICIPANT_NAME_HASH' => 'Participant_Name_Hash',
+        'PARTICIPANT_NAME_ENCRYPTED' => 'Participant_Name_Encrypted',
+        'PARTICIPANT_DEPARTMENT' => 'Participant_Department',
+        'COMPLETION_DATE' => 'Completion_Date',
+        'REMARK_TEXT' => 'Remark_Text',
+        'REMARK_DATE' => 'Remark_Date',
+        'COUNT' => 'count',
+        'ITEM_COUNT' => 'item_count',
+        'PROVIDER_COUNT' => 'provider_count',
+        'COURSE_COUNT' => 'course_count',
+        'PARTICIPANT_COUNT' => 'participant_count',
+        'TRAINER_COUNT' => 'trainer_count',
+        'PAX_COUNT' => 'pax_count',
+    ];
+
+    foreach ($aliases as $sourceKey => $aliasKey) {
+        if (array_key_exists($sourceKey, $normalized)) {
+            $normalized[$aliasKey] = $normalized[$sourceKey];
+        }
+    }
+
+    return $normalized;
 }
 
 function normalizeAssocRows($rows) {
@@ -270,8 +314,8 @@ function getProviderExpertiseMap() {
             $bucket[$tpId] = [];
         }
         $bucket[$tpId][] = [
-            'category' => $row['Item_Category'],
-            'count' => (int)$row['item_count']
+            'category' => $row['ITEM_CATEGORY'],
+            'count' => (int)$row['ITEM_COUNT']
         ];
     }
 

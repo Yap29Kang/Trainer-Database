@@ -38,11 +38,11 @@ try {
            // fetch item name for display
            $itemStmt = $pdo->prepare('SELECT Item_Name FROM Item WHERE Item_ID = ? AND TP_ID = ?');
            $itemStmt->execute([$item_id, $id]);
-           $itemRow = $itemStmt->fetch(PDO::FETCH_ASSOC);
+        $itemRow = normalizeAssocRow($itemStmt->fetch(PDO::FETCH_ASSOC));
            $course_name = $itemRow['Item_Name'] ?? null;
         $countStmt = $pdo->prepare('SELECT COUNT(DISTINCT e.Participant_ID) AS count FROM Enrollment e INNER JOIN Item i ON e.Item_ID = i.Item_ID WHERE i.TP_ID = ? AND i.Item_ID = ?');
         $countStmt->execute([$id, $item_id]);
-        $participantCount = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0);
+        $participantCount = (int)(normalizeAssocRow($countStmt->fetch(PDO::FETCH_ASSOC))['COUNT'] ?? 0);
 
         $sql = "
             SELECT
@@ -64,7 +64,7 @@ try {
     } else {
         $countStmt = $pdo->prepare('SELECT COUNT(DISTINCT e.Participant_ID) AS count FROM Item i LEFT JOIN Enrollment e ON i.Item_ID = e.Item_ID WHERE i.TP_ID = ?');
         $countStmt->execute([$id]);
-        $participantCount = (int)($countStmt->fetch(PDO::FETCH_ASSOC)['count'] ?? 0);
+        $participantCount = (int)(normalizeAssocRow($countStmt->fetch(PDO::FETCH_ASSOC))['COUNT'] ?? 0);
 
         $sql = "
             SELECT
@@ -86,7 +86,7 @@ try {
     }
 
     $participants = [];
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    foreach (normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC)) as $row) {
         $decryptedName = decryptParticipantName($row['Participant_Name_Encrypted'] ?? '');
         $row['Participant_Name'] = $decryptedName ?: ($row['Participant_Token'] ?? 'Participant');
         unset($row['Participant_Name_Encrypted']);
