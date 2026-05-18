@@ -25,6 +25,9 @@ CREATE TABLE IF NOT EXISTS TrainingProviderStatus (
         ON UPDATE CASCADE
 );
 
+CREATE INDEX IF NOT EXISTS idx_trainingproviderstatus_tp_id_startdate
+    ON TrainingProviderStatus (TP_ID, TP_StatusStartDate DESC, TP_Status_ID DESC);
+
 CREATE TABLE IF NOT EXISTS TrainingProviderRemark (
     TP_Remark_ID SERIAL PRIMARY KEY,
     TP_ID INT NOT NULL,
@@ -37,6 +40,9 @@ CREATE TABLE IF NOT EXISTS TrainingProviderRemark (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS idx_trainingproviderremark_tp_id_date
+    ON TrainingProviderRemark (TP_ID, Remark_Date DESC, TP_Remark_ID DESC);
 
 CREATE TABLE IF NOT EXISTS Trainer (
     Trainer_ID SERIAL PRIMARY KEY,
@@ -57,6 +63,9 @@ CREATE TABLE IF NOT EXISTS TrainerRemark (
         ON UPDATE CASCADE
 );
 
+CREATE INDEX IF NOT EXISTS idx_trainerremark_trainer_id_date
+    ON TrainerRemark (Trainer_ID, Remark_Date DESC, Trainer_Remark_ID DESC);
+
 CREATE TABLE IF NOT EXISTS Assignment (
     TP_ID INT,
     Trainer_ID INT,
@@ -72,6 +81,9 @@ CREATE TABLE IF NOT EXISTS Assignment (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
+
+    CREATE INDEX IF NOT EXISTS idx_assignment_tp_id ON Assignment (TP_ID);
+    CREATE INDEX IF NOT EXISTS idx_assignment_trainer_id ON Assignment (Trainer_ID);
 
 CREATE TABLE IF NOT EXISTS Item (
     Item_ID SERIAL PRIMARY KEY,
@@ -101,6 +113,11 @@ CREATE TABLE IF NOT EXISTS Item (
         ON UPDATE CASCADE
 );
 
+CREATE INDEX IF NOT EXISTS idx_item_tp_id ON Item (TP_ID);
+CREATE INDEX IF NOT EXISTS idx_item_trainer_id ON Item (Trainer_ID);
+CREATE INDEX IF NOT EXISTS idx_item_tp_trainer ON Item (TP_ID, Trainer_ID);
+CREATE INDEX IF NOT EXISTS idx_item_category ON Item (Item_Category);
+
 CREATE TABLE IF NOT EXISTS Participant (
     Participant_ID SERIAL PRIMARY KEY,
     Participant_Token VARCHAR(64) NOT NULL UNIQUE,
@@ -126,3 +143,6 @@ CREATE TABLE IF NOT EXISTS Enrollment (
         ON DELETE CASCADE
         ON UPDATE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS idx_enrollment_item_id ON Enrollment (Item_ID);
+CREATE INDEX IF NOT EXISTS idx_enrollment_participant_id ON Enrollment (Participant_ID);

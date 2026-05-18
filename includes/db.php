@@ -431,23 +431,35 @@ function getTrainingProviders() {
             tp.TP_Name,
             tp.TP_FirstAoE,
             tp.TP_SecondAoE,
-            -- Use PostgreSQL string_agg when available. For MySQL the SQL will still work if using mysql driver.
-            COALESCE(
-                (SELECT string_agg(DISTINCT t2.Trainer_Name, '||' ORDER BY t2.Trainer_Name) 
-                 FROM Trainer t2
-                 INNER JOIN Assignment a2 ON t2.Trainer_ID = a2.Trainer_ID
-                 WHERE a2.TP_ID = tp.TP_ID
-                ),
-                '') AS trainer_names,
-            COUNT(DISTINCT t.Trainer_ID) as trainer_count,
-            COUNT(DISTINCT i.Item_ID) as course_count,
-            COUNT(DISTINCT e.Participant_ID) as participant_count
+            COALESCE(trainer_names.trainer_names, '') AS trainer_names,
+            COALESCE(trainer_counts.trainer_count, 0) AS trainer_count,
+            COALESCE(course_counts.course_count, 0) AS course_count,
+            COALESCE(participant_counts.participant_count, 0) AS participant_count
         FROM TrainingProvider tp
-        LEFT JOIN Assignment a ON tp.TP_ID = a.TP_ID
-        LEFT JOIN Trainer t ON a.Trainer_ID = t.Trainer_ID
-        LEFT JOIN Item i ON tp.TP_ID = i.TP_ID
-        LEFT JOIN Enrollment e ON i.Item_ID = e.Item_ID
-        GROUP BY tp.TP_ID, tp.TP_Name, tp.TP_FirstAoE, tp.TP_SecondAoE
+        LEFT JOIN (
+            SELECT
+                a.TP_ID,
+                string_agg(DISTINCT t2.Trainer_Name, '||' ORDER BY t2.Trainer_Name) AS trainer_names
+            FROM Assignment a
+            INNER JOIN Trainer t2 ON t2.Trainer_ID = a.Trainer_ID
+            GROUP BY a.TP_ID
+        ) trainer_names ON trainer_names.TP_ID = tp.TP_ID
+        LEFT JOIN (
+            SELECT a.TP_ID, COUNT(DISTINCT a.Trainer_ID) AS trainer_count
+            FROM Assignment a
+            GROUP BY a.TP_ID
+        ) trainer_counts ON trainer_counts.TP_ID = tp.TP_ID
+        LEFT JOIN (
+            SELECT i.TP_ID, COUNT(*) AS course_count
+            FROM Item i
+            GROUP BY i.TP_ID
+        ) course_counts ON course_counts.TP_ID = tp.TP_ID
+        LEFT JOIN (
+            SELECT i.TP_ID, COUNT(DISTINCT e.Participant_ID) AS participant_count
+            FROM Item i
+            INNER JOIN Enrollment e ON e.Item_ID = i.Item_ID
+            GROUP BY i.TP_ID
+        ) participant_counts ON participant_counts.TP_ID = tp.TP_ID
         ORDER BY tp.TP_Name
     ";
     $stmt = $pdo->prepare($sql);
@@ -611,12 +623,19 @@ function getTrainers() {
             t.Trainer_ID,
             t.Trainer_Name,
             t.Trainer_Status,
-            COUNT(DISTINCT a.TP_ID) as provider_count,
-            COUNT(DISTINCT i.Item_ID) as course_count
+            COALESCE(provider_counts.provider_count, 0) AS provider_count,
+            COALESCE(course_counts.course_count, 0) AS course_count
         FROM Trainer t
-        LEFT JOIN Assignment a ON t.Trainer_ID = a.Trainer_ID
-        LEFT JOIN Item i ON t.Trainer_ID = i.Trainer_ID
-        GROUP BY t.Trainer_ID, t.Trainer_Name, t.Trainer_Status
+        LEFT JOIN (
+            SELECT a.Trainer_ID, COUNT(DISTINCT a.TP_ID) AS provider_count
+            FROM Assignment a
+            GROUP BY a.Trainer_ID
+        ) provider_counts ON provider_counts.Trainer_ID = t.Trainer_ID
+        LEFT JOIN (
+            SELECT i.Trainer_ID, COUNT(*) AS course_count
+            FROM Item i
+            GROUP BY i.Trainer_ID
+        ) course_counts ON course_counts.Trainer_ID = t.Trainer_ID
         ORDER BY t.Trainer_Name
     ";
     $stmt = $pdo->prepare($sql);
