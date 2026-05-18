@@ -1,30 +1,176 @@
 <?php
 /**
- * Simple Database Configuration using only explicit DB_* env vars.
- * This file intentionally does NOT use DATABASE_URL.
+ * Database configuration that accepts either split DB_* env vars or a single
+ * postgres connection URL from DATABASE_URL / DB_HOST.
  */
+
+function normalizeEnvValue($value) {
+    if ($value === false || $value === null) {
+        return null;
+    }
+
+    $value = trim((string)$value);
+    return $value === '' ? null : $value;
+}
+
+function parsePostgresConnectionString($value) {
+    $value = normalizeEnvValue($value);
+    if ($value === null) {
+        return [];
+    }
+
+    if (strpos($value, '://') === false) {
+        return ['host' => $value];
+    }
+
+    $schemePos = strpos($value, '://');
+    $remainder = substr($value, $schemePos + 3);
+
+    $query = '';
+    $queryPos = strpos($remainder, '?');
+    if ($queryPos !== false) {
+        $query = substr($remainder, $queryPos + 1);
+        $remainder = substr($remainder, 0, $queryPos);
+    }
+
+    $path = '';
+    $pathPos = strpos($remainder, '/');
+    if ($pathPos !== false) {
+        $path = substr($remainder, $pathPos + 1);
+        $authority = substr($remainder, 0, $pathPos);
+    } else {
+        $authority = $remainder;
+    }
+
+    $user = null;
+    $pass = null;
+    $atPos = strrpos($authority, '@');
+    if ($atPos !== false) {
+        $userInfo = substr($authority, 0, $atPos);
+        $authority = substr($authority, $atPos + 1);
+
+        $colonPos = strpos($userInfo, ':');
+        if ($colonPos !== false) {
+            $user = rawurldecode(substr($userInfo, 0, $colonPos));
+            $pass = rawurldecode(substr($userInfo, $colonPos + 1));
+        } else {
+            $user = rawurldecode($userInfo);
+        }
+    }
+
+    $host = $authority;
+    $port = null;
+    if (strlen($authority) > 0 && $authority[0] === '[') {
+        $endBracket = strpos($authority, ']');
+        if ($endBracket !== false) {
+            $host = substr($authority, 1, $endBracket - 1);
+            $portPart = substr($authority, $endBracket + 1);
+            if (strpos($portPart, ':') === 0) {
+                $port = substr($portPart, 1);
+            }
+        }
+    } else {
+        $lastColon = strrpos($authority, ':');
+        if ($lastColon !== false && ctype_digit(substr($authority, $lastColon + 1))) {
+            $host = substr($authority, 0, $lastColon);
+            $port = substr($authority, $lastColon + 1);
+        }
+    }
+
+    $dbName = $path !== '' ? ltrim($path, '/') : null;
+    $queryParams = [];
+    if ($query !== '') {
+        parse_str($query, $queryParams);
+    }
+
+    return [
+        'host' => rawurldecode($host),
+        'port' => $port,
+        'dbname' => $dbName !== null ? rawurldecode($dbName) : null,
+        'user' => $user,
+        'pass' => $pass,
+        'sslmode' => $queryParams['sslmode'] ?? null,
+        'hostaddr' => $queryParams['hostaddr'] ?? null,
+    ];
+}
 
 $appEncryptionKey = getenv('APP_ENCRYPTION_KEY') ?: '';
 define('APP_ENCRYPTION_KEY', $appEncryptionKey);
 
-// Use only the explicit environment variables requested.
-$hostName = getenv('DB_HOST');
-$hostAddr = getenv('DB_HOSTADDR');
-$port = getenv('DB_PORT');
-$db   = getenv('DB_NAME');
-$user = getenv('DB_USER');
-$pass = getenv('DB_PASS');
-$ssl  = getenv('DB_SSLMODE') ?: 'require';
+$connection = [
+    'host' => null,
+    'hostaddr' => normalizeEnvValue(getenv('DB_HOSTADDR')),
+    'port' => normalizeEnvValue(getenv('DB_PORT')),
+    'dbname' => normalizeEnvValue(getenv('DB_NAME')),
+    'user' => normalizeEnvValue(getenv('DB_USER')),
+    'pass' => normalizeEnvValue(getenv('DB_PASS')),
+    'sslmode' => normalizeEnvValue(getenv('DB_SSLMODE')) ?: 'require',
+];
 
-// Build DSN preserving hostname (for SNI) and optionally specifying hostaddr (IPv4) to force IPv4 connect
+$databaseUrl = normalizeEnvValue(getenv('DATABASE_URL'));
+if ($databaseUrl !== null) {
+    $connection = array_merge($connection, parsePostgresConnectionString($databaseUrl));
+}
+
+$hostEnv = normalizeEnvValue(getenv('DB_HOST'));
+if ($hostEnv !== null) {
+    $connection = array_merge($connection, parsePostgresConnectionString($hostEnv));
+}
+
+// Explicit split env vars should override URL-derived values when both are present.
+$explicitHostAddr = normalizeEnvValue(getenv('DB_HOSTADDR'));
+if ($explicitHostAddr !== null) {
+    $connection['hostaddr'] = $explicitHostAddr;
+}
+
+$explicitPort = normalizeEnvValue(getenv('DB_PORT'));
+if ($explicitPort !== null) {
+    $connection['port'] = $explicitPort;
+}
+
+$explicitDbName = normalizeEnvValue(getenv('DB_NAME'));
+if ($explicitDbName !== null) {
+    $connection['dbname'] = $explicitDbName;
+}
+
+$explicitUser = normalizeEnvValue(getenv('DB_USER'));
+if ($explicitUser !== null) {
+    $connection['user'] = $explicitUser;
+}
+
+$explicitPass = normalizeEnvValue(getenv('DB_PASS'));
+if ($explicitPass !== null) {
+    $connection['pass'] = $explicitPass;
+}
+
+$explicitSslMode = normalizeEnvValue(getenv('DB_SSLMODE'));
+if ($explicitSslMode !== null) {
+    $connection['sslmode'] = $explicitSslMode;
+}
+
+$hostName = $connection['host'];
+$hostAddr = $connection['hostaddr'];
+$port = $connection['port'];
+$db = $connection['dbname'];
+$user = $connection['user'];
+$pass = $connection['pass'];
+$ssl = $connection['sslmode'] ?: 'require';
+
+// Build DSN preserving hostname (for SNI) and optionally specifying hostaddr (IPv4) to force IPv4 connect.
 $dsn = 'pgsql:';
-if ($hostName !== '' && $hostName !== null) {
+if ($hostName !== null) {
     $dsn .= 'host=' . $hostName . ';';
 }
-if ($hostAddr !== '' && $hostAddr !== null) {
+if ($hostAddr !== null) {
     $dsn .= 'hostaddr=' . $hostAddr . ';';
 }
-$dsn .= 'port=' . $port . ';dbname=' . $db . ';sslmode=' . $ssl;
+if ($port !== null) {
+    $dsn .= 'port=' . $port . ';';
+}
+if ($db !== null) {
+    $dsn .= 'dbname=' . $db . ';';
+}
+$dsn .= 'sslmode=' . $ssl;
 
 // Database connection
 try {
