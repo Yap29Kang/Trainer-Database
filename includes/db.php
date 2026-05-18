@@ -65,6 +65,22 @@ function generateParticipantToken() {
     return 'ptk_' . bin2hex(random_bytes(16));
 }
 
+function normalizeAssocRow($row) {
+    if (!is_array($row)) {
+        return $row;
+    }
+
+    return array_change_key_case($row, CASE_UPPER);
+}
+
+function normalizeAssocRows($rows) {
+    if (!is_array($rows)) {
+        return $rows;
+    }
+
+    return array_map('normalizeAssocRow', $rows);
+}
+
 function normalizeProviderStatusLabel($status) {
     $status = trim((string)$status);
 
@@ -125,7 +141,7 @@ function getTrainingProviderStatusHistory($tp_id) {
     $stmt->execute([$tp_id]);
 
     $rows = [];
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    foreach (normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC)) as $row) {
         $rawStatus = $row['TP_Status'] ?? '';
         $row['TP_StatusRaw'] = $rawStatus;
         $row['TP_StatusDisplay'] = normalizeProviderStatusLabel($rawStatus) ?: 'Active';
@@ -156,7 +172,7 @@ function getTrainingProviderRemarks($tp_id) {
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$tp_id]);
 
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    return normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC));
 }
 
 function getTrainerRemarks($trainer_id) {
@@ -175,7 +191,7 @@ function getTrainerRemarks($trainer_id) {
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$trainer_id]);
 
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    return normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC));
 }
 
 /**
@@ -206,7 +222,7 @@ function getLatestProviderStatusMap() {
     $stmt->execute();
 
     $map = [];
-    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+    foreach (normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC)) as $row) {
         $effectiveStatus = getEffectiveProviderStatus(
             $row['TP_Status'] ?? '',
             $row['TP_StatusEndDate'] ?? null
@@ -245,7 +261,7 @@ function getProviderExpertiseMap() {
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute();
-    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $rows = normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC));
 
     $bucket = [];
     foreach ($rows as $row) {
@@ -310,7 +326,7 @@ function syncProviderExpertiseDefaults($tpId = null) {
     if ($tpId !== null) {
         $stmt = $pdo->prepare('SELECT TP_ID, TP_FirstAoE, TP_SecondAoE FROM TrainingProvider WHERE TP_ID = ?');
         $stmt->execute([(int)$tpId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $row = normalizeAssocRow($stmt->fetch(PDO::FETCH_ASSOC));
         if (!$row) {
             return;
         }
@@ -332,7 +348,7 @@ function syncProviderExpertiseDefaults($tpId = null) {
 
     $stmt = $pdo->prepare('SELECT TP_ID, TP_FirstAoE, TP_SecondAoE FROM TrainingProvider');
     $stmt->execute();
-    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $rows = normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC));
 
     $upd = $pdo->prepare('UPDATE TrainingProvider SET TP_FirstAoE = ?, TP_SecondAoE = ? WHERE TP_ID = ?');
     foreach ($rows as $row) {
@@ -390,7 +406,7 @@ function getTrainingProviders() {
     $stmt = $pdo->prepare($sql);
     $stmt->execute();
 
-    $providers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $providers = normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC));
     $statusMap = getLatestProviderStatusMap();
     $expertiseMap = getProviderExpertiseMap();
 
@@ -448,7 +464,7 @@ function getTrainingProviderDetail($tp_id) {
     $sql = "SELECT TP_ID, TP_Name, TP_FirstAoE, TP_SecondAoE FROM TrainingProvider WHERE TP_ID = ?";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$tp_id]);
-    $provider = $stmt->fetch(PDO::FETCH_ASSOC);
+    $provider = normalizeAssocRow($stmt->fetch(PDO::FETCH_ASSOC));
     
     if (!$provider) return null;
     
@@ -460,7 +476,7 @@ function getTrainingProviderDetail($tp_id) {
     ";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$tp_id]);
-    $provider['trainers'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $provider['trainers'] = normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC));
     
     // Get courses
     $sql = "
@@ -488,7 +504,7 @@ function getTrainingProviderDetail($tp_id) {
     ";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$tp_id]);
-    $provider['courses'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $provider['courses'] = normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC));
 
     $statusMap = getLatestProviderStatusMap();
     $expertiseMap = getProviderExpertiseMap();
@@ -558,7 +574,7 @@ function getTrainers() {
     ";
     $stmt = $pdo->prepare($sql);
     $stmt->execute();
-    $trainers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $trainers = normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC));
 
     $trainerMap = [];
     foreach ($trainers as $trainer) {
@@ -580,7 +596,7 @@ function getTrainers() {
         ";
         $providerStmt = $pdo->prepare($providerSql);
         $providerStmt->execute();
-        $providerRows = $providerStmt->fetchAll(PDO::FETCH_ASSOC);
+        $providerRows = normalizeAssocRows($providerStmt->fetchAll(PDO::FETCH_ASSOC));
 
         foreach ($providerRows as $row) {
             $trainerId = $row['Trainer_ID'];
@@ -607,7 +623,7 @@ function getTrainerDetail($trainer_id) {
     $sql = "SELECT * FROM Trainer WHERE Trainer_ID = ?";
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$trainer_id]);
-    $trainer = $stmt->fetch(PDO::FETCH_ASSOC);
+    $trainer = normalizeAssocRow($stmt->fetch(PDO::FETCH_ASSOC));
 
     if (!$trainer) {
         return null;
@@ -629,7 +645,7 @@ function getTrainerDetail($trainer_id) {
     $trainer['providers'] = array_map(function ($row) use ($statusMap) {
         $row['TP_Status'] = $statusMap[$row['TP_ID']]['TP_Status'] ?? '';
         return $row;
-    }, $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }, normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC)));
 
     $courseSql = "
         SELECT
@@ -657,7 +673,7 @@ function getTrainerDetail($trainer_id) {
     $trainer['courses'] = array_map(function ($row) use ($statusMap) {
         $row['TP_Status'] = $statusMap[$row['TP_ID']]['TP_Status'] ?? '';
         return $row;
-    }, $stmt->fetchAll(PDO::FETCH_ASSOC));
+    }, normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC)));
 
     $trainer['remarks'] = getTrainerRemarks($trainer_id);
 
@@ -676,7 +692,7 @@ function getStatistics() {
     $sql = "SELECT COUNT(*) as count FROM TrainingProvider";
     $stmt = $pdo->prepare($sql);
     $stmt->execute();
-    $stats['total_providers'] = $stmt->fetch()['count'];
+    $stats['total_providers'] = normalizeAssocRow($stmt->fetch())['COUNT'] ?? 0;
     
     // Providers by latest status
     $statusMap = getLatestProviderStatusMap();
@@ -701,19 +717,19 @@ function getStatistics() {
     $sql = "SELECT COUNT(*) as count FROM Trainer";
     $stmt = $pdo->prepare($sql);
     $stmt->execute();
-    $stats['total_trainers'] = $stmt->fetch()['count'];
+    $stats['total_trainers'] = normalizeAssocRow($stmt->fetch())['COUNT'] ?? 0;
     
     // Total courses
     $sql = "SELECT COUNT(*) as count FROM Item";
     $stmt = $pdo->prepare($sql);
     $stmt->execute();
-    $stats['total_courses'] = $stmt->fetch()['count'];
+    $stats['total_courses'] = normalizeAssocRow($stmt->fetch())['COUNT'] ?? 0;
     
     // Total participants
     $sql = "SELECT COUNT(DISTINCT Participant_ID) as count FROM Enrollment";
     $stmt = $pdo->prepare($sql);
     $stmt->execute();
-    $stats['total_participants'] = $stmt->fetch()['count'];
+    $stats['total_participants'] = normalizeAssocRow($stmt->fetch())['COUNT'] ?? 0;
     
     return $stats;
 }
