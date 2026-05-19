@@ -25,7 +25,7 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 .hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem}
 .logo{font-family:'Calibri',sans-serif;font-weight:700;font-size:1.5rem;color:#fff;letter-spacing:-.01em}
 .logo span{color:var(--lime)}
-.hdr-btn{display:none;align-items:center;gap:.38rem;border:1px solid rgba(255,255,255,.3);color:#fff;padding:.34rem .8rem;border-radius:7px;font-family:'Calibri',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);transition:background .2s}
+.hdr-btn{display:inline-flex;align-items:center;gap:.38rem;border:1px solid rgba(255,255,255,.3);color:#fff;padding:.34rem .8rem;border-radius:7px;font-family:'Calibri',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;background:rgba(255,255,255,.12);transition:background .2s}
 .hdr-btn:hover{background:rgba(255,255,255,.22)}
 .hdr-summary{display:flex;align-items:center}
 .sum-main{padding-right:1.5rem;border-right:1px solid rgba(255,255,255,.2)}
