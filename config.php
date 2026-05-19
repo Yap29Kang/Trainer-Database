@@ -114,6 +114,9 @@ if (trim($appEncryptionKey) === '') {
 }
 define('APP_ENCRYPTION_KEY', $appEncryptionKey);
 
+// Admin login password used by the header login button.
+define('ADMIN_PASSWORD', normalizeEnvValue(getenv('ADMIN_PASSWORD')) ?: '');
+
 $connection = [
     'host' => null,
     'hostaddr' => normalizeEnvValue(getenv('DB_HOSTADDR')),

@@ -13,20 +13,14 @@
 </head>
 <body>
 
-<!-- ROLE BAR -->
-<div class="role-bar">
-    <span class="role-label">View as:</span>
-    <div class="role-toggle">
-        <button class="role-btn <?php echo ($_SESSION['role'] === 'user' ? 'active' : ''); ?>" onclick="setRole('user', this)">User</button>
-        <button class="role-btn <?php echo ($_SESSION['role'] === 'admin' ? 'active' : ''); ?>" onclick="setRole('admin', this)">Admin</button>
-    </div>
-</div>
-
 <!-- HEADER -->
 <header>
     <div class="hdr-top">
         <div class="logo">Trainer<span> Database</span></div>
-        <div>
+        <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+            <button class="hdr-btn" id="authHdrBtn" onclick="handleAuthButton()">
+                <?php echo ($_SESSION['role'] === 'admin' ? 'Log Out' : 'Log In'); ?>
+            </button>
             <button class="hdr-btn" id="upHdrBtn" onclick="openUpload()" style="display:none;">
                 <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
                 Upload Excel
@@ -466,38 +460,44 @@ function revealUploadModalKeepState() {
     document.body.style.overflow = 'hidden';
 }
 
-// Server-side role flag
 const SERVER_IS_ADMIN = <?php echo json_encode($_SESSION['role'] === 'admin'); ?>;
 
-// Set role and switch view. Accept optional button element for immediate UI feedback.
-function setRole(role, btn) {
-    fetch('api/set-role.php', {
+function handleAuthButton() {
+    const authBtn = document.getElementById('authHdrBtn');
+    const isAdmin = SERVER_IS_ADMIN;
+
+    if (isAdmin) {
+        fetch('api/admin-logout.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        }).then(() => {
+            location.reload();
+        }).catch(err => {
+            console.error('logout failed', err);
+            showToast('⚠️ Could not log out');
+        });
+        return;
+    }
+
+    const password = window.prompt('Enter admin password');
+    if (password === null) {
+        return;
+    }
+
+    fetch('api/admin-login.php', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: role })
-    }).then(() => {
-        // Immediate UI feedback: toggle active class and show admin buttons
-        if (btn) {
-            document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        }
-        const upBtn = document.getElementById('upHdrBtn');
-        const dlBtn = document.getElementById('dlBtn');
-        if (role === 'admin') {
-            if (upBtn) upBtn.style.display = 'inline-flex';
-            if (dlBtn) dlBtn.style.display = 'flex';
-            const upOv = document.getElementById('upOv'); if (upOv) upOv.style.display = '';
-        } else {
-            if (upBtn) upBtn.style.display = 'none';
-            if (dlBtn) dlBtn.style.display = 'none';
-            const upOv = document.getElementById('upOv'); if (upOv) upOv.style.display = 'none';
-        }
-
-        // Reload so server renders correct admin controls (if session persisted)
+        body: JSON.stringify({ password })
+    }).then(r => r.json().then(data => ({ ok: r.ok, data })))
+    .then(({ ok, data }) => {
+        if (!ok || !data.success) throw new Error(data.message || 'Could not log in');
         location.reload();
     }).catch(err => {
-        console.error('set-role failed', err);
+        console.error('login failed', err);
+        showToast('⚠️ ' + err.message);
     });
 }
 
@@ -1883,12 +1883,15 @@ window.addEventListener('DOMContentLoaded', () => {
     try {
         const upBtn = document.getElementById('upHdrBtn');
         const dlBtn = document.getElementById('dlBtn');
+        const authBtn = document.getElementById('authHdrBtn');
         if (SERVER_IS_ADMIN) {
             if (upBtn) upBtn.style.display = 'inline-flex';
             if (dlBtn) dlBtn.style.display = 'flex';
+            if (authBtn) authBtn.textContent = 'Log Out';
         } else {
             if (upBtn) upBtn.style.display = 'none';
             if (dlBtn) dlBtn.style.display = 'none';
+            if (authBtn) authBtn.textContent = 'Log In';
         }
     } catch (e) { console.error(e); }
 
