@@ -21,10 +21,6 @@
             <button class="hdr-btn" id="authHdrBtn" onclick="handleAuthButton()">
                 <?php echo ($_SESSION['role'] === 'admin' ? 'Log Out' : 'Log In'); ?>
             </button>
-            <button class="hdr-btn" id="upHdrBtn" onclick="openUpload()" style="display:none;">
-                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-                Upload Excel
-            </button>
         </div>
     </div>
     <div class="hdr-summary">
@@ -37,6 +33,12 @@
             <div class="ss"><div class="ss-num y" id="cntGrey">0</div><div class="ss-lbl">Greylist</div></div>
             <div class="ss"><div class="ss-num r" id="cntBlack">0</div><div class="ss-lbl">Blacklisted</div></div>
         </div>
+    </div>
+    <div class="hdr-upload-wrap">
+        <button class="hdr-btn" id="upHdrBtn" onclick="openUpload()" style="<?php echo ($_SESSION['role'] === 'admin' ? 'display:inline-flex;' : 'display:none;'); ?>">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+            Upload Excel
+        </button>
     </div>
 </header>
 

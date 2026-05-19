@@ -22,6 +22,10 @@ body{font-family:'Calibri',Calibri,sans-serif;background:#f0f5fa;color:#0d1a26;f
 
 /* ── HEADER ── */
 header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-index:200}
+
+/* Upload button positioned at bottom-right of header */
+.hdr-upload-wrap{position:absolute;right:1.6rem;bottom:0.85rem}
+.hdr-upload-wrap .hdr-btn{padding:.4rem .9rem}
 .hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem}
 .logo{font-family:'Calibri',sans-serif;font-weight:700;font-size:1.5rem;color:#fff;letter-spacing:-.01em}
 .logo span{color:var(--lime)}
