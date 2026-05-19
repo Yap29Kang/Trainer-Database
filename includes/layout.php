@@ -419,6 +419,25 @@ if (isset($content_file) && is_file($content_file)) {
     </div>
 </div>
 
+<!-- LOGIN MODAL -->
+<div class="lgov" id="loginOv" onclick="if(event.target===this)closeLoginModal()">
+    <div class="lgm">
+        <div class="lgm-hdr">
+            <div class="lgm-title">Administrator Login</div>
+            <button class="lgm-close" onclick="closeLoginModal()">✕</button>
+        </div>
+        <div class="lgm-body">
+            <div class="lgm-instructions">Enter admin password to access admin features.</div>
+            <input id="loginPwd" class="lgm-input" type="password" placeholder="Admin password" onkeydown="if(event.key==='Enter'){submitLoginFromModal()}" />
+            <div id="loginErr" class="lgm-err" role="alert"></div>
+            <div class="lgm-actions">
+                <button class="ux" onclick="closeLoginModal()">Cancel</button>
+                <button class="uc" onclick="submitLoginFromModal()">Log In</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -480,9 +499,36 @@ function handleAuthButton() {
         });
         return;
     }
+    openLoginModal();
+}
 
-    const password = window.prompt('Enter admin password');
-    if (password === null) {
+function openLoginModal() {
+    const ov = document.getElementById('loginOv');
+    if (!ov) return;
+    ov.classList.add('open');
+    setTimeout(() => {
+        const inp = document.getElementById('loginPwd');
+        if (inp) inp.focus();
+    }, 80);
+}
+
+function closeLoginModal() {
+    const ov = document.getElementById('loginOv');
+    if (!ov) return;
+    ov.classList.remove('open');
+    const err = document.getElementById('loginErr');
+    if (err) { err.textContent = ''; err.classList.remove('show'); }
+    const inp = document.getElementById('loginPwd');
+    if (inp) inp.value = '';
+}
+
+function submitLoginFromModal() {
+    const inp = document.getElementById('loginPwd');
+    const err = document.getElementById('loginErr');
+    if (!inp) return;
+    const password = inp.value || '';
+    if (!password) {
+        if (err) { err.textContent = 'Please enter the admin password'; err.classList.add('show'); }
         return;
     }
 
@@ -493,11 +539,13 @@ function handleAuthButton() {
         body: JSON.stringify({ password })
     }).then(r => r.json().then(data => ({ ok: r.ok, data })))
     .then(({ ok, data }) => {
-        if (!ok || !data.success) throw new Error(data.message || 'Could not log in');
+        if (!ok || !data.success) {
+            throw new Error(data.message || 'Could not log in');
+        }
         location.reload();
-    }).catch(err => {
-        console.error('login failed', err);
-        showToast('⚠️ ' + err.message);
+    }).catch(e => {
+        console.error('login failed', e);
+        if (err) { err.textContent = e.message || 'Login failed'; err.classList.add('show'); }
     });
 }
 
