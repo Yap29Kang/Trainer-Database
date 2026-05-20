@@ -1,4 +1,37 @@
 <?php
+
+function iniSizeToBytes($value) {
+    $value = trim((string)$value);
+    if ($value === '') {
+        return 0;
+    }
+
+    $unit = strtolower(substr($value, -1));
+    $number = (float)$value;
+    switch ($unit) {
+        case 'g':
+            $number *= 1024;
+        case 'm':
+            $number *= 1024;
+        case 'k':
+            $number *= 1024;
+    }
+
+    return (int)$number;
+}
+
+$postMaxBytes = iniSizeToBytes((string)ini_get('post_max_size'));
+$contentLength = isset($_SERVER['CONTENT_LENGTH']) ? (int)$_SERVER['CONTENT_LENGTH'] : 0;
+if ($postMaxBytes > 0 && $contentLength > $postMaxBytes) {
+    http_response_code(413);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode([
+        'success' => false,
+        'message' => 'Uploaded file is too large. Maximum allowed size is ' . ini_get('post_max_size') . '.'
+    ]);
+    exit;
+}
+
 require_once '../config.php';
 require_once '../includes/db.php';
 

@@ -229,7 +229,11 @@ date_default_timezone_set('Asia/Kuala_Lumpur');
 
 // Session settings
 if (session_status() === PHP_SESSION_NONE) {
-    session_start();
+    if (!headers_sent()) {
+        session_start();
+    } elseif (!isset($_SESSION) || !is_array($_SESSION)) {
+        $_SESSION = [];
+    }
 }
 
 // Define roles

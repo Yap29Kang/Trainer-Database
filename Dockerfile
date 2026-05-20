@@ -37,6 +37,16 @@ RUN a2enmod rewrite
 # Suppress Apache FQDN warning in container logs
 RUN echo 'ServerName localhost' > /etc/apache2/conf-available/servername.conf && a2enconf servername
 
+# Runtime PHP limits/settings for larger CSV/XLSX uploads and cleaner API output.
+RUN printf '%s\n' \
+    'upload_max_filesize=32M' \
+    'post_max_size=32M' \
+    'max_file_uploads=20' \
+    'display_errors=Off' \
+    'html_errors=Off' \
+    'log_errors=On' \
+    > /usr/local/etc/php/conf.d/uploads.ini
+
 EXPOSE 80
 
 CMD ["apache2-foreground"]

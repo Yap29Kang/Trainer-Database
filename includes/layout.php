@@ -460,6 +460,19 @@ let uploadPreviewActive = false;
 let pendingExpertiseId = null;
 let pendingExpertiseWhich = 1;
 let allCategories = [];
+const MAX_UPLOAD_BYTES = 32 * 1024 * 1024;
+
+function formatBytes(size) {
+    if (!Number.isFinite(size) || size < 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let idx = 0;
+    let value = size;
+    while (value >= 1024 && idx < units.length - 1) {
+        value /= 1024;
+        idx++;
+    }
+    return `${value.toFixed(idx === 0 ? 0 : 1)} ${units[idx]}`;
+}
 
 function syncBodyLock() {
     const anyOpen = ['provOv', 'stOv', 'expOv', 'partOv', 'trainerOv', 'upOv'].some(id => {
@@ -1527,6 +1540,14 @@ function fileSelected(e) {
 }
 
 function selectFile(name, file) {
+    if (file.size > MAX_UPLOAD_BYTES) {
+        selectedFile = null;
+        document.getElementById('finfo').style.display = 'none';
+        document.getElementById('fi2').value = '';
+        showToast('⚠️ File too large (' + formatBytes(file.size) + '). Max allowed is 32 MB.');
+        return;
+    }
+
     selectedFile = file;
     document.getElementById('finfo').style.display = 'flex';
     document.getElementById('fn').textContent = name;
