@@ -1551,6 +1551,28 @@ function resetUpload() {
     selectedFile = null;
 }
 
+function parseUploadResponse(response) {
+    return response.text().then(text => {
+        let payload = null;
+        try {
+            payload = text ? JSON.parse(text) : {};
+        } catch (err) {
+            // Strip HTML warning markup when backend returns PHP warnings/errors.
+            const cleaned = (text || '')
+                .replace(/<[^>]*>/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            throw new Error(cleaned || 'Server returned an invalid response');
+        }
+
+        if (!response.ok && payload && payload.message) {
+            throw new Error(payload.message);
+        }
+
+        return payload;
+    });
+}
+
 function performUpload() {
     if (!selectedFile) {
         showToast('⚠️ Select a file first');
@@ -1571,7 +1593,7 @@ function performUpload() {
         method: 'POST',
         body: formData
     })
-    .then(r => r.json())
+    .then(parseUploadResponse)
     .then(result => {
         if (result.success && result.preview) {
             // show preview modal
@@ -1693,7 +1715,7 @@ function confirmImport() {
         method: 'POST',
         body: formData
     })
-    .then(r => r.json())
+    .then(parseUploadResponse)
     .then(result => {
         if (result.success) {
             fill.style.width = '100%';

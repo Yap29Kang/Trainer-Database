@@ -2,7 +2,11 @@
 require_once '../config.php';
 require_once '../includes/db.php';
 
-header('Content-Type: application/json');
+// Keep API responses JSON-only even when PHP warnings/notices occur.
+ini_set('display_errors', '0');
+ini_set('html_errors', '0');
+error_reporting(E_ALL);
+header('Content-Type: application/json; charset=utf-8');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -140,9 +144,31 @@ function parseCSV($file_path) {
         if ($header === null) {
             $header = normalizeHeaders($row);
         } else {
+            // Keep row width aligned with header count to avoid array_combine warnings
+            // when CSV rows have missing/trailing columns.
+            if (count($row) < count($header)) {
+                $row = array_pad($row, count($header), '');
+            } elseif (count($row) > count($header)) {
+                $row = array_slice($row, 0, count($header));
+            }
+
             $assoc = array_combine($header, $row);
             if ($assoc !== false) {
-                $data[] = canonicalizeRow($assoc);
+                $assoc = canonicalizeRow($assoc);
+
+                // Skip completely empty rows.
+                $hasValue = false;
+                foreach ($assoc as $value) {
+                    if (trim((string)$value) !== '') {
+                        $hasValue = true;
+                        break;
+                    }
+                }
+                if (!$hasValue) {
+                    continue;
+                }
+
+                $data[] = $assoc;
             }
         }
     }
