@@ -461,6 +461,7 @@ let pendingExpertiseId = null;
 let pendingExpertiseWhich = 1;
 let allCategories = [];
 const MAX_UPLOAD_BYTES = 32 * 1024 * 1024;
+const PREVIEW_SIZE_LIMIT_BYTES = 4 * 1024 * 1024;
 
 function formatBytes(size) {
     if (!Number.isFinite(size) || size < 0) return '0 B';
@@ -1597,6 +1598,12 @@ function parseUploadResponse(response) {
 function performUpload() {
     if (!selectedFile) {
         showToast('⚠️ Select a file first');
+        return;
+    }
+
+    if (selectedFile.size > PREVIEW_SIZE_LIMIT_BYTES) {
+        showToast('ℹ️ Large file detected. Skipping preview to speed up import.');
+        confirmImport();
         return;
     }
 

@@ -353,6 +353,72 @@ function normalizeDate($value) {
     return $ts ? date('Y-m-d', $ts) : null;
 }
 
+function chunkRows($rows, $size = 200) {
+    if (empty($rows)) {
+        return [];
+    }
+
+    return array_chunk($rows, $size);
+}
+
+function bulkInsertRows(PDO $pdo, $table, array $columns, array $rows, $ignoreConflicts = false) {
+    if (empty($rows)) {
+        return 0;
+    }
+
+    $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    $columnList = implode(', ', $columns);
+    $placeholders = '(' . implode(', ', array_fill(0, count($columns), '?')) . ')';
+    $insertPrefix = $ignoreConflicts && $driver === 'mysql' ? 'INSERT IGNORE INTO' : 'INSERT INTO';
+    $conflictSuffix = $ignoreConflicts && $driver === 'pgsql' ? ' ON CONFLICT DO NOTHING' : '';
+    $inserted = 0;
+
+    foreach (chunkRows($rows, 200) as $chunk) {
+        $valuesSql = implode(', ', array_fill(0, count($chunk), $placeholders));
+        $sql = sprintf('%s %s (%s) VALUES %s%s', $insertPrefix, $table, $columnList, $valuesSql, $conflictSuffix);
+        $params = [];
+        foreach ($chunk as $row) {
+            foreach ($row as $value) {
+                $params[] = $value;
+            }
+        }
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $inserted += count($chunk);
+    }
+
+    return $inserted;
+}
+
+function fetchIdMap(PDO $pdo, $table, $idColumn, $valueColumn, array $values) {
+    $values = array_values(array_unique(array_filter($values, function ($value) {
+        return $value !== null && $value !== '';
+    })));
+
+    if (empty($values)) {
+        return [];
+    }
+
+    $map = [];
+    foreach (chunkRows($values, 500) as $chunk) {
+        $placeholders = implode(', ', array_fill(0, count($chunk), '?'));
+        $sql = sprintf('SELECT %s, %s FROM %s WHERE %s IN (%s)', $idColumn, $valueColumn, $table, $valueColumn, $placeholders);
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($chunk);
+
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $normalized = normalizeAssocRow($row);
+            $value = trim((string)($normalized[$valueColumn] ?? ''));
+            if ($value !== '' && !isset($map[$value])) {
+                $map[$value] = (int)($normalized[$idColumn] ?? 0);
+            }
+        }
+    }
+
+    return $map;
+}
+
 /**
  * Process uploaded data and insert into database
  */
@@ -368,16 +434,15 @@ function processUploadData($data) {
     $courses_added = 0;
     $participants_added = 0;
     $errors = [];
+    $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
     
-    // Expected columns in CSV/Excel:
-    // Provider: TP_Name
-    // Trainer: Trainer_Name
-    // Item/Course: Item_Name, Item_Category, TP_ID, Trainer_ID
-    // Participant: Participant_Name, Item_ID
-    
-    // First pass: collect unique providers and trainers
+    $validRows = [];
     $providers_map = [];
     $trainers_map = [];
+    $items_map = [];
+    $participant_inputs = [];
+    $participant_departments = [];
+    $assignment_pairs = [];
     
     foreach ($data as $idx => $row) {
         $row = array_map('trim', $row); // Trim whitespace
@@ -387,6 +452,8 @@ function processUploadData($data) {
             $errors[] = "Row " . ($idx + 2) . ": Missing TP_Name or Trainer_Name";
             continue;
         }
+
+        $validRows[] = $row;
         
         // Provider
         $provider_key = $row['TP_Name'];
@@ -408,226 +475,187 @@ function processUploadData($data) {
         } elseif (trim((string)($trainers_map[$trainer_key]['status'] ?? '')) === '' && $trainerStatus !== '') {
             $trainers_map[$trainer_key]['status'] = $trainerStatus;
         }
-    }
-    
-    // Insert providers
-    $provider_ids = [];
-    foreach ($providers_map as $key => $provider) {
-        try {
-            // Insert provider and obtain ID (use RETURNING for Postgres)
-            if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
-                $sql = "INSERT INTO TrainingProvider (TP_Name) VALUES (?) RETURNING TP_ID";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([$provider['name']]);
-                $provider_ids[$key] = (int)$stmt->fetchColumn();
-            } else {
-                $sql = "INSERT INTO TrainingProvider (TP_Name) VALUES (?)";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([$provider['name']]);
-                $provider_ids[$key] = $pdo->lastInsertId();
-            }
-            $providers_added++;
 
-            // New providers default to Active status history.
-            $statusSql = "INSERT INTO TrainingProviderStatus (TP_ID, TP_Status, TP_StatusStartDate) VALUES (?, 'Active', CURRENT_DATE)";
-            $statusStmt = $pdo->prepare($statusSql);
-            $statusStmt->execute([$provider_ids[$key]]);
-        } catch (Exception $e) {
-            // Fallback: provider may already exist.
-            try {
-                $sel = $pdo->prepare('SELECT TP_ID FROM TrainingProvider WHERE TP_Name = ? ORDER BY TP_ID ASC LIMIT 1');
-                $sel->execute([$provider['name']]);
-                $existing = normalizeAssocRow($sel->fetch(PDO::FETCH_ASSOC));
-                $existingId = $existing['TP_ID'] ?? null;
-                if ($existingId !== null) {
-                    $provider_ids[$key] = (int)$existingId;
-                } else {
-                    $errors[] = "Provider '{$provider['name']}': " . $e->getMessage();
-                }
-            } catch (Exception $inner) {
-                $errors[] = "Provider '{$provider['name']}': " . $e->getMessage();
+        $assignment_pairs[$provider_key . '|' . $trainer_key] = [$provider_key, $trainer_key];
+
+        if (!empty($row['Item_Name'])) {
+            $item_key = $provider_key . '|' . $trainer_key . '|' . $row['Item_Name'];
+            if (!isset($items_map[$item_key])) {
+                $items_map[$item_key] = [
+                    'provider_name' => $provider_key,
+                    'trainer_name' => $trainer_key,
+                    'item_name' => $row['Item_Name'],
+                    'item_category' => $row['Item_Category'] ?? null,
+                    'item_venue' => $row['Item_Venue'] ?? null,
+                ];
+            }
+        }
+
+        if (!empty($row['Participant_Name']) && !empty($row['Item_Name'])) {
+            $participantHash = participantNameHash($row['Participant_Name']);
+            $participant_inputs[$participantHash] = [
+                'name' => $row['Participant_Name'],
+                'hash' => $participantHash,
+                'token' => generateParticipantToken(),
+                'encrypted' => encryptParticipantName($row['Participant_Name']),
+            ];
+
+            $department = trim((string)($row['Participant_Department'] ?? ''));
+            if ($department !== '') {
+                $participant_departments[$participantHash] = $department;
             }
         }
     }
-    
-    // Insert trainers
-    $trainer_ids = [];
-    foreach ($trainers_map as $key => $trainer) {
-        try {
-            // Insert trainer and obtain ID
-            if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
-                $sql = "INSERT INTO Trainer (Trainer_Name, Trainer_Status) VALUES (?, ?) RETURNING Trainer_ID";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([$trainer['name'], $trainer['status']]);
-                $trainer_ids[$key] = (int)$stmt->fetchColumn();
-            } else {
-                $sql = "INSERT INTO Trainer (Trainer_Name, Trainer_Status) VALUES (?, ?)";
-                $stmt = $pdo->prepare($sql);
-                $stmt->execute([$trainer['name'], $trainer['status']]);
-                $trainer_ids[$key] = $pdo->lastInsertId();
-            }
-            $trainers_added++;
-        } catch (Exception $e) {
-                // Fallback: trainer may already exist. Resolve ID and update status if provided.
-                try {
-                    $sel = $pdo->prepare('SELECT Trainer_ID, Trainer_Status FROM Trainer WHERE Trainer_Name = ? ORDER BY Trainer_ID ASC LIMIT 1');
-                    $sel->execute([$trainer['name']]);
-                    $existing = normalizeAssocRow($sel->fetch(PDO::FETCH_ASSOC));
-                    $existingId = $existing['TRAINER_ID'] ?? null;
-                    if ($existingId !== null) {
-                        $trainer_ids[$key] = (int)$existingId;
 
-                        $existingStatus = trim((string)($existing['TRAINER_STATUS'] ?? ''));
-                        $incomingStatus = trim((string)($trainer['status'] ?? ''));
-                        if ($incomingStatus !== '' && $existingStatus === '') {
-                            $upd = $pdo->prepare('UPDATE Trainer SET Trainer_Status = ? WHERE Trainer_ID = ?');
-                            $upd->execute([$incomingStatus, $trainer_ids[$key]]);
-                        }
-                    } else {
-                        $errors[] = "Trainer '{$trainer['name']}': " . $e->getMessage();
-                    }
-                } catch (Exception $inner) {
-                    $errors[] = "Trainer '{$trainer['name']}': " . $e->getMessage();
-                }
+    if (empty($validRows)) {
+        return [
+            'success' => false,
+            'message' => !empty($errors)
+                ? ('No records were imported. First error: ' . $errors[0])
+                : 'No records were imported. Please verify your file columns and values.'
+        ];
+    }
+
+    // Resolve existing providers/trainers in bulk, then insert only the missing rows.
+    $providerNames = array_keys($providers_map);
+    $trainerNames = array_keys($trainers_map);
+    $provider_ids = fetchIdMap($pdo, 'TrainingProvider', 'TP_ID', 'TP_Name', $providerNames);
+    $trainer_ids = fetchIdMap($pdo, 'Trainer', 'Trainer_ID', 'Trainer_Name', $trainerNames);
+
+    $missingProviders = [];
+    foreach ($providers_map as $name => $provider) {
+        if (!isset($provider_ids[$name])) {
+            $missingProviders[] = [$provider['name']];
         }
     }
-    
-    // Second pass: insert assignments, courses, participants
-    $item_map = []; // Map course names to IDs
-    
-    foreach ($data as $idx => $row) {
-        $row = array_map('trim', $row);
-        
-        if (empty($row['TP_Name']) || empty($row['Trainer_Name'])) {
+    if (!empty($missingProviders)) {
+        bulkInsertRows($pdo, 'TrainingProvider', ['TP_Name'], $missingProviders);
+        $providers_added = count($missingProviders);
+    }
+
+    $missingTrainers = [];
+    foreach ($trainers_map as $name => $trainer) {
+        if (!isset($trainer_ids[$name])) {
+            $missingTrainers[] = [$trainer['name'], $trainer['status']];
+        }
+    }
+    if (!empty($missingTrainers)) {
+        bulkInsertRows($pdo, 'Trainer', ['Trainer_Name', 'Trainer_Status'], $missingTrainers);
+        $trainers_added = count($missingTrainers);
+    }
+
+    $provider_ids = fetchIdMap($pdo, 'TrainingProvider', 'TP_ID', 'TP_Name', $providerNames);
+    $trainer_ids = fetchIdMap($pdo, 'Trainer', 'Trainer_ID', 'Trainer_Name', $trainerNames);
+
+    $providerStatusRows = [];
+    foreach ($missingProviders as $row) {
+        $providerId = $provider_ids[$row[0]] ?? null;
+        if ($providerId !== null) {
+            $providerStatusRows[] = [$providerId, 'Active', date('Y-m-d')];
+        }
+    }
+    if (!empty($providerStatusRows)) {
+        bulkInsertRows($pdo, 'TrainingProviderStatus', ['TP_ID', 'TP_Status', 'TP_StatusStartDate'], $providerStatusRows);
+    }
+
+    // Insert assignments in bulk so the item foreign key can rely on existing pairs.
+    $assignmentRows = [];
+    foreach ($assignment_pairs as $pair) {
+        $tpId = $provider_ids[$pair[0]] ?? null;
+        $trainerId = $trainer_ids[$pair[1]] ?? null;
+        if ($tpId !== null && $trainerId !== null) {
+            $assignmentRows[] = [$tpId, $trainerId];
+        }
+    }
+    if (!empty($assignmentRows)) {
+        bulkInsertRows($pdo, 'Assignment', ['TP_ID', 'Trainer_ID'], $assignmentRows, true);
+    }
+
+    // Insert items with a prepared statement reused across the full import.
+    $itemMap = [];
+    if ($driver === 'pgsql') {
+        $itemSql = 'INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES (?, ?, ?, ?, ?) RETURNING Item_ID';
+    } else {
+        $itemSql = 'INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES (?, ?, ?, ?, ?)';
+    }
+    $itemStmt = $pdo->prepare($itemSql);
+    foreach ($items_map as $itemKey => $item) {
+        $tpId = $provider_ids[$item['provider_name']] ?? null;
+        $trainerId = $trainer_ids[$item['trainer_name']] ?? null;
+        if ($tpId === null || $trainerId === null) {
             continue;
         }
-        
-        try {
-            $tp_id = $provider_ids[$row['TP_Name']] ?? null;
-            $trainer_id = $trainer_ids[$row['Trainer_Name']] ?? null;
-            
-            if (!$tp_id || !$trainer_id) {
-                continue;
-            }
-            
-            // Insert assignment if not exists
-                try {
-                    if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
-                        $sql = "INSERT INTO Assignment (TP_ID, Trainer_ID) VALUES (?, ?) ON CONFLICT (TP_ID, Trainer_ID) DO NOTHING";
-                        $stmt = $pdo->prepare($sql);
-                        $stmt->execute([$tp_id, $trainer_id]);
-                    } else {
-                        $sql = "INSERT IGNORE INTO Assignment (TP_ID, Trainer_ID) VALUES (?, ?)";
-                        $stmt = $pdo->prepare($sql);
-                        $stmt->execute([$tp_id, $trainer_id]);
-                    }
-                } catch (Exception $e) {
-                    // Assignment might already exist, continue
-                }
-            
-            // Insert item/course if provided
-            if (!empty($row['Item_Name'])) {
-                $item_key = $tp_id . '|' . $trainer_id . '|' . $row['Item_Name'];
-                    if (!isset($item_map[$item_key])) {
-                        if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
-                            $sql = "INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES (?, ?, ?, ?, ?) RETURNING Item_ID";
-                            $stmt = $pdo->prepare($sql);
-                            $stmt->execute([
-                                $tp_id,
-                                $trainer_id,
-                                $row['Item_Name'],
-                                $row['Item_Category'] ?? null,
-                                $row['Item_Venue'] ?? null
-                            ]);
-                            $item_map[$item_key] = (int)$stmt->fetchColumn();
-                        } else {
-                            $sql = "INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES (?, ?, ?, ?, ?)";
-                            $stmt = $pdo->prepare($sql);
-                            $stmt->execute([
-                                $tp_id,
-                                $trainer_id,
-                                $row['Item_Name'],
-                                $row['Item_Category'] ?? null,
-                                $row['Item_Venue'] ?? null
-                            ]);
-                            $item_map[$item_key] = $pdo->lastInsertId();
-                        }
-                        $courses_added++;
-                    }
-                
-                // Insert participants if provided
-                if (!empty($row['Participant_Name']) && isset($item_map[$item_key])) {
-                    $item_id = $item_map[$item_key];
-                    
-                    // Check if participant exists
-                    $participantHash = participantNameHash($row['Participant_Name']);
-                    $sql = "SELECT Participant_ID FROM Participant WHERE Participant_Name_Hash = ?";
-                    $stmt = $pdo->prepare($sql);
-                    $stmt->execute([$participantHash]);
-                    $participant = normalizeAssocRow($stmt->fetch(PDO::FETCH_ASSOC));
 
-                    $department = trim((string)($row['Participant_Department'] ?? ''));
-                    $department = $department === '' ? null : $department;
+        $itemStmt->execute([
+            $tpId,
+            $trainerId,
+            $item['item_name'],
+            $item['item_category'],
+            $item['item_venue'],
+        ]);
 
-                    if (!$participant) {
-                        $participantToken = generateParticipantToken();
-                        $participantEncrypted = encryptParticipantName($row['Participant_Name']);
+        $itemMap[$itemKey] = $driver === 'pgsql' ? (int)$itemStmt->fetchColumn() : (int)$pdo->lastInsertId();
+        $courses_added++;
+    }
 
-                        // Create participant (use RETURNING on Postgres)
-                        if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
-                            $sql = "INSERT INTO Participant (Participant_Token, Participant_Name_Hash, Participant_Name_Encrypted, Participant_Department) VALUES (?, ?, ?, ?) RETURNING Participant_ID";
-                            $stmt = $pdo->prepare($sql);
-                            $stmt->execute([$participantToken, $participantHash, $participantEncrypted, $department]);
-                            $participant_id = (int)$stmt->fetchColumn();
-                        } else {
-                            $sql = "INSERT INTO Participant (Participant_Token, Participant_Name_Hash, Participant_Name_Encrypted, Participant_Department) VALUES (?, ?, ?, ?)";
-                            $stmt = $pdo->prepare($sql);
-                            $stmt->execute([$participantToken, $participantHash, $participantEncrypted, $department]);
-                            $participant_id = $pdo->lastInsertId();
-                        }
-                        $participants_added++;
-                    } else {
-                        $participant_id = $participant['Participant_ID'] ?? null;
+    // Participants are unique by hash, so they can also be resolved and inserted in bulk.
+    $participantHashes = array_keys($participant_inputs);
+    $participant_ids = fetchIdMap($pdo, 'Participant', 'Participant_ID', 'Participant_Name_Hash', $participantHashes);
 
-                        // Fill/update department whenever upload includes it.
-                        if ($participant_id !== null && $department !== null) {
-                            $upd = $pdo->prepare('UPDATE Participant SET Participant_Department = ? WHERE Participant_ID = ?');
-                            $upd->execute([$department, $participant_id]);
-                        }
-                    }
-
-                    if ($participant_id === null) {
-                        $errors[] = "Row " . ($idx + 2) . ": Unable to resolve participant ID for enrollment";
-                        continue;
-                    }
-                    
-                    // Insert enrollment
-                        try {
-                            if ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'pgsql') {
-                                $sql = "INSERT INTO Enrollment (Item_ID, Participant_ID, Completion_Date) VALUES (?, ?, ?) ON CONFLICT (Item_ID, Participant_ID) DO NOTHING";
-                                $stmt = $pdo->prepare($sql);
-                                $stmt->execute([
-                                    $item_id,
-                                    $participant_id,
-                                    normalizeDate($row['Completion_Date'] ?? null)
-                                ]);
-                            } else {
-                                $sql = "INSERT IGNORE INTO Enrollment (Item_ID, Participant_ID, Completion_Date) VALUES (?, ?, ?)";
-                                $stmt = $pdo->prepare($sql);
-                                $stmt->execute([
-                                    $item_id,
-                                    $participant_id,
-                                    normalizeDate($row['Completion_Date'] ?? null)
-                                ]);
-                            }
-                        } catch (Exception $e) {
-                            // Enrollment might already exist
-                        }
-                }
-            }
-        } catch (Exception $e) {
-            $errors[] = "Row " . ($idx + 2) . ": " . $e->getMessage();
+    $missingParticipants = [];
+    foreach ($participant_inputs as $hash => $participant) {
+        if (!isset($participant_ids[$hash])) {
+            $missingParticipants[] = [
+                $participant['token'],
+                $participant['hash'],
+                $participant['encrypted'],
+                $participant_departments[$hash] ?? null,
+            ];
         }
+    }
+    if (!empty($missingParticipants)) {
+        bulkInsertRows($pdo, 'Participant', ['Participant_Token', 'Participant_Name_Hash', 'Participant_Name_Encrypted', 'Participant_Department'], $missingParticipants);
+        $participants_added = count($missingParticipants);
+    }
+
+    $participant_ids = fetchIdMap($pdo, 'Participant', 'Participant_ID', 'Participant_Name_Hash', $participantHashes);
+
+    // Apply department updates once per participant instead of on every row.
+    if (!empty($participant_departments)) {
+        $deptStmt = $pdo->prepare('UPDATE Participant SET Participant_Department = ? WHERE Participant_ID = ?');
+        foreach ($participant_departments as $hash => $department) {
+            $participantId = $participant_ids[$hash] ?? null;
+            if ($participantId !== null) {
+                $deptStmt->execute([$department, $participantId]);
+            }
+        }
+    }
+
+    // Build enrollments after item and participant IDs are available.
+    $enrollmentRows = [];
+    foreach ($validRows as $row) {
+        if (empty($row['Item_Name']) || empty($row['Participant_Name'])) {
+            continue;
+        }
+
+        $itemKey = $row['TP_Name'] . '|' . $row['Trainer_Name'] . '|' . $row['Item_Name'];
+        $itemId = $itemMap[$itemKey] ?? null;
+        $participantHash = participantNameHash($row['Participant_Name']);
+        $participantId = $participant_ids[$participantHash] ?? null;
+
+        if ($itemId === null || $participantId === null) {
+            continue;
+        }
+
+        $enrollmentRows[] = [
+            $itemId,
+            $participantId,
+            normalizeDate($row['Completion_Date'] ?? null),
+        ];
+    }
+
+    if (!empty($enrollmentRows)) {
+        bulkInsertRows($pdo, 'Enrollment', ['Item_ID', 'Participant_ID', 'Completion_Date'], $enrollmentRows, true);
     }
     
     $hasInserts = ($providers_added + $trainers_added + $courses_added + $participants_added) > 0;
@@ -639,7 +667,7 @@ function processUploadData($data) {
                 : 'No records were imported. Please verify your file columns and values.'
         ];
     }
-
+    
     // Persist weighted AoE defaults into TP_FirstAoE / TP_SecondAoE for empty fields.
     syncProviderExpertiseDefaults();
 
