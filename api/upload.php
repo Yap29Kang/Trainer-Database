@@ -190,7 +190,7 @@ function parseCSV($file_path) {
 
             $assoc = array_combine($header, $row);
             if ($assoc !== false) {
-                $assoc = canonicalizeRow($assoc);
+                $assoc = normalizeImportedRow(canonicalizeRow($assoc));
 
                 // Skip completely empty rows.
                 $hasValue = false;
@@ -250,7 +250,7 @@ function parseExcel($file_path) {
             continue;
         }
 
-        $assoc = canonicalizeRow($assoc);
+        $assoc = normalizeImportedRow(canonicalizeRow($assoc));
 
         // Skip completely empty rows
         $hasValue = false;
@@ -354,6 +354,22 @@ function normalizeDate($value) {
 
     $ts = strtotime($value);
     return $ts ? date('Y-m-d', $ts) : null;
+}
+
+function normalizeImportName($value, $default) {
+    $value = trim((string)$value);
+    if ($value === '' || strcasecmp($value, 'NIL') === 0) {
+        return $default;
+    }
+
+    return $value;
+}
+
+function normalizeImportedRow(array $row) {
+    $row['TP_Name'] = normalizeImportName($row['TP_Name'] ?? '', 'Unknown Training Provider');
+    $row['Trainer_Name'] = normalizeImportName($row['Trainer_Name'] ?? '', 'Unknown Trainer');
+    $row['Trainer_Status'] = normalizeImportName($row['Trainer_Status'] ?? '', 'Active');
+    return $row;
 }
 
 function chunkRows($rows, $size = 200) {
@@ -506,13 +522,8 @@ function processUploadData($data) {
     
     foreach ($data as $idx => $row) {
         $row = array_map('trim', $row); // Trim whitespace
+        $row = normalizeImportedRow($row);
         
-        // Check required fields
-        if (empty($row['TP_Name']) || empty($row['Trainer_Name'])) {
-            $errors[] = "Row " . ($idx + 2) . ": Missing TP_Name or Trainer_Name";
-            continue;
-        }
-
         $validRows[] = $row;
         
         // Provider
