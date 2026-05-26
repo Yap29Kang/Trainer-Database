@@ -1587,8 +1587,8 @@ function parseUploadResponse(response) {
             throw new Error(cleaned || 'Server returned an invalid response');
         }
 
-        if (!response.ok && payload && payload.message) {
-            throw new Error(payload.message);
+        if (!response.ok) {
+            throw new Error((payload && payload.message) ? payload.message : ('Upload failed with status ' + response.status));
         }
 
         return payload;
@@ -1643,7 +1643,7 @@ function performUpload() {
         }
     })
     .catch(err => {
-        showToast('❌ Upload error: ' + err.message);
+        showToast('❌ Upload error: ' + (err && err.message ? err.message : String(err || 'Unknown error')));
         prog.style.display = 'none';
     });
 }
@@ -1757,12 +1757,12 @@ function confirmImport() {
                 updateStats();
             }, 700);
         } else {
-            showToast('❌ ' + result.message);
+            showToast('❌ ' + (result && result.message ? result.message : 'Upload failed'));
             prog.style.display = 'none';
         }
     })
     .catch(err => {
-        showToast('❌ Upload error: ' + err.message);
+        showToast('❌ Upload error: ' + (err && err.message ? err.message : String(err || 'Unknown error')));
         prog.style.display = 'none';
     });
 }
@@ -1774,7 +1774,7 @@ function downloadExport() {
 // Toast notifications
 function showToast(msg) {
     const t = document.getElementById('toast');
-    t.textContent = msg;
+    t.textContent = (msg === undefined || msg === null || msg === '') ? 'Unknown error' : String(msg);
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3200);
 }
