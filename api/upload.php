@@ -35,6 +35,9 @@ if ($postMaxBytes > 0 && $contentLength > $postMaxBytes) {
 require_once '../config.php';
 require_once '../includes/db.php';
 
+@set_time_limit(0);
+@ini_set('memory_limit', '512M');
+
 // Keep API responses JSON-only even when PHP warnings/notices occur.
 ini_set('display_errors', '0');
 ini_set('html_errors', '0');
@@ -391,6 +394,63 @@ function bulkInsertRows(PDO $pdo, $table, array $columns, array $rows, $ignoreCo
     return $inserted;
 }
 
+function fetchInsertedItemMap(PDO $pdo, array $itemRows) {
+    if (empty($itemRows)) {
+        return [];
+    }
+
+    $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    $map = [];
+
+    foreach (chunkRows($itemRows, 200) as $chunk) {
+        $placeholders = '(' . implode(', ', array_fill(0, 5, '?')) . ')';
+        $valuesSql = implode(', ', array_fill(0, count($chunk), $placeholders));
+        $chunkKeys = [];
+        foreach ($chunk as $row) {
+            $chunkKeys[] = $row[0];
+        }
+
+        if ($driver === 'pgsql') {
+            $sql = 'INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES ' . $valuesSql . ' RETURNING Item_ID, TP_ID, Trainer_ID, Item_Name';
+            $stmt = $pdo->prepare($sql);
+            $params = [];
+            foreach ($chunk as $row) {
+                foreach (array_slice($row, 1) as $value) {
+                    $params[] = $value;
+                }
+            }
+            $stmt->execute($params);
+
+            $index = 0;
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $normalized = normalizeAssocRow($row);
+                $originalKey = $chunkKeys[$index] ?? null;
+                if ($originalKey !== null) {
+                    $map[$originalKey] = (int)$normalized['ITEM_ID'];
+                }
+                $index++;
+            }
+        } else {
+            $sql = 'INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES ' . $valuesSql;
+            $stmt = $pdo->prepare($sql);
+            $params = [];
+            foreach ($chunk as $row) {
+                foreach (array_slice($row, 1) as $value) {
+                    $params[] = $value;
+                }
+            }
+            $stmt->execute($params);
+
+            $firstId = (int)$pdo->lastInsertId();
+            foreach ($chunk as $index => $row) {
+                $map[$row[0]] = $firstId + $index;
+            }
+        }
+    }
+
+    return $map;
+}
+
 function fetchIdMap(PDO $pdo, $table, $idColumn, $valueColumn, array $values) {
     $values = array_values(array_unique(array_filter($values, function ($value) {
         return $value !== null && $value !== '';
@@ -571,14 +631,8 @@ function processUploadData($data) {
         bulkInsertRows($pdo, 'Assignment', ['TP_ID', 'Trainer_ID'], $assignmentRows, true);
     }
 
-    // Insert items with a prepared statement reused across the full import.
-    $itemMap = [];
-    if ($driver === 'pgsql') {
-        $itemSql = 'INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES (?, ?, ?, ?, ?) RETURNING Item_ID';
-    } else {
-        $itemSql = 'INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES (?, ?, ?, ?, ?)';
-    }
-    $itemStmt = $pdo->prepare($itemSql);
+    // Insert items in batches and map generated IDs from each batch.
+    $itemInsertRows = [];
     foreach ($items_map as $itemKey => $item) {
         $tpId = $provider_ids[$item['provider_name']] ?? null;
         $trainerId = $trainer_ids[$item['trainer_name']] ?? null;
@@ -586,17 +640,18 @@ function processUploadData($data) {
             continue;
         }
 
-        $itemStmt->execute([
+        $itemInsertRows[$itemKey] = [
+            $itemKey,
             $tpId,
             $trainerId,
             $item['item_name'],
             $item['item_category'],
             $item['item_venue'],
-        ]);
-
-        $itemMap[$itemKey] = $driver === 'pgsql' ? (int)$itemStmt->fetchColumn() : (int)$pdo->lastInsertId();
-        $courses_added++;
+        ];
     }
+
+    $itemMap = fetchInsertedItemMap($pdo, array_values($itemInsertRows));
+    $courses_added = count($itemInsertRows);
 
     // Participants are unique by hash, so they can also be resolved and inserted in bulk.
     $participantHashes = array_keys($participant_inputs);
