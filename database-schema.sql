@@ -67,9 +67,11 @@ CREATE INDEX IF NOT EXISTS idx_trainerremark_trainer_id_date
     ON TrainerRemark (Trainer_ID, Remark_Date DESC, Trainer_Remark_ID DESC);
 
 CREATE TABLE IF NOT EXISTS Assignment (
+    Assignment_ID SERIAL PRIMARY KEY,
     TP_ID INT,
     Trainer_ID INT,
-    PRIMARY KEY (TP_ID, Trainer_ID),
+    -- keep uniqueness on pair to preserve assignment semantics
+    UNIQUE (TP_ID, Trainer_ID),
 
     FOREIGN KEY (TP_ID)
         REFERENCES TrainingProvider(TP_ID)
@@ -127,11 +129,13 @@ CREATE TABLE IF NOT EXISTS Participant (
 );
 
 CREATE TABLE IF NOT EXISTS Enrollment (
+    Enrollment_ID SERIAL PRIMARY KEY,
     Item_ID INT,
     Participant_ID INT,
     Completion_Date DATE,
 
-    PRIMARY KEY (Item_ID, Participant_ID),
+    -- preserve previous uniqueness constraint so canonical enrollments remain unique
+    UNIQUE (Item_ID, Participant_ID),
 
     FOREIGN KEY (Item_ID)
         REFERENCES Item(Item_ID)
