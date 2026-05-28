@@ -296,6 +296,7 @@ function canonicalizeRow($row) {
         'Item_Category' => ['Item_Category', 'Category'],
         'Item_Venue' => ['Item_Venue', 'Item Venue', 'Venue', 'Course Venue', 'Training Venue', 'Venue Name'],
         'Participant_Name' => ['Participant_Name', 'Participant Name', 'Full Name', 'Participant'],
+        'Participant_User_ID' => ['User ID', 'User_ID', 'UserID'],
         'Participant_Department' => ['Participant_Department', 'Department', 'Participant Department'],
         'Completion_Date' => ['Completion_Date', 'Completion Date', 'Course Completion Date', 'Date Completed']
     ];
@@ -370,6 +371,15 @@ function normalizeImportedRow(array $row) {
     $row['Trainer_Name'] = normalizeImportName($row['Trainer_Name'] ?? '', 'Unknown Trainer');
     $row['Trainer_Status'] = normalizeImportName($row['Trainer_Status'] ?? '', 'Active');
     return $row;
+}
+
+function participantIdentityValue(array $row) {
+    $userId = trim((string)($row['Participant_User_ID'] ?? ''));
+    if ($userId !== '' && strcasecmp($userId, 'NIL') !== 0) {
+        return $userId;
+    }
+
+    return trim((string)($row['Participant_Name'] ?? ''));
 }
 
 function chunkRows($rows, $size = 200) {
@@ -562,10 +572,12 @@ function processUploadData($data) {
             }
         }
 
-        if (!empty($row['Participant_Name']) && !empty($row['Item_Name'])) {
-            $participantHash = participantNameHash($row['Participant_Name']);
+        $participantIdentity = participantIdentityValue($row);
+        if ($participantIdentity !== '' && !empty($row['Item_Name'])) {
+            $participantHash = participantNameHash($participantIdentity);
             $participant_inputs[$participantHash] = [
                 'name' => $row['Participant_Name'],
+                'identity' => $participantIdentity,
                 'hash' => $participantHash,
                 'token' => generateParticipantToken(),
                 'encrypted' => encryptParticipantName($row['Participant_Name']),
@@ -706,7 +718,8 @@ function processUploadData($data) {
 
         $itemKey = $row['TP_Name'] . '|' . $row['Trainer_Name'] . '|' . $row['Item_Name'];
         $itemId = $itemMap[$itemKey] ?? null;
-        $participantHash = participantNameHash($row['Participant_Name']);
+        $participantIdentity = participantIdentityValue($row);
+        $participantHash = participantNameHash($participantIdentity);
         $participantId = $participant_ids[$participantHash] ?? null;
 
         if ($itemId === null || $participantId === null) {
