@@ -457,6 +457,10 @@ let participantPage = 1;
 let participantSearch = '';
 const providerDetailCache = new Map();
 const providerDetailInflight = new Map();
+const trainerDetailCache = new Map();
+const trainerDetailInflight = new Map();
+const listDataCache = new Map();
+const listDataInflight = new Map();
 const participantListCache = new Map();
 const participantListInflight = new Map();
 let pendingStatus = '';
@@ -612,19 +616,98 @@ function toggleSort() {
     loadData();
 }
 
+function getListCacheKey(view, search, status, sort) {
+    return `${view}|${search}|${status}|${sort}`;
+}
+
+function getCurrentListQuery() {
+    return {
+        view: currentView,
+        search: document.getElementById('si')?.value || '',
+        status: document.getElementById('sfSel')?.value || 'all',
+        sort: sortAsc ? 'asc' : 'desc'
+    };
+}
+
+function renderListCacheIfAvailable(query) {
+    const cacheKey = getListCacheKey(query.view, query.search, query.status, query.sort);
+    if (!listDataCache.has(cacheKey)) return false;
+    allData = listDataCache.get(cacheKey);
+    renderData();
+    return true;
+}
+
+function prefetchViewData(view, search, sort) {
+    const status = view === 'prov' ? 'all' : 'all';
+    const params = new URLSearchParams({
+        view,
+        search: search || '',
+        status,
+        sort: sort || 'asc',
+        _: 'prefetch'
+    });
+    const cacheKey = getListCacheKey(view, search || '', status, sort || 'asc');
+    if (listDataCache.has(cacheKey) || listDataInflight.has(cacheKey)) return;
+
+    const promise = fetch('api/get-data.php?' + params, { credentials: 'same-origin', cache: 'no-store' })
+        .then(r => r.ok ? r.json() : r.json().then(payload => { throw new Error(payload?.error || 'Failed to load data'); }).catch(() => { throw new Error('Failed to load data'); }))
+        .then(data => {
+            if (Array.isArray(data)) {
+                listDataCache.set(cacheKey, data);
+            }
+            return data;
+        })
+        .finally(() => {
+            listDataInflight.delete(cacheKey);
+        });
+
+    listDataInflight.set(cacheKey, promise);
+}
+
 // Load data from server
 function loadData() {
     const search = document.getElementById('si').value;
     const status = document.getElementById('sfSel').value;
-    const params = new URLSearchParams({
+    const query = {
         view: currentView,
-        search: search,
-        status: status,
-        sort: sortAsc ? 'asc' : 'desc',
+        search,
+        status,
+        sort: sortAsc ? 'asc' : 'desc'
+    };
+    const cacheKey = getListCacheKey(query.view, query.search, query.status, query.sort);
+
+    if (renderListCacheIfAvailable(query)) {
+        const oppositeView = currentView === 'prov' ? 'train' : 'prov';
+        if (query.search || query.sort) {
+            prefetchViewData(oppositeView, query.search, query.sort);
+        }
+        return;
+    }
+
+    const params = new URLSearchParams({
+        view: query.view,
+        search: query.search,
+        status: query.status,
+        sort: query.sort,
         _: String(Date.now())
     });
+
+    if (listDataInflight.has(cacheKey)) {
+        listDataInflight.get(cacheKey)
+            .then(data => {
+                if (Array.isArray(data)) {
+                    allData = data;
+                    renderData();
+                }
+            })
+            .catch(err => {
+                showToast('⚠️ Error loading data');
+                console.error(err);
+            });
+        return;
+    }
     
-    fetch('api/get-data.php?' + params, { credentials: 'same-origin', cache: 'no-store' })
+    const request = fetch('api/get-data.php?' + params, { credentials: 'same-origin', cache: 'no-store' })
         .then(r => {
             if (!r.ok) {
                 return r.json().then(payload => {
@@ -639,13 +722,23 @@ function loadData() {
             if (!Array.isArray(data)) {
                 throw new Error(data?.error || 'Invalid data response');
             }
+            listDataCache.set(cacheKey, data);
             allData = data;
             renderData();
+            const oppositeView = currentView === 'prov' ? 'train' : 'prov';
+            if (query.search || query.sort) {
+                prefetchViewData(oppositeView, query.search, query.sort);
+            }
+        })
+        .finally(() => {
+            listDataInflight.delete(cacheKey);
         })
         .catch(err => {
             showToast('⚠️ Error loading data');
             console.error(err);
         });
+
+    listDataInflight.set(cacheKey, request);
 }
 
 // Render data based on current view
@@ -812,7 +905,7 @@ function renderTrainers() {
                 <div class="tpills tpills-trainer">${providerRows}</div>
             </div>
             <div class="tc2-foot">
-                <button class="vb" onclick="openTrainerModal(${trainer.Trainer_ID})">View</button>
+                <button class="vb" onpointerenter="prefetchTrainerModal(${trainer.Trainer_ID})" onfocus="prefetchTrainerModal(${trainer.Trainer_ID})" onclick="openTrainerModal(${trainer.Trainer_ID})">View</button>
                 <button class="ftb${trainer.Trainer_Status ? ' flagged' : ''}" style="display:${SERVER_IS_ADMIN ? 'flex' : 'none'}" onclick="showToast('🚩 Red Flag workflow available in full mode')">🚩 Red Flag</button>
             </div>
         `;
@@ -873,6 +966,47 @@ function loadProviderDetail(id) {
 
     providerDetailInflight.set(cacheKey, promise);
     return promise;
+}
+
+function getTrainerCacheKey(id) {
+    return String(id);
+}
+
+function loadTrainerDetail(id) {
+    const cacheKey = getTrainerCacheKey(id);
+    if (trainerDetailCache.has(cacheKey)) {
+        return Promise.resolve(trainerDetailCache.get(cacheKey));
+    }
+    if (trainerDetailInflight.has(cacheKey)) {
+        return trainerDetailInflight.get(cacheKey);
+    }
+
+    const promise = fetch('api/get-trainer.php?id=' + encodeURIComponent(id) + '&_=' + Date.now(), { credentials: 'same-origin', cache: 'no-store' })
+        .then(r => {
+            if (!r.ok) {
+                return r.json().then(payload => {
+                    throw new Error(payload?.error || 'Failed to load trainer');
+                }).catch(() => {
+                    throw new Error('Failed to load trainer');
+                });
+            }
+            return r.json();
+        })
+        .then(trainer => {
+            trainerDetailCache.set(cacheKey, trainer);
+            return trainer;
+        })
+        .finally(() => {
+            trainerDetailInflight.delete(cacheKey);
+        });
+
+    trainerDetailInflight.set(cacheKey, promise);
+    return promise;
+}
+
+function prefetchTrainerModal(id) {
+    if (!id) return;
+    loadTrainerDetail(id).catch(() => {});
 }
 
 function prefetchProviderModal(id) {
@@ -958,6 +1092,46 @@ function renderProviderModal(provider) {
     switchProviderTab('courses');
 }
 
+function setTrainerModalLoading() {
+    const name = document.getElementById('trainerName');
+    const provCount = document.getElementById('trainerProvCount');
+    const courseCount = document.getElementById('trainerCourseCount');
+    const providersC = document.getElementById('trainerProvidersC');
+    const coursesC = document.getElementById('trainerCoursesC');
+    const remarksC = document.getElementById('trainerRemarksC');
+    const trainerYSel = document.getElementById('trainerYSel');
+
+    if (name) name.textContent = 'Loading trainer details...';
+    if (provCount) provCount.textContent = '—';
+    if (courseCount) courseCount.textContent = '—';
+    if (providersC) providersC.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted)">Loading trainer details...</div>';
+    if (coursesC) coursesC.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted)">Loading trainer details...</div>';
+    if (remarksC) remarksC.innerHTML = '';
+    if (trainerYSel) trainerYSel.innerHTML = '<option value="all">All Years</option>';
+}
+
+function renderTrainerModal(trainer) {
+    currentTrainerDetail = trainer;
+    document.getElementById('trainerName').textContent = trainer.Trainer_Name || '—';
+    document.getElementById('trainerProvCount').textContent = trainer.provider_count || 0;
+    document.getElementById('trainerCourseCount').textContent = trainer.course_count || 0;
+
+    currentTrainerTab = 'providers';
+    renderTrainerProviders();
+    renderTrainerCourses();
+    renderTrainerRemarks();
+
+    const trainerYSel = document.getElementById('trainerYSel');
+    const years = Array.from(new Set((trainer.courses || [])
+        .map(course => parseCourseYear(course.Completion_Date || course.Item_Date))
+        .filter(Boolean)))
+        .sort((a, b) => b - a);
+
+    trainerYSel.innerHTML = '<option value="all">All Years</option>' + years.map(year => `<option value="${year}">${year}</option>`).join('');
+    trainerYSel.value = 'all';
+    switchTrainerTab('providers');
+}
+
 function setParticipantsModalLoading() {
     const title = document.getElementById('partT');
     const subtitle = document.getElementById('partS');
@@ -1012,43 +1186,26 @@ function openProviderModal(id) {
 }
 
 function openTrainerModal(id) {
-    fetch('api/get-trainer.php?id=' + id + '&_=' + Date.now(), { credentials: 'same-origin', cache: 'no-store' })
-        .then(r => {
-            if (!r.ok) {
-                return r.json().then(payload => {
-                    throw new Error(payload?.error || 'Failed to load trainer');
-                }).catch(() => {
-                    throw new Error('Failed to load trainer');
-                });
-            }
-            return r.json();
-        })
+    const modal = document.getElementById('trainerOv');
+    if (!modal) return;
+
+    modal.classList.add('open');
+    syncBodyLock();
+
+    const cacheKey = getTrainerCacheKey(id);
+    if (trainerDetailCache.has(cacheKey)) {
+        renderTrainerModal(trainerDetailCache.get(cacheKey));
+        return;
+    }
+
+    setTrainerModalLoading();
+    loadTrainerDetail(id)
         .then(trainer => {
-            currentTrainerDetail = trainer;
-            document.getElementById('trainerName').textContent = trainer.Trainer_Name || '—';
-            document.getElementById('trainerProvCount').textContent = trainer.provider_count || 0;
-            document.getElementById('trainerCourseCount').textContent = trainer.course_count || 0;
-
-            currentTrainerTab = 'providers';
-            renderTrainerProviders();
-            renderTrainerCourses();
-            renderTrainerRemarks();
-            
-            const trainerYSel = document.getElementById('trainerYSel');
-            const years = Array.from(new Set((trainer.courses || [])
-                .map(course => parseCourseYear(course.Completion_Date || course.Item_Date))
-                .filter(Boolean)))
-                .sort((a, b) => b - a);
-
-            trainerYSel.innerHTML = '<option value="all">All Years</option>' + years.map(year => `<option value="${year}">${year}</option>`).join('');
-            trainerYSel.value = 'all';
-            
-            switchTrainerTab('providers');
-            
-            document.getElementById('trainerOv').classList.add('open');
-            syncBodyLock();
+            renderTrainerModal(trainer);
         })
         .catch(err => {
+            document.getElementById('trainerName').textContent = 'Could not load trainer details';
+            document.getElementById('trainerProvidersC').innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted)">Please try again.</div>';
             showToast('⚠️ Could not load trainer details');
             console.error(err);
         });
