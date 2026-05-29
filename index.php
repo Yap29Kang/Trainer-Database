@@ -13,6 +13,7 @@ ob_start();
     <div class="rl" id="rl">Showing Training Providers</div>
     <div class="pg" id="provGrid"></div>
     <div class="tg hidden" id="trainGrid"></div>
+    <div class="list-pager-wrap" id="listPager"></div>
 </div>
 
 <?php

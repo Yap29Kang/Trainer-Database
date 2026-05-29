@@ -64,7 +64,7 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 
 /* ── PROVIDER GRID (3 cols, max 5 rows) ── */
 .pg{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-.pc{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow:visible;display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s;animation:fu .35s ease both}
+.pc{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow:hidden;display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s;animation:fu .35s ease both}
 .pc:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,128,198,.13)}
 @keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .pc-band{height:5px;border-radius:13px 0 0 0}.band-a{background:var(--green)}.band-c{background:#c8960a}.band-b{background:var(--red)}.band-z{background:#9bb4c7}
@@ -148,6 +148,12 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 .pg-btn:hover:not(:disabled){background:var(--blue-dk);transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,128,198,.25)}
 .pg-btn:disabled{background:var(--border);color:var(--muted);cursor:not-allowed;opacity:.5}
 .pg-info{font-family:'Calibri',sans-serif;font-size:.85rem;color:var(--muted);font-weight:700;min-width:60px;text-align:center}
+.list-pager-wrap{display:flex;align-items:center;justify-content:center;gap:.4rem;flex-wrap:wrap;margin-top:1rem}
+.lp-btn{width:32px;height:32px;border:1.5px solid var(--border);border-radius:7px;background:var(--card);color:var(--ink);font-family:'Calibri',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .18s}
+.lp-btn:hover:not(:disabled){border-color:var(--blue);color:var(--blue);transform:translateY(-1px)}
+.lp-btn.active{background:var(--blue);border-color:var(--blue);color:#fff}
+.lp-btn:disabled{opacity:.35;cursor:default;pointer-events:none}
+.lp-ellipsis{min-width:18px;text-align:center;color:var(--muted);font-weight:700;font-family:'Calibri',sans-serif}
 
 .tg{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;grid-auto-rows:minmax(320px,auto);align-items:stretch}
 .tc2{background:var(--card);border:1px solid var(--border);border-radius:13px;overflow:hidden;animation:fu .35s ease both;transition:transform .2s,box-shadow .2s;display:flex;flex-direction:column;height:100%;min-height:320px}

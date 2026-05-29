@@ -455,6 +455,7 @@ let currentTrainerTab = 'providers';
 let currentParticipants = [];
 let participantPage = 1;
 let participantSearch = '';
+let currentListPages = { prov: 1, train: 1 };
 const providerDetailCache = new Map();
 const providerDetailInflight = new Map();
 const trainerDetailCache = new Map();
@@ -470,6 +471,7 @@ let pendingExpertiseWhich = 1;
 let allCategories = [];
 const MAX_UPLOAD_BYTES = 32 * 1024 * 1024;
 const PREVIEW_SIZE_LIMIT_BYTES = 4 * 1024 * 1024;
+const LIST_PAGE_SIZE = 9;
 
 function formatBytes(size) {
     if (!Number.isFinite(size) || size < 0) return '0 B';
@@ -575,6 +577,7 @@ function submitLoginFromModal() {
 
 // Search and filter
 function handleSearch() {
+    currentListPages[currentView] = 1;
     loadData();
 }
 
@@ -606,6 +609,8 @@ function setView(view, btn) {
             });
     }
 
+    currentListPages[view] = 1;
+
     loadData();
 }
 
@@ -613,6 +618,7 @@ function setView(view, btn) {
 function toggleSort() {
     sortAsc = !sortAsc;
     document.getElementById('sortLbl').textContent = sortAsc ? 'A → Z' : 'Z → A';
+    currentListPages[currentView] = 1;
     loadData();
 }
 
@@ -745,6 +751,7 @@ function loadData() {
 function renderData() {
     const provGrid = document.getElementById('provGrid');
     const trainGrid = document.getElementById('trainGrid');
+    const pager = document.getElementById('listPager');
     
     if (currentView === 'prov') {
         provGrid.classList.remove('hidden');
@@ -759,6 +766,69 @@ function renderData() {
     updateStats();
 }
 
+function renderListPagination(totalItems) {
+    const pager = document.getElementById('listPager');
+    if (!pager) return;
+
+    pager.innerHTML = '';
+
+    const pageCount = Math.max(1, Math.ceil(totalItems / LIST_PAGE_SIZE));
+    const page = Math.min(currentListPages[currentView] || 1, pageCount);
+    currentListPages[currentView] = page;
+
+    if (pageCount <= 1) return;
+
+    const makeButton = (label, targetPage, disabled = false, active = false) => {
+        const button = document.createElement('button');
+        button.className = 'lp-btn' + (active ? ' active' : '');
+        button.textContent = label;
+        button.disabled = disabled;
+        if (!disabled) {
+            button.onclick = () => {
+                currentListPages[currentView] = targetPage;
+                renderData();
+            };
+        }
+        return button;
+    };
+
+    pager.appendChild(makeButton('‹', Math.max(1, page - 1), page === 1));
+
+    const visiblePages = [];
+    const addVisiblePage = (candidate) => {
+        if (candidate >= 1 && candidate <= pageCount && !visiblePages.includes(candidate)) {
+            visiblePages.push(candidate);
+        }
+    };
+
+    if (pageCount <= 7) {
+        for (let i = 1; i <= pageCount; i++) addVisiblePage(i);
+    } else {
+        addVisiblePage(1);
+        addVisiblePage(2);
+        addVisiblePage(page - 1);
+        addVisiblePage(page);
+        addVisiblePage(page + 1);
+        addVisiblePage(pageCount - 1);
+        addVisiblePage(pageCount);
+        visiblePages.sort((a, b) => a - b);
+    }
+
+    let lastPage = null;
+    visiblePages.forEach(pageNumber => {
+        if (lastPage !== null && pageNumber - lastPage > 1) {
+            const ellipsis = document.createElement('span');
+            ellipsis.className = 'lp-ellipsis';
+            ellipsis.textContent = '…';
+            pager.appendChild(ellipsis);
+        }
+        pager.appendChild(makeButton(String(pageNumber), pageNumber, false, pageNumber === page));
+        lastPage = pageNumber;
+    });
+
+    pager.appendChild(makeButton('›', Math.min(pageCount, page + 1), page === pageCount));
+}
+
 // Render providers
 function renderProviders() {
     const grid = document.getElementById('provGrid');
@@ -768,10 +838,16 @@ function renderProviders() {
         grid.innerHTML = '<div style="grid-column:1/-1;padding:2rem;text-align:center;color:var(--muted)">No training providers found</div>';
         const rl = document.getElementById('rl');
         if (rl) rl.textContent = 'Showing 0 of 0 Training Providers';
+        renderListPagination(0);
         return;
     }
+
+    const pageCount = Math.max(1, Math.ceil(allData.length / LIST_PAGE_SIZE));
+    currentListPages.prov = Math.min(currentListPages.prov || 1, pageCount);
+    const start = (currentListPages.prov - 1) * LIST_PAGE_SIZE;
+    const pageData = allData.slice(start, start + LIST_PAGE_SIZE);
     
-    allData.forEach(provider => {
+    pageData.forEach(provider => {
         const providerStatus = provider.TP_Status || '';
         const normalizedStatus = providerStatus === 'In Consideration' ? 'Greylist' : (providerStatus || 'Active');
         const statusClass = normalizedStatus.toLowerCase().replace(' ', '_');
@@ -839,7 +915,8 @@ function renderProviders() {
     });
 
     const rl = document.getElementById('rl');
-    if (rl) rl.textContent = `Showing ${allData.length} of ${allData.length} Training Providers`;
+    if (rl) rl.textContent = `Showing ${start + 1}-${Math.min(start + LIST_PAGE_SIZE, allData.length)} of ${allData.length} Training Providers`;
+    renderListPagination(allData.length);
 }
 
 // Render trainers
@@ -851,10 +928,16 @@ function renderTrainers() {
         grid.innerHTML = '<div style="grid-column:1/-1;padding:2rem;text-align:center;color:var(--muted)">No trainers found</div>';
         const rl = document.getElementById('rl');
         if (rl) rl.textContent = 'Showing 0 of 0 Trainers / Speakers';
+        renderListPagination(0);
         return;
     }
+
+    const pageCount = Math.max(1, Math.ceil(allData.length / LIST_PAGE_SIZE));
+    currentListPages.train = Math.min(currentListPages.train || 1, pageCount);
+    const start = (currentListPages.train - 1) * LIST_PAGE_SIZE;
+    const pageData = allData.slice(start, start + LIST_PAGE_SIZE);
     
-    allData.forEach(trainer => {
+    pageData.forEach(trainer => {
         const initials = trainer.Trainer_Name
             .split(' ')
             .filter(Boolean)
@@ -913,7 +996,8 @@ function renderTrainers() {
     });
 
     const rl = document.getElementById('rl');
-    if (rl) rl.textContent = `Showing ${allData.length} of ${allData.length} Trainers / Speakers`;
+    if (rl) rl.textContent = `Showing ${start + 1}-${Math.min(start + LIST_PAGE_SIZE, allData.length)} of ${allData.length} Trainers / Speakers`;
+    renderListPagination(allData.length);
 }
 
 // Update statistics
