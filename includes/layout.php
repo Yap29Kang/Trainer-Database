@@ -455,6 +455,10 @@ let currentTrainerTab = 'providers';
 let currentParticipants = [];
 let participantPage = 1;
 let participantSearch = '';
+const providerDetailCache = new Map();
+const providerDetailInflight = new Map();
+const participantListCache = new Map();
+const participantListInflight = new Map();
 let pendingStatus = '';
 let uploadPreviewActive = false;
 let pendingExpertiseId = null;
@@ -735,7 +739,7 @@ function renderProviders() {
                 </div>
             </div>
             <div class="pc-foot">
-                <button class="vb" onclick="openProviderModal(${provider.TP_ID})">View</button>
+                <button class="vb" onpointerenter="prefetchProviderModal(${provider.TP_ID})" onfocus="prefetchProviderModal(${provider.TP_ID})" onclick="openProviderModal(${provider.TP_ID})">View</button>
             </div>
         `;
         grid.appendChild(card);
@@ -831,9 +835,24 @@ function updateStats() {
         });
 }
 
-// Open provider modal
-function openProviderModal(id) {
-    fetch('api/get-provider.php?id=' + id + '&_=' + Date.now(), { credentials: 'same-origin', cache: 'no-store' })
+function getProviderCacheKey(id) {
+    return String(id);
+}
+
+function getParticipantsCacheKey(providerId, itemId) {
+    return `${providerId || '0'}:${itemId || 'all'}`;
+}
+
+function loadProviderDetail(id) {
+    const cacheKey = getProviderCacheKey(id);
+    if (providerDetailCache.has(cacheKey)) {
+        return Promise.resolve(providerDetailCache.get(cacheKey));
+    }
+    if (providerDetailInflight.has(cacheKey)) {
+        return providerDetailInflight.get(cacheKey);
+    }
+
+    const promise = fetch('api/get-provider.php?id=' + encodeURIComponent(id) + '&_=' + Date.now(), { credentials: 'same-origin', cache: 'no-store' })
         .then(r => {
             if (!r.ok) {
                 return r.json().then(payload => {
@@ -845,31 +864,148 @@ function openProviderModal(id) {
             return r.json();
         })
         .then(provider => {
-            currentProviderDetail = provider;
-            document.getElementById('mN').textContent = provider.TP_Name;
-            renderProviderSummaryBubbles();
-            document.getElementById('mPa').textContent = provider.participant_count || 0;
-            renderExpertiseBubble(1);
-            renderExpertiseBubble(2);
-            currentProviderTab = 'courses';
+            providerDetailCache.set(cacheKey, provider);
+            return provider;
+        })
+        .finally(() => {
+            providerDetailInflight.delete(cacheKey);
+        });
 
-            const ySel = document.getElementById('ySel');
-            const years = Array.from(new Set((provider.courses || [])
-                .map(course => parseCourseYear(course.Completion_Date || course.Item_Date))
-                .filter(Boolean)))
-                .sort((a, b) => b - a);
+    providerDetailInflight.set(cacheKey, promise);
+    return promise;
+}
 
-            ySel.innerHTML = '<option value="all">All Years</option>' + years.map(year => `<option value="${year}">${year}</option>`).join('');
-            ySel.value = 'all';
-            renderHistory();
-            renderStatusHistory();
-            renderProviderRemarks();
-            switchProviderTab('courses');
-            
-            document.getElementById('provOv').classList.add('open');
-            syncBodyLock();
+function prefetchProviderModal(id) {
+    if (!id) return;
+    loadProviderDetail(id).catch(() => {});
+}
+
+function loadParticipantsData(providerId, itemId) {
+    const cacheKey = getParticipantsCacheKey(providerId, itemId);
+    if (participantListCache.has(cacheKey)) {
+        return Promise.resolve(participantListCache.get(cacheKey));
+    }
+    if (participantListInflight.has(cacheKey)) {
+        return participantListInflight.get(cacheKey);
+    }
+
+    const url = new URL('api/get-provider-participants.php', window.location.href);
+    url.searchParams.set('id', providerId);
+    if (itemId) url.searchParams.set('item_id', String(itemId));
+    url.searchParams.set('_', String(Date.now()));
+
+    const promise = fetch(url.toString(), { credentials: 'same-origin', cache: 'no-store' })
+        .then(r => {
+            if (!r.ok) {
+                return r.json().then(payload => {
+                    throw new Error(payload?.error || 'Failed to load participants');
+                }).catch(() => {
+                    throw new Error('Failed to load participants');
+                });
+            }
+            return r.json();
+        })
+        .then(payload => {
+            participantListCache.set(cacheKey, payload);
+            return payload;
+        })
+        .finally(() => {
+            participantListInflight.delete(cacheKey);
+        });
+
+    participantListInflight.set(cacheKey, promise);
+    return promise;
+}
+
+function setProviderModalLoading() {
+    const title = document.getElementById('mN');
+    const participantCount = document.getElementById('mPa');
+    const yearHeading = document.getElementById('yearHeading');
+    const ySel = document.getElementById('ySel');
+    const histC = document.getElementById('histC');
+    const statusHistC = document.getElementById('statusHistC');
+    const provRemarksC = document.getElementById('provRemarksC');
+
+    if (title) title.textContent = 'Loading provider details...';
+    if (participantCount) participantCount.textContent = '—';
+    if (yearHeading) yearHeading.textContent = 'Loading...';
+    if (ySel) ySel.innerHTML = '<option value="all">All Years</option>';
+    if (histC) histC.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted)">Loading provider details...</div>';
+    if (statusHistC) statusHistC.innerHTML = '';
+    if (provRemarksC) provRemarksC.innerHTML = '';
+}
+
+function renderProviderModal(provider) {
+    currentProviderDetail = provider;
+    document.getElementById('mN').textContent = provider.TP_Name;
+    renderProviderSummaryBubbles();
+    document.getElementById('mPa').textContent = provider.participant_count || 0;
+    renderExpertiseBubble(1);
+    renderExpertiseBubble(2);
+    currentProviderTab = 'courses';
+
+    const ySel = document.getElementById('ySel');
+    const years = Array.from(new Set((provider.courses || [])
+        .map(course => parseCourseYear(course.Completion_Date || course.Item_Date))
+        .filter(Boolean)))
+        .sort((a, b) => b - a);
+
+    ySel.innerHTML = '<option value="all">All Years</option>' + years.map(year => `<option value="${year}">${year}</option>`).join('');
+    ySel.value = 'all';
+    renderHistory();
+    renderStatusHistory();
+    renderProviderRemarks();
+    switchProviderTab('courses');
+}
+
+function setParticipantsModalLoading() {
+    const title = document.getElementById('partT');
+    const subtitle = document.getElementById('partS');
+    const body = document.getElementById('partBd');
+    const pager = document.getElementById('pgBs');
+    const info = document.getElementById('pgI');
+
+    if (title) title.textContent = 'Participants';
+    if (subtitle) subtitle.textContent = 'Loading participant list...';
+    if (body) body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.4rem;color:var(--muted)">Loading participants...</td></tr>';
+    if (pager) pager.innerHTML = '';
+    if (info) info.textContent = '';
+}
+
+function renderParticipantsModal(payload) {
+    currentParticipants = Array.isArray(payload.participants) ? payload.participants : [];
+    participantPage = 1;
+    participantSearch = '';
+    document.getElementById('partT').textContent = `Participants — ${payload.provider_name || currentProviderDetail?.TP_Name || '—'}` + (payload.course_name ? ` — ${payload.course_name}` : '');
+    document.getElementById('partS').textContent = `${payload.participant_count || currentParticipants.length || 0} total registered participants`;
+    document.getElementById('partSearch').value = '';
+    renderParticipants();
+}
+
+// Open provider modal
+function openProviderModal(id) {
+    const modal = document.getElementById('provOv');
+    if (!modal) return;
+
+    modal.classList.add('open');
+    syncBodyLock();
+
+    const cacheKey = getProviderCacheKey(id);
+    if (providerDetailCache.has(cacheKey)) {
+        renderProviderModal(providerDetailCache.get(cacheKey));
+        loadParticipantsData(id).catch(() => {});
+        return;
+    }
+
+    setProviderModalLoading();
+    loadProviderDetail(id)
+        .then(provider => {
+            renderProviderModal(provider);
+            loadParticipantsData(id).catch(() => {});
         })
         .catch(err => {
+            document.getElementById('mN').textContent = 'Could not load provider details';
+            document.getElementById('histC').innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted)">Please try again.</div>';
             showToast('⚠️ Could not load provider details');
             console.error(err);
         });
@@ -1372,34 +1508,28 @@ function openParticipantsModal(itemId, providerId) {
         showToast('⚠️ Provider not selected');
         return;
     }
-    
-    // Resolve against the current page URL so both / and /index.php loads work.
-    const url = new URL('api/get-provider-participants.php', window.location.href);
-    url.searchParams.set('id', actualProviderId);
-    if (itemId) url.searchParams.set('item_id', String(itemId));
-    url.searchParams.set('_', String(Date.now()));
-    console.log('Fetching participants URL:', url.toString());
-    fetch(url.toString(), { credentials: 'same-origin', cache: 'no-store' })
-        .then(r => {
-            if (!r.ok) {
-                console.error('Participants fetch failed', r.status, r.url);
-                return r.json().then(payload => { throw new Error(payload?.error || 'Failed to load participants'); }).catch(() => { throw new Error('Failed to load participants'); });
-            }
-            return r.json();
-        })
+
+    const modal = document.getElementById('partOv');
+    if (!modal) return;
+
+    modal.classList.add('open');
+    syncBodyLock();
+
+    const cacheKey = getParticipantsCacheKey(actualProviderId, itemId);
+    if (participantListCache.has(cacheKey)) {
+        renderParticipantsModal(participantListCache.get(cacheKey));
+        return;
+    }
+
+    setParticipantsModalLoading();
+    loadParticipantsData(actualProviderId, itemId)
         .then(payload => {
-            currentParticipants = Array.isArray(payload.participants) ? payload.participants : [];
-            participantPage = 1;
-            participantSearch = '';
-            document.getElementById('partT').textContent = `Participants — ${payload.provider_name || currentProviderDetail?.TP_Name || '—'}` + (payload.course_name ? ` — ${payload.course_name}` : '');
-            document.getElementById('partS').textContent = `${payload.participant_count || currentParticipants.length || 0} total registered participants`;
-            document.getElementById('partSearch').value = '';
-            renderParticipants();
-            document.getElementById('partOv').classList.add('open');
-            syncBodyLock();
+            renderParticipantsModal(payload);
         })
         .catch(err => {
             console.error(err);
+            document.getElementById('partS').textContent = 'Unable to load participants';
+            document.getElementById('partBd').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.4rem;color:var(--muted)">Could not load participant list</td></tr>';
             showToast('⚠️ Could not load participant list');
         });
 }
@@ -1485,14 +1615,43 @@ function renderParticipants() {
     pager.innerHTML = '';
     const buttons = [];
     buttons.push({ label: '‹', page: Math.max(1, participantPage - 1), disabled: participantPage === 1 });
-    for (let i = 1; i <= pageCount; i++) buttons.push({ label: String(i), page: i, active: i === participantPage });
+
+    const visiblePages = [];
+    const addVisiblePage = (page) => {
+        if (page >= 1 && page <= pageCount && !visiblePages.includes(page)) {
+            visiblePages.push(page);
+        }
+    };
+
+    if (pageCount <= 7) {
+        for (let i = 1; i <= pageCount; i++) addVisiblePage(i);
+    } else {
+        addVisiblePage(1);
+        addVisiblePage(2);
+        addVisiblePage(participantPage - 1);
+        addVisiblePage(participantPage);
+        addVisiblePage(participantPage + 1);
+        addVisiblePage(pageCount - 1);
+        addVisiblePage(pageCount);
+        visiblePages.sort((a, b) => a - b);
+    }
+
+    let lastPage = null;
+    visiblePages.forEach(page => {
+        if (lastPage !== null && page - lastPage > 1) {
+            buttons.push({ label: '…', page: null, disabled: true });
+        }
+        buttons.push({ label: String(page), page, active: page === participantPage });
+        lastPage = page;
+    });
+
     buttons.push({ label: '›', page: Math.min(pageCount, participantPage + 1), disabled: participantPage === pageCount });
     buttons.forEach(btn => {
         const el = document.createElement('button');
         el.className = 'pb' + (btn.active ? ' active' : '');
         el.textContent = btn.label;
-        if (btn.disabled) el.disabled = true;
-        if (!btn.disabled) el.onclick = () => { participantPage = btn.page; renderParticipants(); };
+        if (btn.disabled || btn.page === null) el.disabled = true;
+        if (!btn.disabled && btn.page !== null) el.onclick = () => { participantPage = btn.page; renderParticipants(); };
         pager.appendChild(el);
     });
 }
