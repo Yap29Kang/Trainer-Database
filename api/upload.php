@@ -619,11 +619,12 @@ function processUploadData($data) {
     $missingTrainers = [];
     foreach ($trainers_map as $name => $trainer) {
         if (!isset($trainer_ids[$name])) {
-            $missingTrainers[] = [$trainer['name'], $trainer['status']];
+            // Only insert Trainer_Name into Trainer table; status is now stored in TrainerStatus history table.
+            $missingTrainers[] = [$trainer['name']];
         }
     }
     if (!empty($missingTrainers)) {
-        bulkInsertRows($pdo, 'Trainer', ['Trainer_Name', 'Trainer_Status'], $missingTrainers);
+        bulkInsertRows($pdo, 'Trainer', ['Trainer_Name'], $missingTrainers);
         $trainers_added = count($missingTrainers);
     }
 
@@ -639,6 +640,23 @@ function processUploadData($data) {
     }
     if (!empty($providerStatusRows)) {
         bulkInsertRows($pdo, 'TrainingProviderStatus', ['TP_ID', 'TP_Status', 'TP_StatusStartDate'], $providerStatusRows);
+    }
+
+    // If the import provided trainer status values (non-Active), persist them into TrainerStatus history table.
+    $trainerStatusRows = [];
+    foreach ($trainers_map as $name => $trainer) {
+        $status = trim((string)($trainer['status'] ?? ''));
+        if ($status !== '' && strcasecmp($status, 'Active') !== 0) {
+            $trainerId = $trainer_ids[$name] ?? null;
+            if ($trainerId !== null) {
+                // Store start date as today; reasoning is not provided in import.
+                $trainerStatusRows[] = [$trainerId, $status, date('Y-m-d')];
+            }
+        }
+    }
+    if (!empty($trainerStatusRows)) {
+        // Columns: Trainer_ID, Trainer_Status, Trainer_StatusStartDate
+        bulkInsertRows($pdo, 'TrainerStatus', ['Trainer_ID', 'Trainer_Status', 'Trainer_StatusStartDate'], $trainerStatusRows);
     }
 
     // Insert assignments in bulk so the item foreign key can rely on existing pairs.
