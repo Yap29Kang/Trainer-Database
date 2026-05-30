@@ -655,8 +655,11 @@ function processUploadData($data) {
         }
     }
     if (!empty($trainerStatusRows)) {
-        // Columns: Trainer_ID, Trainer_Status, Trainer_StatusStartDate
-        bulkInsertRows($pdo, 'TrainerStatus', ['Trainer_ID', 'Trainer_Status', 'Trainer_StatusStartDate'], $trainerStatusRows);
+        // Columns: Trainer_ID, Trainer_Status, Trainer_StatusReasoning, Trainer_StatusStartDate, Trainer_StatusEndDate
+        $trainerStatusRows = array_map(function ($row) {
+            return [$row[0], $row[1], null, $row[2], null];
+        }, $trainerStatusRows);
+        bulkInsertRows($pdo, 'TrainerStatus', ['Trainer_ID', 'Trainer_Status', 'Trainer_StatusReasoning', 'Trainer_StatusStartDate', 'Trainer_StatusEndDate'], $trainerStatusRows);
     }
 
     // Insert assignments in bulk so the item foreign key can rely on existing pairs.

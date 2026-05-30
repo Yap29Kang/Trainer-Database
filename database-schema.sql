@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS TrainerStatus (
     Trainer_Status_ID SERIAL PRIMARY KEY,
     Trainer_ID INT NOT NULL,
 
-    Trainer_Status VARCHAR(100) NOT NULL DEFAULT 'Red Flag',
+    Trainer_Status VARCHAR(100) NOT NULL DEFAULT 'Active',
     Trainer_StatusReasoning TEXT,
     Trainer_StatusStartDate DATE,
     Trainer_StatusEndDate DATE,
