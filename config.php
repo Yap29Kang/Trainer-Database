@@ -227,6 +227,13 @@ function resolveIpv4Address($host) {
 // Set default timezone
 date_default_timezone_set('Asia/Kuala_Lumpur');
 
+// Avoid stale cached HTML/JS for dynamic PHP responses after UI updates.
+if (!headers_sent()) {
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+}
+
 // Session settings
 if (session_status() === PHP_SESSION_NONE) {
     if (!headers_sent()) {
