@@ -86,6 +86,11 @@ function normalizeAssocRow($row) {
         'TRAINER_ID' => 'Trainer_ID',
         'TRAINER_NAME' => 'Trainer_Name',
         'TRAINER_STATUS' => 'Trainer_Status',
+        'LEGACYTRAINER_STATUS' => 'LegacyTrainer_Status',
+        'TRAINER_STATUS_ID' => 'Trainer_Status_ID',
+        'TRAINER_STATUSREASONING' => 'Trainer_StatusReasoning',
+        'TRAINER_STATUSSTARTDATE' => 'Trainer_StatusStartDate',
+        'TRAINER_STATUSENDDATE' => 'Trainer_StatusEndDate',
         'TRAINER_REMARK_ID' => 'Trainer_Remark_ID',
         'TRAINER_NAMES' => 'trainer_names',
         'ITEM_ID' => 'Item_ID',
@@ -203,6 +208,69 @@ function getTrainingProviderStatusHistory($tp_id) {
     return $rows;
 }
 
+function normalizeTrainerStatusLabel($status) {
+    $status = trim((string)$status);
+
+    if ($status === '' || strcasecmp($status, 'Red Flag') === 0 || strcasecmp($status, 'Red Flagged') === 0) {
+        return $status === '' ? '' : 'Red Flag';
+    }
+
+    return $status;
+}
+
+function getTrainerStatusHistory($trainer_id) {
+    global $pdo;
+
+    $sql = "
+        SELECT
+            Trainer_Status_ID,
+            Trainer_ID,
+            Trainer_Status,
+            Trainer_StatusReasoning,
+            Trainer_StatusStartDate,
+            Trainer_StatusEndDate
+        FROM TrainerStatus
+        WHERE Trainer_ID = ?
+        ORDER BY COALESCE(Trainer_StatusStartDate, '1000-01-01') DESC, Trainer_Status_ID DESC
+    ";
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$trainer_id]);
+
+    $rows = [];
+    foreach (normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC)) as $row) {
+        $rawStatus = $row['Trainer_Status'] ?? '';
+        $row['Trainer_StatusRaw'] = $rawStatus;
+        $row['Trainer_StatusDisplay'] = normalizeTrainerStatusLabel($rawStatus) ?: 'Red Flag';
+        $row['Trainer_StatusActive'] = empty($row['Trainer_StatusEndDate']);
+        $rows[] = $row;
+    }
+
+    if (!empty($rows)) {
+        return $rows;
+    }
+
+    $legacyStmt = $pdo->prepare('SELECT Trainer_Status FROM Trainer WHERE Trainer_ID = ?');
+    $legacyStmt->execute([$trainer_id]);
+    $legacy = normalizeAssocRow($legacyStmt->fetch(PDO::FETCH_ASSOC));
+    $legacyStatus = trim((string)($legacy['Trainer_Status'] ?? ''));
+
+    if ($legacyStatus === '') {
+        return [];
+    }
+
+    return [[
+        'Trainer_Status_ID' => null,
+        'Trainer_ID' => $trainer_id,
+        'Trainer_Status' => 'Red Flag',
+        'Trainer_StatusRaw' => $legacyStatus,
+        'Trainer_StatusDisplay' => 'Red Flag',
+        'Trainer_StatusReasoning' => $legacyStatus,
+        'Trainer_StatusStartDate' => null,
+        'Trainer_StatusEndDate' => null,
+        'Trainer_StatusActive' => true
+    ]];
+}
+
 function getTrainingProviderRemarks($tp_id) {
     global $pdo;
 
@@ -282,6 +350,77 @@ function getLatestProviderStatusMap() {
             'TP_StatusStartDate' => $row['TP_StatusStartDate'] ?? null,
             'TP_StatusEndDate' => $row['TP_StatusEndDate'] ?? null,
             'TP_StatusExpired' => $effectiveStatus === 'Greylist' && normalizeProviderStatusLabel($row['TP_Status'] ?? '') === 'Blacklisted'
+        ];
+    }
+
+    return $map;
+}
+
+/**
+ * Fetch latest trainer status per trainer.
+ */
+function getLatestTrainerStatusMap() {
+    global $pdo;
+
+    $sql = "
+        SELECT
+            t.Trainer_ID,
+            ts.Trainer_Status,
+            ts.Trainer_StatusReasoning,
+            ts.Trainer_StatusStartDate,
+            ts.Trainer_StatusEndDate,
+            t.Trainer_Status AS LegacyTrainer_Status
+        FROM Trainer t
+        LEFT JOIN TrainerStatus ts
+            ON ts.Trainer_Status_ID = (
+                SELECT ts2.Trainer_Status_ID
+                FROM TrainerStatus ts2
+                WHERE ts2.Trainer_ID = t.Trainer_ID
+                ORDER BY COALESCE(ts2.Trainer_StatusStartDate, '1000-01-01') DESC, ts2.Trainer_Status_ID DESC
+                LIMIT 1
+            )
+    ";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute();
+
+    $map = [];
+    foreach (normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC)) as $row) {
+        $legacyStatus = trim((string)($row['LegacyTrainer_Status'] ?? ''));
+        $effectiveStatus = '';
+        $reasoning = null;
+        $startDate = $row['Trainer_StatusStartDate'] ?? null;
+        $endDate = $row['Trainer_StatusEndDate'] ?? null;
+
+        if (!empty($row['Trainer_Status']) && empty($endDate)) {
+            $effectiveStatus = 'Red Flag';
+            $reasoning = $row['Trainer_StatusReasoning'] ?? null;
+        } elseif ($legacyStatus !== '') {
+            $effectiveStatus = 'Red Flag';
+            $reasoning = $legacyStatus;
+            $startDate = null;
+            $endDate = null;
+        }
+
+        if ($effectiveStatus === '') {
+            $map[$row['Trainer_ID']] = [
+                'Trainer_Status' => '',
+                'Trainer_StatusRaw' => '',
+                'Trainer_StatusReasoning' => null,
+                'Trainer_StatusStartDate' => null,
+                'Trainer_StatusEndDate' => null,
+                'Trainer_StatusActive' => false
+            ];
+            continue;
+        }
+
+        $map[$row['Trainer_ID']] = [
+            'Trainer_Status' => $effectiveStatus,
+            'Trainer_StatusRaw' => $row['Trainer_Status'] ?? $legacyStatus,
+            'Trainer_StatusReasoning' => $reasoning,
+            'Trainer_StatusStartDate' => $startDate,
+            'Trainer_StatusEndDate' => $endDate,
+            'Trainer_StatusActive' => true
         ];
     }
 
@@ -648,6 +787,15 @@ function getTrainers() {
         $trainerMap[$trainer['Trainer_ID']] = $trainer;
     }
 
+    $trainerStatusMap = getLatestTrainerStatusMap();
+    foreach ($trainerMap as $trainerId => $trainer) {
+        $status = $trainerStatusMap[$trainerId] ?? null;
+        $trainerMap[$trainerId]['Trainer_Status'] = $status['Trainer_Status'] ?? trim((string)($trainerMap[$trainerId]['Trainer_Status'] ?? ''));
+        $trainerMap[$trainerId]['Trainer_StatusReasoning'] = $status['Trainer_StatusReasoning'] ?? null;
+        $trainerMap[$trainerId]['Trainer_StatusStartDate'] = $status['Trainer_StatusStartDate'] ?? null;
+        $trainerMap[$trainerId]['Trainer_StatusEndDate'] = $status['Trainer_StatusEndDate'] ?? null;
+    }
+
     if (!empty($trainerMap)) {
         $statusMap = getLatestProviderStatusMap();
 
@@ -696,6 +844,7 @@ function getTrainerDetail($trainer_id) {
     }
 
     $statusMap = getLatestProviderStatusMap();
+    $trainerStatusMap = getLatestTrainerStatusMap();
 
     $providerSql = "
         SELECT
@@ -741,6 +890,12 @@ function getTrainerDetail($trainer_id) {
         return $row;
     }, normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC)));
 
+    $trainerStatus = $trainerStatusMap[(int)$trainer_id] ?? null;
+    $trainer['Trainer_Status'] = $trainerStatus['Trainer_Status'] ?? trim((string)($trainer['Trainer_Status'] ?? ''));
+    $trainer['Trainer_StatusReasoning'] = $trainerStatus['Trainer_StatusReasoning'] ?? null;
+    $trainer['Trainer_StatusStartDate'] = $trainerStatus['Trainer_StatusStartDate'] ?? null;
+    $trainer['Trainer_StatusEndDate'] = $trainerStatus['Trainer_StatusEndDate'] ?? null;
+    $trainer['status_history'] = getTrainerStatusHistory($trainer_id);
     $trainer['remarks'] = getTrainerRemarks($trainer_id);
 
     return $trainer;
@@ -825,12 +980,46 @@ function updateProviderStatus($tp_id, $status, $reason = null) {
  */
 function updateTrainerRedFlag($trainer_id, $is_red_flag, $reason = null) {
     global $pdo;
-    
-    $sql = "UPDATE Trainer SET Trainer_Status = ? WHERE Trainer_ID = ?";
-    $status = $is_red_flag ? $reason : NULL;
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute([$status, $trainer_id]);
-    
-    return $stmt->rowCount() > 0;
+
+    $pdo->beginTransaction();
+
+    try {
+        if ($is_red_flag) {
+            $closeStmt = $pdo->prepare(
+                "UPDATE TrainerStatus
+                 SET Trainer_StatusEndDate = CURRENT_DATE
+                 WHERE Trainer_ID = ?
+                   AND Trainer_StatusEndDate IS NULL"
+            );
+            $closeStmt->execute([$trainer_id]);
+
+            $insertStmt = $pdo->prepare(
+                'INSERT INTO TrainerStatus (Trainer_ID, Trainer_Status, Trainer_StatusReasoning, Trainer_StatusStartDate, Trainer_StatusEndDate) VALUES (?, ?, ?, CURRENT_DATE, NULL)'
+            );
+            $insertStmt->execute([$trainer_id, 'Red Flag', $reason]);
+
+            $legacyStmt = $pdo->prepare('UPDATE Trainer SET Trainer_Status = ? WHERE Trainer_ID = ?');
+            $legacyStmt->execute([$reason ?: 'Red Flag', $trainer_id]);
+        } else {
+            $closeStmt = $pdo->prepare(
+                "UPDATE TrainerStatus
+                 SET Trainer_StatusEndDate = CURRENT_DATE
+                 WHERE Trainer_ID = ?
+                   AND Trainer_StatusEndDate IS NULL"
+            );
+            $closeStmt->execute([$trainer_id]);
+
+            $legacyStmt = $pdo->prepare('UPDATE Trainer SET Trainer_Status = NULL WHERE Trainer_ID = ?');
+            $legacyStmt->execute([$trainer_id]);
+        }
+
+        $pdo->commit();
+        return true;
+    } catch (Exception $e) {
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        throw $e;
+    }
 }
 ?>

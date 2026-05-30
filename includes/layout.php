@@ -340,6 +340,7 @@ if (isset($content_file) && is_file($content_file)) {
             <button class="ptab active" id="ttab-providers" onclick="switchTrainerTab('providers', this)">Training Providers</button>
             <button class="ptab" id="ttab-courses" onclick="switchTrainerTab('courses', this)">Courses Taught</button>
             <?php if ($_SESSION['role'] === 'admin'): ?>
+            <button class="ptab" id="ttab-status" onclick="switchTrainerTab('status', this)">Status History</button>
             <button class="ptab" id="ttab-remarks" onclick="switchTrainerTab('remarks', this)">Remarks</button>
             <?php endif; ?>
         </div>
@@ -363,6 +364,11 @@ if (isset($content_file) && is_file($content_file)) {
                 </div>
             </div>
             <?php if ($_SESSION['role'] === 'admin'): ?>
+            <div class="ptab-panel" id="trainerTab-status">
+                <div class="mb2">
+                    <div id="trainerStatusHistC"></div>
+                </div>
+            </div>
             <div class="ptab-panel" id="trainerTab-remarks">
                 <div class="mb2">
                     <div id="trainerRemarksC"></div>
@@ -375,6 +381,37 @@ if (isset($content_file) && is_file($content_file)) {
                 </div>
             </div>
             <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════
+     TRAINER STATUS MODAL
+════════════════════════════════════ -->
+<div class="stov" id="trStatusOv" onclick="if(event.target===this)closeTrainerStatusModal()">
+    <div class="stm">
+        <div class="stm-hdr">
+            <h3 id="trStatusTitle">Flag Trainer</h3>
+            <button class="stm-close" onclick="closeTrainerStatusModal()">✕</button>
+        </div>
+        <div class="stm-body">
+            <div class="stm-pname" id="trStatusTrainerName">—</div>
+            <div class="stm-label" id="trStatusNote">Select a reason for the trainer red flag.</div>
+            <div class="bl-reason-wrap" id="trStatusReasonWrap" style="display:block;margin-top:0;">
+                <div class="bl-reason-label">Reason for Red Flag <span style="color:var(--red)">*</span></div>
+                <select class="bl-reason-ta" id="trStatusReasonSel">
+                    <option value="">Select a reason</option>
+                    <option value="Unprofessional conduct">Unprofessional conduct - Behavioural issues, misconduct, or complaints from participants.</option>
+                    <option value="Poor training quality">Poor training quality - Below-standard delivery, outdated content, or low feedback scores.</option>
+                    <option value="Compliance or legal concern">Compliance or legal concern - Regulatory breach, credential issues, or ongoing legal matter.</option>
+                    <option value="Reliability issues">Reliability issues - Repeated no-shows, late cancellations, or session disruptions.</option>
+                </select>
+            </div>
+
+            <div class="stm-actions">
+                <button class="stm-cancel" onclick="closeTrainerStatusModal()">Cancel</button>
+                <button class="stm-confirm" id="trStatusConfirm" onclick="confirmTrainerStatus()">Submit</button>
+            </div>
         </div>
     </div>
 </div>
@@ -465,6 +502,9 @@ const listDataInflight = new Map();
 const participantListCache = new Map();
 const participantListInflight = new Map();
 let pendingStatus = '';
+let pendingTrainerStatusMode = 'flag';
+let pendingTrainerStatusId = null;
+let pendingTrainerStatusName = '';
 let uploadPreviewActive = false;
 let pendingExpertiseId = null;
 let pendingExpertiseWhich = 1;
@@ -472,6 +512,12 @@ let allCategories = [];
 const MAX_UPLOAD_BYTES = 32 * 1024 * 1024;
 const PREVIEW_SIZE_LIMIT_BYTES = 4 * 1024 * 1024;
 const LIST_PAGE_SIZE = 9;
+const TRAINER_RED_FLAG_REASONS = [
+    'Unprofessional conduct',
+    'Poor training quality',
+    'Compliance or legal concern',
+    'Reliability issues'
+];
 
 function formatBytes(size) {
     if (!Number.isFinite(size) || size < 0) return '0 B';
@@ -486,7 +532,7 @@ function formatBytes(size) {
 }
 
 function syncBodyLock() {
-    const anyOpen = ['provOv', 'stOv', 'expOv', 'partOv', 'trainerOv', 'upOv'].some(id => {
+    const anyOpen = ['provOv', 'stOv', 'expOv', 'partOv', 'trainerOv', 'trStatusOv', 'upOv'].some(id => {
         const el = document.getElementById(id);
         return el && (el.classList.contains('open') || el.style.display === 'flex');
     });
@@ -503,6 +549,16 @@ function revealUploadModalKeepState() {
     const up = document.getElementById('upOv');
     if (up) up.classList.add('open');
     document.body.style.overflow = 'hidden';
+}
+
+function invalidateListCaches() {
+    listDataCache.clear();
+    listDataInflight.clear();
+}
+
+function getCurrentTrainerRecord(trainerId) {
+    const numericId = Number(trainerId);
+    return allData.find(trainer => Number(trainer.Trainer_ID) === numericId) || currentTrainerDetail || null;
 }
 
 const SERVER_IS_ADMIN = <?php echo json_encode($_SESSION['role'] === 'admin'); ?>;
@@ -974,6 +1030,8 @@ function renderTrainers() {
 
         const card = document.createElement('div');
         card.className = 'tc2';
+        const hasRedFlag = !!String(trainer.Trainer_Status || '').trim();
+        const redFlagLabel = hasRedFlag ? 'Remove Red Flag' : 'Red Flag';
         card.innerHTML = `
             <div class="tc2-inner">
                 <div class="tctop">
@@ -989,7 +1047,7 @@ function renderTrainers() {
             </div>
             <div class="tc2-foot">
                 <button class="vb" onpointerenter="prefetchTrainerModal(${trainer.Trainer_ID})" onfocus="prefetchTrainerModal(${trainer.Trainer_ID})" onclick="openTrainerModal(${trainer.Trainer_ID})">View</button>
-                <button class="ftb${trainer.Trainer_Status ? ' flagged' : ''}" style="display:${SERVER_IS_ADMIN ? 'flex' : 'none'}" onclick="showToast('🚩 Red Flag workflow available in full mode')">🚩 Red Flag</button>
+                <button class="ftb${hasRedFlag ? ' flagged' : ''}" style="display:${SERVER_IS_ADMIN ? 'flex' : 'none'}" onclick="openTrainerStatusModal(${trainer.Trainer_ID})">🚩 ${redFlagLabel}</button>
             </div>
         `;
         grid.appendChild(card);
@@ -1185,6 +1243,7 @@ function setTrainerModalLoading() {
     const providersC = document.getElementById('trainerProvidersC');
     const coursesC = document.getElementById('trainerCoursesC');
     const remarksC = document.getElementById('trainerRemarksC');
+    const statusHistC = document.getElementById('trainerStatusHistC');
     const trainerYSel = document.getElementById('trainerYSel');
 
     if (name) name.textContent = 'Loading trainer details...';
@@ -1193,6 +1252,7 @@ function setTrainerModalLoading() {
     if (providersC) providersC.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted)">Loading trainer details...</div>';
     if (coursesC) coursesC.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted)">Loading trainer details...</div>';
     if (remarksC) remarksC.innerHTML = '';
+    if (statusHistC) statusHistC.innerHTML = '';
     if (trainerYSel) trainerYSel.innerHTML = '<option value="all">All Years</option>';
 }
 
@@ -1207,6 +1267,7 @@ function renderTrainerModal(trainer) {
     currentTrainerTab = 'providers';
     renderTrainerProviders();
     renderTrainerCourses();
+    renderTrainerStatusHistory();
     renderTrainerRemarks();
 
     const trainerYSel = document.getElementById('trainerYSel');
@@ -1218,6 +1279,151 @@ function renderTrainerModal(trainer) {
     trainerYSel.innerHTML = '<option value="all">All Years</option>' + years.map(year => `<option value="${year}">${year}</option>`).join('');
     trainerYSel.value = 'all';
     switchTrainerTab('providers');
+}
+
+function renderTrainerStatusHistory() {
+    const histC = document.getElementById('trainerStatusHistC');
+    if (!histC || !currentTrainerDetail) return;
+
+    const history = Array.isArray(currentTrainerDetail.status_history) ? currentTrainerDetail.status_history : [];
+    if (!history.length) {
+        histC.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted)">No red flag history yet</div>';
+        return;
+    }
+
+    histC.innerHTML = history.map(row => {
+        const isActive = !!row.Trainer_StatusActive || !row.Trainer_StatusEndDate;
+        const startDate = formatDisplayDate(row.Trainer_StatusStartDate);
+        const endDate = row.Trainer_StatusEndDate ? ` → ${formatDisplayDate(row.Trainer_StatusEndDate)}` : '';
+        const reason = row.Trainer_StatusReasoning ? `<div class="status-note">Reason: ${escapeHtml(String(row.Trainer_StatusReasoning))}</div>` : '';
+        return `
+            <div class="status-card">
+                <div class="status-top">
+                    <span class="bdg b-b">Red Flag</span>
+                    <span class="status-date">${startDate}${endDate}</span>
+                </div>
+                ${isActive ? '<div class="status-note">Active red flag</div>' : ''}
+                ${reason}
+            </div>
+        `;
+    }).join('');
+}
+
+function openTrainerStatusModal(trainerId) {
+    const trainer = getCurrentTrainerRecord(trainerId);
+    if (!trainer) {
+        showToast('⚠️ Trainer not selected');
+        return;
+    }
+
+    pendingTrainerStatusId = trainer.Trainer_ID;
+    pendingTrainerStatusName = trainer.Trainer_Name || '—';
+    pendingTrainerStatusMode = String(trainer.Trainer_Status || '').trim() ? 'remove' : 'flag';
+
+    const modal = document.getElementById('trStatusOv');
+    if (!modal) return;
+
+    document.getElementById('trStatusTrainerName').textContent = pendingTrainerStatusName;
+    const title = document.getElementById('trStatusTitle');
+    const note = document.getElementById('trStatusNote');
+    const reasonWrap = document.getElementById('trStatusReasonWrap');
+    const reasonSel = document.getElementById('trStatusReasonSel');
+    const confirmBtn = document.getElementById('trStatusConfirm');
+
+    if (pendingTrainerStatusMode === 'flag') {
+        if (title) title.textContent = 'Flag Trainer';
+        if (note) note.textContent = 'Select a reason for the trainer red flag.';
+        if (reasonWrap) reasonWrap.style.display = 'block';
+        if (reasonSel) reasonSel.value = '';
+        if (confirmBtn) confirmBtn.textContent = 'Submit';
+    } else {
+        if (title) title.textContent = 'Remove Red Flag';
+        if (note) note.textContent = 'Are you sure you want to remove this trainer red flag?';
+        if (reasonWrap) reasonWrap.style.display = 'none';
+        if (confirmBtn) confirmBtn.textContent = 'Remove Red Flag';
+    }
+
+    modal.classList.add('open');
+    syncBodyLock();
+}
+
+function closeTrainerStatusModal() {
+    const modal = document.getElementById('trStatusOv');
+    if (!modal) return;
+    modal.classList.remove('open');
+    syncBodyLock();
+}
+
+function confirmTrainerStatus() {
+    if (!pendingTrainerStatusId) return;
+
+    const reasonSel = document.getElementById('trStatusReasonSel');
+    const reason = reasonSel ? reasonSel.value.trim() : '';
+    if (pendingTrainerStatusMode === 'flag' && !reason) {
+        showToast('⚠️ Please select a red flag reason');
+        reasonSel?.focus();
+        return;
+    }
+
+    fetch('api/update-trainer-status.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trainer_id: pendingTrainerStatusId, action: pendingTrainerStatusMode, reason: reason || null })
+    })
+    .then(r => r.json().then(data => ({ ok: r.ok, data })))
+    .then(({ ok, data }) => {
+        if (!ok || !data.success) throw new Error(data.error || 'Unable to update trainer status');
+
+        const current = allData.find(trainer => Number(trainer.Trainer_ID) === Number(pendingTrainerStatusId));
+        const today = new Date().toISOString().slice(0, 10);
+
+        if (currentTrainerDetail && Number(currentTrainerDetail.Trainer_ID) === Number(pendingTrainerStatusId)) {
+            currentTrainerDetail.Trainer_Status = pendingTrainerStatusMode === 'flag' ? 'Red Flag' : '';
+            currentTrainerDetail.Trainer_StatusReasoning = pendingTrainerStatusMode === 'flag' ? reason : null;
+            currentTrainerDetail.Trainer_StatusStartDate = pendingTrainerStatusMode === 'flag' ? today : currentTrainerDetail.Trainer_StatusStartDate || null;
+            currentTrainerDetail.Trainer_StatusEndDate = pendingTrainerStatusMode === 'remove' ? today : null;
+            if (!Array.isArray(currentTrainerDetail.status_history)) {
+                currentTrainerDetail.status_history = [];
+            }
+            if (pendingTrainerStatusMode === 'flag') {
+                currentTrainerDetail.status_history.unshift({
+                    Trainer_Status_ID: 'new',
+                    Trainer_ID: pendingTrainerStatusId,
+                    Trainer_Status: 'Red Flag',
+                    Trainer_StatusRaw: 'Red Flag',
+                    Trainer_StatusDisplay: 'Red Flag',
+                    Trainer_StatusReasoning: reason,
+                    Trainer_StatusStartDate: today,
+                    Trainer_StatusEndDate: null,
+                    Trainer_StatusActive: true
+                });
+            } else if (currentTrainerDetail.status_history.length) {
+                currentTrainerDetail.status_history[0].Trainer_StatusEndDate = today;
+                currentTrainerDetail.status_history[0].Trainer_StatusActive = false;
+            }
+        }
+
+        if (current) {
+            current.Trainer_Status = pendingTrainerStatusMode === 'flag' ? 'Red Flag' : '';
+            current.Trainer_StatusReasoning = pendingTrainerStatusMode === 'flag' ? reason : null;
+        }
+
+        if (currentTrainerDetail) {
+            renderTrainerModal(currentTrainerDetail);
+        }
+
+        trainerDetailCache.set(String(pendingTrainerStatusId), currentTrainerDetail || current || null);
+        invalidateListCaches();
+        closeTrainerStatusModal();
+        loadData();
+        updateStats();
+        showToast(pendingTrainerStatusMode === 'flag' ? '✓ Trainer red flagged' : '✓ Red flag removed');
+    })
+    .catch(err => {
+        console.error(err);
+        showToast('⚠️ Could not update trainer red flag');
+    });
 }
 
 function setParticipantsModalLoading() {
@@ -1306,10 +1512,10 @@ function closeTrainerModal() {
 
 function switchTrainerTab(tabName, button) {
     currentTrainerTab = tabName;
-    const panels = document.querySelectorAll('#trainerTab-providers, #trainerTab-courses, #trainerTab-remarks');
+    const panels = document.querySelectorAll('#trainerTab-providers, #trainerTab-courses, #trainerTab-status, #trainerTab-remarks');
     panels.forEach(p => p.classList.remove('active'));
     
-    const buttons = document.querySelectorAll('#ttab-providers, #ttab-courses, #ttab-remarks');
+    const buttons = document.querySelectorAll('#ttab-providers, #ttab-courses, #ttab-status, #ttab-remarks');
     buttons.forEach(b => b.classList.remove('active'));
     
     const panelEl = document.getElementById('trainerTab-' + tabName);
@@ -1735,6 +1941,7 @@ function confirmStatus() {
         closeStatusModal();
         renderProviderSummaryBubbles();
         renderStatusHistory();
+        invalidateListCaches();
         loadData();
         updateStats();
         showToast(`✓ Status updated to "${pendingStatus || 'Active'}"`);

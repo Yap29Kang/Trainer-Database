@@ -50,6 +50,24 @@ CREATE TABLE IF NOT EXISTS Trainer (
     Trainer_Status VARCHAR(100)
 );
 
+CREATE TABLE IF NOT EXISTS TrainerStatus (
+    Trainer_Status_ID SERIAL PRIMARY KEY,
+    Trainer_ID INT NOT NULL,
+
+    Trainer_Status VARCHAR(100) NOT NULL DEFAULT 'Red Flag',
+    Trainer_StatusReasoning TEXT,
+    Trainer_StatusStartDate DATE,
+    Trainer_StatusEndDate DATE,
+
+    FOREIGN KEY (Trainer_ID)
+        REFERENCES Trainer(Trainer_ID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_trainerstatus_trainer_id_startdate
+    ON TrainerStatus (Trainer_ID, Trainer_StatusStartDate DESC, Trainer_Status_ID DESC);
+
 CREATE TABLE IF NOT EXISTS TrainerRemark (
     Trainer_Remark_ID SERIAL PRIMARY KEY,
     Trainer_ID INT NOT NULL,
