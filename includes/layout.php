@@ -1158,6 +1158,8 @@ function renderProviderModal(provider) {
     document.getElementById('mN').textContent = provider.TP_Name;
     renderProviderSummaryBubbles();
     document.getElementById('mPa').textContent = provider.participant_count || 0;
+    const yearHeading = document.getElementById('yearHeading');
+    if (yearHeading) yearHeading.textContent = '';
     renderExpertiseBubble(1);
     renderExpertiseBubble(2);
     currentProviderTab = 'courses';
@@ -1199,6 +1201,8 @@ function renderTrainerModal(trainer) {
     document.getElementById('trainerName').textContent = trainer.Trainer_Name || '—';
     document.getElementById('trainerProvCount').textContent = trainer.provider_count || 0;
     document.getElementById('trainerCourseCount').textContent = trainer.course_count || 0;
+    const trainerYearHeading = document.getElementById('trainerYearHeading');
+    if (trainerYearHeading) trainerYearHeading.textContent = '';
 
     currentTrainerTab = 'providers';
     renderTrainerProviders();
