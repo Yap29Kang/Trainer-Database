@@ -62,7 +62,7 @@ try {
         // Optional trainer status filter for trainer view
         if ($status === 'redflag') {
             $trainers = array_filter($trainers, function($t) {
-                return !empty(trim((string)($t['Trainer_Status'] ?? '')));
+                return !empty($t['Trainer_StatusActive']);
             });
         }
         

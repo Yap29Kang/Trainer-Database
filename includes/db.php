@@ -710,7 +710,6 @@ function getTrainers() {
         SELECT 
             t.Trainer_ID,
             t.Trainer_Name,
-            t.Trainer_Status,
             COALESCE(provider_counts.provider_count, 0) AS provider_count,
             COALESCE(course_counts.course_count, 0) AS course_count
         FROM Trainer t
@@ -739,7 +738,7 @@ function getTrainers() {
     $trainerStatusMap = getLatestTrainerStatusMap();
     foreach ($trainerMap as $trainerId => $trainer) {
         $status = $trainerStatusMap[$trainerId] ?? null;
-        $trainerMap[$trainerId]['Trainer_Status'] = $status['Trainer_Status'] ?? trim((string)($trainerMap[$trainerId]['Trainer_Status'] ?? ''));
+        $trainerMap[$trainerId]['Trainer_Status'] = $status['Trainer_Status'] ?? '';
         $trainerMap[$trainerId]['Trainer_StatusReasoning'] = $status['Trainer_StatusReasoning'] ?? null;
         $trainerMap[$trainerId]['Trainer_StatusStartDate'] = $status['Trainer_StatusStartDate'] ?? null;
         $trainerMap[$trainerId]['Trainer_StatusEndDate'] = $status['Trainer_StatusEndDate'] ?? null;
@@ -841,7 +840,7 @@ function getTrainerDetail($trainer_id) {
     }, normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC)));
 
     $trainerStatus = $trainerStatusMap[(int)$trainer_id] ?? null;
-    $trainer['Trainer_Status'] = $trainerStatus['Trainer_Status'] ?? trim((string)($trainer['Trainer_Status'] ?? ''));
+    $trainer['Trainer_Status'] = $trainerStatus['Trainer_Status'] ?? '';
     $trainer['Trainer_StatusReasoning'] = $trainerStatus['Trainer_StatusReasoning'] ?? null;
     $trainer['Trainer_StatusStartDate'] = $trainerStatus['Trainer_StatusStartDate'] ?? null;
     $trainer['Trainer_StatusEndDate'] = $trainerStatus['Trainer_StatusEndDate'] ?? null;
