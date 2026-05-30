@@ -561,6 +561,15 @@ function getCurrentTrainerRecord(trainerId) {
     return allData.find(trainer => Number(trainer.Trainer_ID) === numericId) || null;
 }
 
+function isTrainerRedFlagged(trainer) {
+    if (!trainer) return false;
+    if (trainer.Trainer_StatusActive === true || trainer.Trainer_StatusActive === 1 || trainer.Trainer_StatusActive === '1') {
+        return true;
+    }
+    const statusText = String(trainer.Trainer_StatusDisplay || trainer.Trainer_Status || trainer.Trainer_StatusRaw || '').trim();
+    return statusText === 'Red Flag' || statusText === 'Red Flagged';
+}
+
 const SERVER_IS_ADMIN = <?php echo json_encode($_SESSION['role'] === 'admin'); ?>;
 
 function handleAuthButton() {
@@ -1030,14 +1039,18 @@ function renderTrainers() {
 
         const card = document.createElement('div');
         card.className = 'tc2';
-        const hasRedFlag = !!trainer.Trainer_StatusActive;
+        const hasRedFlag = isTrainerRedFlagged(trainer);
         const redFlagLabel = hasRedFlag ? 'Remove Red Flag' : 'Red Flag';
+        const trainerStatusLabel = hasRedFlag ? 'Red Flag' : '';
         card.innerHTML = `
             <div class="tc2-inner">
                 <div class="tctop">
                     <div class="tavlg" style="background:var(--accent)">${initials}</div>
                     <div>
-                        <div class="tfn">${trainer.Trainer_Name}</div>
+                        <div style="display:flex;align-items:center;gap:.45rem;flex-wrap:wrap;">
+                            <div class="tfn">${trainer.Trainer_Name}</div>
+                            ${trainerStatusLabel ? `<span class="bdg b-b tpr-badge trainer-status-badge">${trainerStatusLabel}</span>` : ''}
+                        </div>
                         <div class="tsp">${trainer.provider_count} providers · ${trainer.course_count} courses</div>
                     </div>
                 </div>
@@ -1318,7 +1331,7 @@ function openTrainerStatusModal(trainerId) {
 
     pendingTrainerStatusId = trainer.Trainer_ID;
     pendingTrainerStatusName = trainer.Trainer_Name || '—';
-    pendingTrainerStatusMode = trainer.Trainer_StatusActive ? 'remove' : 'flag';
+    pendingTrainerStatusMode = isTrainerRedFlagged(trainer) ? 'remove' : 'flag';
 
     const modal = document.getElementById('trStatusOv');
     if (!modal) return;
@@ -1380,6 +1393,7 @@ function confirmTrainerStatus() {
 
         if (currentTrainerDetail && Number(currentTrainerDetail.Trainer_ID) === Number(pendingTrainerStatusId)) {
             currentTrainerDetail.Trainer_Status = pendingTrainerStatusMode === 'flag' ? 'Red Flag' : '';
+            currentTrainerDetail.Trainer_StatusDisplay = pendingTrainerStatusMode === 'flag' ? 'Red Flag' : '';
             currentTrainerDetail.Trainer_StatusReasoning = pendingTrainerStatusMode === 'flag' ? reason : null;
             currentTrainerDetail.Trainer_StatusStartDate = pendingTrainerStatusMode === 'flag' ? today : currentTrainerDetail.Trainer_StatusStartDate || null;
             currentTrainerDetail.Trainer_StatusEndDate = pendingTrainerStatusMode === 'remove' ? today : null;
@@ -1407,6 +1421,7 @@ function confirmTrainerStatus() {
 
         if (current) {
             current.Trainer_Status = pendingTrainerStatusMode === 'flag' ? 'Red Flag' : '';
+            current.Trainer_StatusDisplay = pendingTrainerStatusMode === 'flag' ? 'Red Flag' : '';
             current.Trainer_StatusReasoning = pendingTrainerStatusMode === 'flag' ? reason : null;
             current.Trainer_StatusActive = pendingTrainerStatusMode === 'flag';
         }
