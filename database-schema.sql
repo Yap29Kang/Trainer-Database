@@ -1,8 +1,6 @@
 -- Postgres schema for Trainer Database
 
 -- TRAINING PROVIDER TABLE
-ALTER TABLE IF EXISTS Trainer DROP COLUMN IF EXISTS Trainer_Status;
-
 CREATE TABLE IF NOT EXISTS TrainingProvider (
     TP_ID SERIAL PRIMARY KEY,
     TP_Name VARCHAR(255) NOT NULL,

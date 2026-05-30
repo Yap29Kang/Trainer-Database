@@ -558,7 +558,7 @@ function invalidateListCaches() {
 
 function getCurrentTrainerRecord(trainerId) {
     const numericId = Number(trainerId);
-    return allData.find(trainer => Number(trainer.Trainer_ID) === numericId) || currentTrainerDetail || null;
+    return allData.find(trainer => Number(trainer.Trainer_ID) === numericId) || null;
 }
 
 const SERVER_IS_ADMIN = <?php echo json_encode($_SESSION['role'] === 'admin'); ?>;
@@ -1415,7 +1415,7 @@ function confirmTrainerStatus() {
             renderTrainerModal(currentTrainerDetail);
         }
 
-        trainerDetailCache.set(String(pendingTrainerStatusId), currentTrainerDetail || current || null);
+        trainerDetailCache.delete(String(pendingTrainerStatusId));
         invalidateListCaches();
         closeTrainerStatusModal();
         loadData();
