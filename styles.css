@@ -318,7 +318,7 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 .bl-reason-wrap{display:none;margin-top:1rem}
 .bl-reason-wrap.show{display:block}
 .bl-reason-label{font-size:.75rem;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-family:'Calibri',sans-serif;margin-bottom:.45rem}
-.bl-reason-ta{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:.52rem .7rem;font-family:'Calibri',sans-serif;font-size:.85rem;background:var(--card);outline:none;cursor:pointer}
+.bl-reason-ta{width:100%;max-width:100%;min-width:0;box-sizing:border-box;display:block;border:1.5px solid var(--border);border-radius:8px;padding:.52rem .7rem;font-family:'Calibri',sans-serif;font-size:.85rem;background:var(--card);outline:none;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bl-reason-ta:focus{border-color:var(--blue)}
 .stm-actions{display:flex;gap:.6rem;margin-top:1.25rem}
 .stm-cancel,.stm-confirm{flex:1;border:none;border-radius:8px;padding:.75rem 1rem;font-family:'Calibri',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer}

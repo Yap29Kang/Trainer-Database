@@ -85,8 +85,6 @@ function normalizeAssocRow($row) {
         'TP_REMARK_ID' => 'TP_Remark_ID',
         'TRAINER_ID' => 'Trainer_ID',
         'TRAINER_NAME' => 'Trainer_Name',
-        'TRAINER_STATUS' => 'Trainer_Status',
-        'LEGACYTRAINER_STATUS' => 'LegacyTrainer_Status',
         'TRAINER_STATUS_ID' => 'Trainer_Status_ID',
         'TRAINER_STATUSREASONING' => 'Trainer_StatusReasoning',
         'TRAINER_STATUSSTARTDATE' => 'Trainer_StatusStartDate',
@@ -245,30 +243,7 @@ function getTrainerStatusHistory($trainer_id) {
         $rows[] = $row;
     }
 
-    if (!empty($rows)) {
-        return $rows;
-    }
-
-    $legacyStmt = $pdo->prepare('SELECT Trainer_Status FROM Trainer WHERE Trainer_ID = ?');
-    $legacyStmt->execute([$trainer_id]);
-    $legacy = normalizeAssocRow($legacyStmt->fetch(PDO::FETCH_ASSOC));
-    $legacyStatus = trim((string)($legacy['Trainer_Status'] ?? ''));
-
-    if ($legacyStatus === '') {
-        return [];
-    }
-
-    return [[
-        'Trainer_Status_ID' => null,
-        'Trainer_ID' => $trainer_id,
-        'Trainer_Status' => 'Red Flag',
-        'Trainer_StatusRaw' => $legacyStatus,
-        'Trainer_StatusDisplay' => 'Red Flag',
-        'Trainer_StatusReasoning' => $legacyStatus,
-        'Trainer_StatusStartDate' => null,
-        'Trainer_StatusEndDate' => null,
-        'Trainer_StatusActive' => true
-    ]];
+    return $rows;
 }
 
 function getTrainingProviderRemarks($tp_id) {
@@ -368,8 +343,7 @@ function getLatestTrainerStatusMap() {
             ts.Trainer_Status,
             ts.Trainer_StatusReasoning,
             ts.Trainer_StatusStartDate,
-            ts.Trainer_StatusEndDate,
-            t.Trainer_Status AS LegacyTrainer_Status
+            ts.Trainer_StatusEndDate
         FROM Trainer t
         LEFT JOIN TrainerStatus ts
             ON ts.Trainer_Status_ID = (
@@ -386,41 +360,16 @@ function getLatestTrainerStatusMap() {
 
     $map = [];
     foreach (normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC)) as $row) {
-        $legacyStatus = trim((string)($row['LegacyTrainer_Status'] ?? ''));
-        $effectiveStatus = '';
-        $reasoning = null;
-        $startDate = $row['Trainer_StatusStartDate'] ?? null;
-        $endDate = $row['Trainer_StatusEndDate'] ?? null;
-
-        if (!empty($row['Trainer_Status']) && empty($endDate)) {
-            $effectiveStatus = 'Red Flag';
-            $reasoning = $row['Trainer_StatusReasoning'] ?? null;
-        } elseif ($legacyStatus !== '') {
-            $effectiveStatus = 'Red Flag';
-            $reasoning = $legacyStatus;
-            $startDate = null;
-            $endDate = null;
-        }
-
-        if ($effectiveStatus === '') {
-            $map[$row['Trainer_ID']] = [
-                'Trainer_Status' => '',
-                'Trainer_StatusRaw' => '',
-                'Trainer_StatusReasoning' => null,
-                'Trainer_StatusStartDate' => null,
-                'Trainer_StatusEndDate' => null,
-                'Trainer_StatusActive' => false
-            ];
-            continue;
-        }
+        $rawStatus = $row['Trainer_Status'] ?? '';
+        $effectiveStatus = (!empty($rawStatus) && empty($row['Trainer_StatusEndDate'])) ? 'Red Flag' : '';
 
         $map[$row['Trainer_ID']] = [
             'Trainer_Status' => $effectiveStatus,
-            'Trainer_StatusRaw' => $row['Trainer_Status'] ?? $legacyStatus,
-            'Trainer_StatusReasoning' => $reasoning,
-            'Trainer_StatusStartDate' => $startDate,
-            'Trainer_StatusEndDate' => $endDate,
-            'Trainer_StatusActive' => true
+            'Trainer_StatusRaw' => $rawStatus,
+            'Trainer_StatusReasoning' => $row['Trainer_StatusReasoning'] ?? null,
+            'Trainer_StatusStartDate' => $row['Trainer_StatusStartDate'] ?? null,
+            'Trainer_StatusEndDate' => $row['Trainer_StatusEndDate'] ?? null,
+            'Trainer_StatusActive' => $effectiveStatus !== ''
         ];
     }
 
@@ -794,6 +743,7 @@ function getTrainers() {
         $trainerMap[$trainerId]['Trainer_StatusReasoning'] = $status['Trainer_StatusReasoning'] ?? null;
         $trainerMap[$trainerId]['Trainer_StatusStartDate'] = $status['Trainer_StatusStartDate'] ?? null;
         $trainerMap[$trainerId]['Trainer_StatusEndDate'] = $status['Trainer_StatusEndDate'] ?? null;
+        $trainerMap[$trainerId]['Trainer_StatusActive'] = !empty($status) && !empty($status['Trainer_StatusActive']);
     }
 
     if (!empty($trainerMap)) {
@@ -895,6 +845,7 @@ function getTrainerDetail($trainer_id) {
     $trainer['Trainer_StatusReasoning'] = $trainerStatus['Trainer_StatusReasoning'] ?? null;
     $trainer['Trainer_StatusStartDate'] = $trainerStatus['Trainer_StatusStartDate'] ?? null;
     $trainer['Trainer_StatusEndDate'] = $trainerStatus['Trainer_StatusEndDate'] ?? null;
+    $trainer['Trainer_StatusActive'] = !empty($trainerStatus) && !empty($trainerStatus['Trainer_StatusActive']);
     $trainer['status_history'] = getTrainerStatusHistory($trainer_id);
     $trainer['remarks'] = getTrainerRemarks($trainer_id);
 
@@ -997,9 +948,6 @@ function updateTrainerRedFlag($trainer_id, $is_red_flag, $reason = null) {
                 'INSERT INTO TrainerStatus (Trainer_ID, Trainer_Status, Trainer_StatusReasoning, Trainer_StatusStartDate, Trainer_StatusEndDate) VALUES (?, ?, ?, CURRENT_DATE, NULL)'
             );
             $insertStmt->execute([$trainer_id, 'Red Flag', $reason]);
-
-            $legacyStmt = $pdo->prepare('UPDATE Trainer SET Trainer_Status = ? WHERE Trainer_ID = ?');
-            $legacyStmt->execute([$reason ?: 'Red Flag', $trainer_id]);
         } else {
             $closeStmt = $pdo->prepare(
                 "UPDATE TrainerStatus
@@ -1008,9 +956,6 @@ function updateTrainerRedFlag($trainer_id, $is_red_flag, $reason = null) {
                    AND Trainer_StatusEndDate IS NULL"
             );
             $closeStmt->execute([$trainer_id]);
-
-            $legacyStmt = $pdo->prepare('UPDATE Trainer SET Trainer_Status = NULL WHERE Trainer_ID = ?');
-            $legacyStmt->execute([$trainer_id]);
         }
 
         $pdo->commit();

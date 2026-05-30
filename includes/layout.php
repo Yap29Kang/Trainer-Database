@@ -401,10 +401,10 @@ if (isset($content_file) && is_file($content_file)) {
                 <div class="bl-reason-label">Reason for Red Flag <span style="color:var(--red)">*</span></div>
                 <select class="bl-reason-ta" id="trStatusReasonSel">
                     <option value="">Select a reason</option>
-                    <option value="Unprofessional conduct">Unprofessional conduct - Behavioural issues, misconduct, or complaints from participants.</option>
-                    <option value="Poor training quality">Poor training quality - Below-standard delivery, outdated content, or low feedback scores.</option>
-                    <option value="Compliance or legal concern">Compliance or legal concern - Regulatory breach, credential issues, or ongoing legal matter.</option>
-                    <option value="Reliability issues">Reliability issues - Repeated no-shows, late cancellations, or session disruptions.</option>
+                    <option value="Unprofessional conduct">Unprofessional conduct</option>
+                    <option value="Poor training quality">Poor training quality</option>
+                    <option value="Compliance or legal concern">Compliance or legal concern</option>
+                    <option value="Reliability issues">Reliability issues</option>
                 </select>
             </div>
 
@@ -1030,7 +1030,7 @@ function renderTrainers() {
 
         const card = document.createElement('div');
         card.className = 'tc2';
-        const hasRedFlag = !!String(trainer.Trainer_Status || '').trim();
+        const hasRedFlag = !!trainer.Trainer_StatusActive;
         const redFlagLabel = hasRedFlag ? 'Remove Red Flag' : 'Red Flag';
         card.innerHTML = `
             <div class="tc2-inner">
@@ -1318,7 +1318,7 @@ function openTrainerStatusModal(trainerId) {
 
     pendingTrainerStatusId = trainer.Trainer_ID;
     pendingTrainerStatusName = trainer.Trainer_Name || '—';
-    pendingTrainerStatusMode = String(trainer.Trainer_Status || '').trim() ? 'remove' : 'flag';
+    pendingTrainerStatusMode = trainer.Trainer_StatusActive ? 'remove' : 'flag';
 
     const modal = document.getElementById('trStatusOv');
     if (!modal) return;
@@ -1383,6 +1383,7 @@ function confirmTrainerStatus() {
             currentTrainerDetail.Trainer_StatusReasoning = pendingTrainerStatusMode === 'flag' ? reason : null;
             currentTrainerDetail.Trainer_StatusStartDate = pendingTrainerStatusMode === 'flag' ? today : currentTrainerDetail.Trainer_StatusStartDate || null;
             currentTrainerDetail.Trainer_StatusEndDate = pendingTrainerStatusMode === 'remove' ? today : null;
+            currentTrainerDetail.Trainer_StatusActive = pendingTrainerStatusMode === 'flag';
             if (!Array.isArray(currentTrainerDetail.status_history)) {
                 currentTrainerDetail.status_history = [];
             }
@@ -1407,6 +1408,7 @@ function confirmTrainerStatus() {
         if (current) {
             current.Trainer_Status = pendingTrainerStatusMode === 'flag' ? 'Red Flag' : '';
             current.Trainer_StatusReasoning = pendingTrainerStatusMode === 'flag' ? reason : null;
+            current.Trainer_StatusActive = pendingTrainerStatusMode === 'flag';
         }
 
         if (currentTrainerDetail) {
