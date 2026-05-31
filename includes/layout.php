@@ -200,14 +200,16 @@ if (isset($content_file) && is_file($content_file)) {
 
             <div class="bl-reason-wrap" id="blReasonWrap">
                 <div class="bl-reason-label">Reason for Blacklisting <span style="color:var(--red)">*</span></div>
-                <select class="bl-reason-ta" id="blReasonTa">
-                    <option value="">Select a reason</option>
-                    <option value="Fraud / falsified records">Fraud / falsified records</option>
-                    <option value="Repeated complaints">Repeated complaints</option>
-                    <option value="Misconduct / unethical behavior">Misconduct / unethical behavior</option>
-                    <option value="Safety / compliance violations">Safety / compliance violations</option>
-                    <option value="Poor course delivery / performance">Poor course delivery / performance</option>
-                </select>
+                <div class="trainer-flag-reason">
+                    <button type="button" class="trainer-flag-reason-btn" id="blReasonBtn" onclick="toggleBlacklistReasonMenu()">Select a reason</button>
+                    <div class="trainer-flag-reason-menu" id="blReasonMenu">
+                        <button type="button" class="trainer-flag-reason-item" onclick="chooseBlacklistReason('Fraud / falsified records')">Fraud / falsified records</button>
+                        <button type="button" class="trainer-flag-reason-item" onclick="chooseBlacklistReason('Repeated complaints')">Repeated complaints</button>
+                        <button type="button" class="trainer-flag-reason-item" onclick="chooseBlacklistReason('Misconduct / unethical behavior')">Misconduct / unethical behavior</button>
+                        <button type="button" class="trainer-flag-reason-item" onclick="chooseBlacklistReason('Safety / compliance violations')">Safety / compliance violations</button>
+                        <button type="button" class="trainer-flag-reason-item" onclick="chooseBlacklistReason('Poor course delivery / performance')">Poor course delivery / performance</button>
+                    </div>
+                </div>
             </div>
 
             <div class="stm-actions">
@@ -503,6 +505,7 @@ const listDataInflight = new Map();
 const participantListCache = new Map();
 const participantListInflight = new Map();
 let pendingStatus = '';
+let pendingBlacklistReason = '';
 let uploadPreviewActive = false;
 let pendingExpertiseId = null;
 let pendingExpertiseWhich = 1;
@@ -1749,6 +1752,7 @@ function renderExpertiseBubble(which) {
 function openStatusModal() {
     if (!currentProviderDetail) return;
     pendingStatus = currentProviderDetail.TP_Status || 'Active';
+    pendingBlacklistReason = currentProviderDetail.blacklistReason || currentProviderDetail.TP_StatusReasoning || '';
     document.getElementById('stmProvName').textContent = currentProviderDetail.TP_Name || '—';
     const reason = document.getElementById('blReasonTa');
     if (reason) reason.value = currentProviderDetail.blacklistReason || '';
@@ -1765,7 +1769,27 @@ function openStatusModal() {
 
 function closeStatusModal() {
     document.getElementById('stOv').classList.remove('open');
+    pendingBlacklistReason = '';
+    const reasonBtn = document.getElementById('blReasonBtn');
+    if (reasonBtn) reasonBtn.textContent = 'Select a reason';
+    const reasonMenu = document.getElementById('blReasonMenu');
+    if (reasonMenu) reasonMenu.classList.remove('open');
     syncBodyLock();
+}
+
+function toggleBlacklistReasonMenu() {
+    if (pendingStatus !== 'Blacklisted') return;
+    const menu = document.getElementById('blReasonMenu');
+    if (!menu) return;
+    menu.classList.toggle('open');
+}
+
+function chooseBlacklistReason(reason) {
+    pendingBlacklistReason = reason || '';
+    const btn = document.getElementById('blReasonBtn');
+    if (btn) btn.textContent = reason || 'Select a reason';
+    const menu = document.getElementById('blReasonMenu');
+    if (menu) menu.classList.remove('open');
 }
 
 function getTodayLocalISODate() {
@@ -1896,6 +1920,8 @@ function renderStatusOptions() {
 
     const wrap = document.getElementById('blReasonWrap');
     const untilWrap = document.getElementById('blUntilWrap');
+    const reasonBtn = document.getElementById('blReasonBtn');
+    const reasonMenu = document.getElementById('blReasonMenu');
     if (wrap) {
         const show = pendingStatus === 'Blacklisted';
         wrap.classList.toggle('show', show);
@@ -1907,15 +1933,20 @@ function renderStatusOptions() {
         untilWrap.classList.toggle('show', show);
         untilWrap.style.display = show ? 'block' : 'none';
     }
+    if (reasonBtn) {
+        reasonBtn.textContent = pendingBlacklistReason || 'Select a reason';
+    }
+    if (reasonMenu) {
+        reasonMenu.classList.remove('open');
+    }
 }
 
 function confirmStatus() {
     if (!currentProviderDetail) return;
-    const reason = document.getElementById('blReasonTa')?.value.trim() || '';
+    const reason = pendingStatus === 'Blacklisted' ? (pendingBlacklistReason || '').trim() : '';
     const blacklistUntil = document.getElementById('blUntilTa')?.value || '';
     if (pendingStatus === 'Blacklisted' && !reason) {
         showToast('⚠️ Please provide a reason for blacklisting.');
-        document.getElementById('blReasonTa')?.focus();
         return;
     }
     if (pendingStatus === 'Blacklisted' && !blacklistUntil) {
