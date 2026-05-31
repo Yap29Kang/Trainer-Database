@@ -54,12 +54,10 @@
     </div>
     <div class="sf-wrap">
         <span class="sf-lbl">Status:</span>
-        <select class="ss-sel" id="sfSel" onchange="handleSearch()">
-            <option value="all">All</option>
-            <option value="active">Active</option>
-            <option value="greylist">Greylist</option>
-            <option value="blacklisted">Blacklisted</option>
-        </select>
+        <div class="trainer-flag-reason" style="width:170px;">
+            <button type="button" class="trainer-flag-reason-btn" id="sfBtn" onclick="toggleStatusFilterMenu()">All</button>
+            <div class="trainer-flag-reason-menu" id="sfMenu"></div>
+        </div>
     </div>
     <button class="sort-btn" onclick="toggleSort()">
         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M3 6h18M7 12h10M11 18h2"/></svg>
@@ -506,6 +504,7 @@ const participantListCache = new Map();
 const participantListInflight = new Map();
 let pendingStatus = '';
 let pendingBlacklistReason = '';
+let currentStatusFilter = 'all';
 let uploadPreviewActive = false;
 let pendingExpertiseId = null;
 let pendingExpertiseWhich = 1;
@@ -622,6 +621,76 @@ function handleSearch() {
     loadData();
 }
 
+function getStatusFilterOptions(view) {
+    if (view === 'prov') {
+        return [
+            { value: 'all', label: 'All' },
+            { value: 'active', label: 'Active' },
+            { value: 'greylist', label: 'Greylist' },
+            { value: 'blacklisted', label: 'Blacklisted' }
+        ];
+    }
+
+    return [
+        { value: 'all', label: 'All Trainers / Speakers' },
+        { value: 'redflag', label: 'Red Flag Only' }
+    ];
+}
+
+function updateStatusFilterMenu() {
+    const btn = document.getElementById('sfBtn');
+    const menu = document.getElementById('sfMenu');
+    if (!btn || !menu) return;
+
+    const options = getStatusFilterOptions(currentView);
+    const activeOption = options.find(option => option.value === currentStatusFilter) || options[0];
+    currentStatusFilter = activeOption.value;
+    btn.textContent = activeOption.label;
+    menu.innerHTML = options.map(option => `
+        <button type="button" class="trainer-flag-reason-item" onclick="chooseStatusFilter('${option.value}')">${option.label}</button>
+    `).join('');
+}
+
+function filterListData(data, view, status) {
+    const rows = Array.isArray(data) ? data.slice() : [];
+    const normalizedStatus = status || 'all';
+
+    if (view === 'prov') {
+        if (normalizedStatus === 'all') return rows;
+        const statusMap = {
+            active: 'Active',
+            blank: 'Active',
+            approved: 'Active',
+            consideration: 'Greylist',
+            greylist: 'Greylist',
+            blacklisted: 'Blacklisted'
+        };
+        const targetStatus = statusMap[normalizedStatus] || normalizedStatus;
+        return rows.filter(row => (row.TP_Status || '') === targetStatus);
+    }
+
+    if (normalizedStatus === 'redflag') {
+        return rows.filter(row => !!row.Trainer_StatusActive);
+    }
+
+    return rows;
+}
+
+function toggleStatusFilterMenu() {
+    const menu = document.getElementById('sfMenu');
+    if (!menu) return;
+    menu.classList.toggle('open');
+}
+
+function chooseStatusFilter(value) {
+    currentStatusFilter = value || 'all';
+    const menu = document.getElementById('sfMenu');
+    if (menu) menu.classList.remove('open');
+    updateStatusFilterMenu();
+    currentListPages[currentView] = 1;
+    loadData();
+}
+
 // View toggle
 function setView(view, btn) {
     currentView = view;
@@ -630,25 +699,8 @@ function setView(view, btn) {
         btn.classList.add('active');
     }
 
-    const sfSel = document.getElementById('sfSel');
-    sfSel.innerHTML = '';
-    if (view === 'prov') {
-        [['all','All'],['active','Active'],['greylist','Greylist'],['blacklisted','Blacklisted']]
-            .forEach(([val,lbl]) => {
-                const o = document.createElement('option');
-                o.value = val;
-                o.textContent = lbl;
-                sfSel.appendChild(o);
-            });
-    } else {
-        [['all','All Trainers / Speakers'],['redflag','Red Flag Only']]
-            .forEach(([val,lbl]) => {
-                const o = document.createElement('option');
-                o.value = val;
-                o.textContent = lbl;
-                sfSel.appendChild(o);
-            });
-    }
+    currentStatusFilter = 'all';
+    updateStatusFilterMenu();
 
     currentListPages[view] = 1;
 
@@ -663,37 +715,35 @@ function toggleSort() {
     loadData();
 }
 
-function getListCacheKey(view, search, status, sort) {
-    return `${view}|${search}|${status}|${sort}`;
+function getListCacheKey(view, search, sort) {
+    return `${view}|${search}|${sort}`;
 }
 
 function getCurrentListQuery() {
     return {
         view: currentView,
         search: document.getElementById('si')?.value || '',
-        status: document.getElementById('sfSel')?.value || 'all',
+        status: currentStatusFilter || 'all',
         sort: sortAsc ? 'asc' : 'desc'
     };
 }
 
 function renderListCacheIfAvailable(query) {
-    const cacheKey = getListCacheKey(query.view, query.search, query.status, query.sort);
+    const cacheKey = getListCacheKey(query.view, query.search, query.sort);
     if (!listDataCache.has(cacheKey)) return false;
-    allData = listDataCache.get(cacheKey);
+    allData = filterListData(listDataCache.get(cacheKey), query.view, query.status);
     renderData();
     return true;
 }
 
 function prefetchViewData(view, search, sort) {
-    const status = view === 'prov' ? 'all' : 'all';
     const params = new URLSearchParams({
         view,
         search: search || '',
-        status,
         sort: sort || 'asc',
         _: 'prefetch'
     });
-    const cacheKey = getListCacheKey(view, search || '', status, sort || 'asc');
+    const cacheKey = getListCacheKey(view, search || '', sort || 'asc');
     if (listDataCache.has(cacheKey) || listDataInflight.has(cacheKey)) return;
 
     const promise = fetch('api/get-data.php?' + params, { credentials: 'same-origin', cache: 'no-store' })
@@ -714,14 +764,13 @@ function prefetchViewData(view, search, sort) {
 // Load data from server
 function loadData() {
     const search = document.getElementById('si').value;
-    const status = document.getElementById('sfSel').value;
     const query = {
         view: currentView,
         search,
-        status,
+        status: currentStatusFilter || 'all',
         sort: sortAsc ? 'asc' : 'desc'
     };
-    const cacheKey = getListCacheKey(query.view, query.search, query.status, query.sort);
+    const cacheKey = getListCacheKey(query.view, query.search, query.sort);
 
     if (renderListCacheIfAvailable(query)) {
         const oppositeView = currentView === 'prov' ? 'train' : 'prov';
@@ -734,7 +783,6 @@ function loadData() {
     const params = new URLSearchParams({
         view: query.view,
         search: query.search,
-        status: query.status,
         sort: query.sort,
         _: String(Date.now())
     });
@@ -770,7 +818,7 @@ function loadData() {
                 throw new Error(data?.error || 'Invalid data response');
             }
             listDataCache.set(cacheKey, data);
-            allData = data;
+            allData = filterListData(data, query.view, query.status);
             renderData();
             const oppositeView = currentView === 'prov' ? 'train' : 'prov';
             if (query.search || query.sort) {
@@ -2657,6 +2705,7 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     } catch (e) { console.error(e); }
 
+    updateStatusFilterMenu();
     loadData();
     updateStats();
 });
