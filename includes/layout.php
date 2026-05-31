@@ -386,6 +386,36 @@ if (isset($content_file) && is_file($content_file)) {
 </div>
 
 <!-- ════════════════════════════════════
+     TRAINER RED FLAG MODAL
+════════════════════════════════════ -->
+<div class="stov" id="trainerFlagOv" onclick="if(event.target===this)closeTrainerFlagModal()">
+    <div class="stm">
+        <div class="stm-hdr">
+            <h3 id="trainerFlagTitle">Red Flag Trainer</h3>
+            <button class="stm-close" onclick="closeTrainerFlagModal()">✕</button>
+        </div>
+        <div class="stm-body">
+            <div class="stm-pname" id="trainerFlagName">—</div>
+            <div id="trainerFlagMessage" style="font-size:.9rem;line-height:1.5;color:var(--muted);margin-bottom:1rem;"></div>
+            <div id="trainerFlagReasonWrap" style="margin-bottom:1rem;">
+                <div class="stm-label">Reason for Red Flag</div>
+                <select class="bl-reason-ta" id="trainerFlagReasonSel">
+                    <option value="">Select a reason</option>
+                    <option value="Unprofessional conduct">Unprofessional conduct - Behavioural issues, misconduct, or complaints from participants.</option>
+                    <option value="Poor training quality">Poor training quality - Below-standard delivery, outdated content, or low feedback scores.</option>
+                    <option value="Compliance or legal concern">Compliance or legal concern - Regulatory breach, credential issues, or ongoing legal matter.</option>
+                    <option value="Reliability issues">Reliability issues - Repeated no-shows, late cancellations, or session disruptions.</option>
+                </select>
+            </div>
+            <div class="stm-actions">
+                <button class="stm-cancel" onclick="closeTrainerFlagModal()">Cancel</button>
+                <button class="stm-confirm" id="trainerFlagSubmitBtn" onclick="submitTrainerRedFlag()">Submit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════
      UPLOAD MODAL (Admin Only)
      (included always so client-side toggles work even if session not yet persisted)
 ════════════════════════════ -->
