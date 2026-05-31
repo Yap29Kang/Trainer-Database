@@ -399,13 +399,15 @@ if (isset($content_file) && is_file($content_file)) {
             <div id="trainerFlagMessage" style="font-size:.9rem;line-height:1.5;color:var(--muted);margin-bottom:1rem;"></div>
             <div id="trainerFlagReasonWrap" style="margin-bottom:1rem;">
                 <div class="stm-label">Reason for Red Flag</div>
-                <select class="bl-reason-ta" id="trainerFlagReasonSel">
-                    <option value="">Select a reason</option>
-                    <option value="Unprofessional conduct">Unprofessional conduct - Behavioural issues, misconduct, or complaints from participants.</option>
-                    <option value="Poor training quality">Poor training quality - Below-standard delivery, outdated content, or low feedback scores.</option>
-                    <option value="Compliance or legal concern">Compliance or legal concern - Regulatory breach, credential issues, or ongoing legal matter.</option>
-                    <option value="Reliability issues">Reliability issues - Repeated no-shows, late cancellations, or session disruptions.</option>
-                </select>
+                <div class="trainer-flag-reason">
+                    <button type="button" class="trainer-flag-reason-btn" id="trainerFlagReasonBtn" onclick="toggleTrainerFlagReasonMenu()">Select a reason</button>
+                    <div class="trainer-flag-reason-menu" id="trainerFlagReasonMenu">
+                        <button type="button" class="trainer-flag-reason-item" onclick="chooseTrainerFlagReason('Unprofessional conduct', 'Unprofessional conduct - Behavioural issues, misconduct, or complaints from participants.')">Unprofessional conduct - Behavioural issues, misconduct, or complaints from participants.</button>
+                        <button type="button" class="trainer-flag-reason-item" onclick="chooseTrainerFlagReason('Poor training quality', 'Poor training quality - Below-standard delivery, outdated content, or low feedback scores.')">Poor training quality - Below-standard delivery, outdated content, or low feedback scores.</button>
+                        <button type="button" class="trainer-flag-reason-item" onclick="chooseTrainerFlagReason('Compliance or legal concern', 'Compliance or legal concern - Regulatory breach, credential issues, or ongoing legal matter.')">Compliance or legal concern - Regulatory breach, credential issues, or ongoing legal matter.</button>
+                        <button type="button" class="trainer-flag-reason-item" onclick="chooseTrainerFlagReason('Reliability issues', 'Reliability issues - Repeated no-shows, late cancellations, or session disruptions.')">Reliability issues - Repeated no-shows, late cancellations, or session disruptions.</button>
+                    </div>
+                </div>
             </div>
             <div class="stm-actions">
                 <button class="stm-cancel" onclick="closeTrainerFlagModal()">Cancel</button>
@@ -1342,10 +1344,19 @@ function closeTrainerModal() {
 
 let pendingTrainerFlagId = null;
 let pendingTrainerFlagIsRed = false;
+let pendingTrainerFlagReason = '';
+
+const TRAINER_FLAG_REASON_LABELS = {
+    'Unprofessional conduct': 'Unprofessional conduct - Behavioural issues, misconduct, or complaints from participants.',
+    'Poor training quality': 'Poor training quality - Below-standard delivery, outdated content, or low feedback scores.',
+    'Compliance or legal concern': 'Compliance or legal concern - Regulatory breach, credential issues, or ongoing legal matter.',
+    'Reliability issues': 'Reliability issues - Repeated no-shows, late cancellations, or session disruptions.'
+};
 
 function openTrainerRedFlagModal(id, isRedFlagged) {
     pendingTrainerFlagId = Number(id);
     pendingTrainerFlagIsRed = !!isRedFlagged;
+    pendingTrainerFlagReason = '';
 
     const modal = document.getElementById('trainerFlagOv');
     if (!modal) return;
@@ -1380,6 +1391,8 @@ function renderTrainerRedFlagModal() {
     const message = document.getElementById('trainerFlagMessage');
     const reasonWrap = document.getElementById('trainerFlagReasonWrap');
     const submitBtn = document.getElementById('trainerFlagSubmitBtn');
+    const reasonBtn = document.getElementById('trainerFlagReasonBtn');
+    const reasonMenu = document.getElementById('trainerFlagReasonMenu');
 
     const isRemoveMode = pendingTrainerFlagIsRed;
     const trainerName = currentTrainerDetail?.Trainer_Name || 'Loading trainer...';
@@ -1394,9 +1407,32 @@ function renderTrainerRedFlagModal() {
     if (reasonWrap) {
         reasonWrap.style.display = isRemoveMode ? 'none' : 'block';
     }
+    if (reasonBtn) {
+        reasonBtn.textContent = pendingTrainerFlagReason
+            ? (TRAINER_FLAG_REASON_LABELS[pendingTrainerFlagReason] || pendingTrainerFlagReason)
+            : 'Select a reason';
+    }
+    if (reasonMenu) {
+        reasonMenu.classList.remove('open');
+    }
     if (submitBtn) {
         submitBtn.textContent = 'Submit';
     }
+}
+
+function toggleTrainerFlagReasonMenu() {
+    if (pendingTrainerFlagIsRed) return;
+    const menu = document.getElementById('trainerFlagReasonMenu');
+    if (!menu) return;
+    menu.classList.toggle('open');
+}
+
+function chooseTrainerFlagReason(reason, label) {
+    pendingTrainerFlagReason = reason || '';
+    const btn = document.getElementById('trainerFlagReasonBtn');
+    if (btn) btn.textContent = label || 'Select a reason';
+    const menu = document.getElementById('trainerFlagReasonMenu');
+    if (menu) menu.classList.remove('open');
 }
 
 function closeTrainerFlagModal() {
@@ -1404,25 +1440,27 @@ function closeTrainerFlagModal() {
     if (modal) modal.classList.remove('open');
     pendingTrainerFlagId = null;
     pendingTrainerFlagIsRed = false;
-    const reasonSel = document.getElementById('trainerFlagReasonSel');
-    if (reasonSel) reasonSel.value = '';
+    pendingTrainerFlagReason = '';
+    const reasonBtn = document.getElementById('trainerFlagReasonBtn');
+    if (reasonBtn) reasonBtn.textContent = 'Select a reason';
+    const reasonMenu = document.getElementById('trainerFlagReasonMenu');
+    if (reasonMenu) reasonMenu.classList.remove('open');
     syncBodyLock();
 }
 
 function submitTrainerRedFlag() {
     if (!pendingTrainerFlagId) return;
 
-    const reasonSel = document.getElementById('trainerFlagReasonSel');
-    const reason = pendingTrainerFlagIsRed ? null : (reasonSel?.value || '').trim();
+    const reason = pendingTrainerFlagIsRed ? null : (pendingTrainerFlagReason || '').trim();
 
     if (!pendingTrainerFlagIsRed && !reason) {
         showToast('⚠️ Please choose a reason for the red flag.');
-        if (reasonSel) reasonSel.focus();
         return;
     }
 
     const trainerId = pendingTrainerFlagId;
     const isRemoveMode = pendingTrainerFlagIsRed;
+    closeTrainerFlagModal();
 
     fetch('api/update-trainer-red-flag.php', {
         method: 'POST',
@@ -1444,7 +1482,6 @@ function submitTrainerRedFlag() {
         trainerDetailCache.delete(cacheKey);
         listDataCache.clear();
         listDataInflight.clear();
-        closeTrainerFlagModal();
 
         if (document.getElementById('trainerOv')?.classList.contains('open')) {
             loadTrainerDetail(trainerId)

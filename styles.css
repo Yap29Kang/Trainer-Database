@@ -300,6 +300,7 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 .stov{position:fixed;inset:0;background:rgba(0,64,110,.6);backdrop-filter:blur(4px);z-index:700;display:none;align-items:center;justify-content:center;padding:1.5rem;overflow-y:auto}
 .stov.open{display:flex}
 .stm{background:var(--card);border-radius:14px;width:100%;max-width:620px;overflow:hidden;box-shadow:0 18px 50px rgba(7,31,51,.2)}
+.stov#trainerFlagOv .stm{overflow:visible;position:relative}
 .stm-hdr{background:var(--blue);color:#fff;padding:.95rem 1.45rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}
 .stm-hdr h3{font-family:'Calibri',sans-serif;font-weight:700;font-size:1rem}
 .stm-close{background:rgba(255,255,255,.15);border:none;color:#fff;width:29px;height:29px;border-radius:50%;font-size:.95rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
@@ -320,6 +321,14 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 .bl-reason-label{font-size:.75rem;font-weight:700;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;font-family:'Calibri',sans-serif;margin-bottom:.45rem}
 .bl-reason-ta{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:.52rem .7rem;font-family:'Calibri',sans-serif;font-size:.85rem;background:var(--card);outline:none;cursor:pointer}
 .bl-reason-ta:focus{border-color:var(--blue)}
+.trainer-flag-reason{position:relative}
+.trainer-flag-reason-btn{width:100%;text-align:left;border:1.5px solid var(--border);border-radius:8px;padding:.72rem .85rem;font-family:'Calibri',sans-serif;font-size:.88rem;background:var(--card);color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+.trainer-flag-reason-btn::after{content:'▾';font-size:.85rem;color:var(--muted)}
+.trainer-flag-reason-btn:focus{border-color:var(--blue);outline:none}
+.trainer-flag-reason-menu{display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;max-height:220px;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 14px 30px rgba(7,31,51,.18);padding:.35rem}
+.trainer-flag-reason-menu.open{display:block}
+.trainer-flag-reason-item{width:100%;display:block;text-align:left;border:none;background:transparent;color:var(--ink);padding:.6rem .65rem;border-radius:8px;font-family:'Calibri',sans-serif;font-size:.83rem;cursor:pointer;line-height:1.35}
+.trainer-flag-reason-item:hover{background:var(--cream)}
 .stm-actions{display:flex;gap:.6rem;margin-top:1.25rem}
 .stm-cancel,.stm-confirm{flex:1;border:none;border-radius:8px;padding:.75rem 1rem;font-family:'Calibri',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer}
 .stm-cancel{background:var(--cream);color:var(--ink)}
