@@ -2535,10 +2535,14 @@ function renderHistory() {
         const courseRows = grouped.get(year).map(({ course, dateInfo }) => {
             const paxClass = SERVER_IS_ADMIN ? 'pax-btn admin-pax' : 'pax-btn';
             const onclick = SERVER_IS_ADMIN && course.Item_ID ? `onclick="openParticipantsModal(${course.Item_ID})"` : '';
+            const trainerName = course.Trainer_Name ? String(course.Trainer_Name) : '';
+            const trainerId = course.Trainer_ID || '';
+            const trainerSpan = trainerName ? `<div style="flex-shrink:0;font-size:.75rem;color:var(--muted);white-space:nowrap;"><a href="#" onpointerenter="prefetchTrainerModal(${trainerId})" onfocus="prefetchTrainerModal(${trainerId})" onclick="event.preventDefault(); closeModal(); openTrainerModal(${trainerId})" style="color:inherit;text-decoration:none;">${escapeHtml(trainerName)}</a></div>` : '';
             return `
             <div class="hr2">
                 <div class="ht">${course.Item_Name || 'N/A'}</div>
                 <div class="hch">
+                    ${trainerSpan}
                     <div class="hc hc-date"><span class="hci">📅</span><span class="hct hct-day">${dateInfo.day}</span><span class="hct hct-month">${dateInfo.month}</span></div>
                     <div class="hc hc-pax"><span class="${paxClass}" ${onclick}><span class="hci">👥</span><span class="hct">${course.participant_count || 0} pax</span></span></div>
                 </div>
