@@ -1067,7 +1067,10 @@ function renderTrainers() {
                 <div class="tctop">
                     <div class="tavlg" style="background:var(--accent)">${initials}</div>
                     <div>
-                        <div class="tfn">${trainer.Trainer_Name}</div>
+                        <div class="tfn-row">
+                            <div class="tfn">${trainer.Trainer_Name}</div>
+                            ${trainer.Trainer_StatusActive ? '<span class="bdg b-rf tfn-badge">Red Flag</span>' : ''}
+                        </div>
                         <div class="tsp">${trainer.provider_count} providers · ${trainer.course_count} courses</div>
                     </div>
                 </div>
