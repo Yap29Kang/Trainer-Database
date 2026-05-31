@@ -54,7 +54,7 @@
     </div>
     <div class="sf-wrap">
         <span class="sf-lbl">Status:</span>
-        <div class="trainer-flag-reason" style="width:170px;">
+        <div class="trainer-flag-reason" style="width:132px;">
             <button type="button" class="trainer-flag-reason-btn" id="sfBtn" onclick="toggleStatusFilterMenu()">All</button>
             <div class="trainer-flag-reason-menu" id="sfMenu"></div>
         </div>
@@ -624,7 +624,7 @@ function handleSearch() {
 function getStatusFilterOptions(view) {
     if (view === 'prov') {
         return [
-            { value: 'all', label: 'All' },
+            { value: 'all', label: 'All', buttonLabel: 'All' },
             { value: 'active', label: 'Active' },
             { value: 'greylist', label: 'Greylist' },
             { value: 'blacklisted', label: 'Blacklisted' }
@@ -632,8 +632,8 @@ function getStatusFilterOptions(view) {
     }
 
     return [
-        { value: 'all', label: 'All Trainers / Speakers' },
-        { value: 'redflag', label: 'Red Flag Only' }
+        { value: 'all', label: 'All Trainers / Speakers', buttonLabel: 'All' },
+        { value: 'redflag', label: 'Red Flag Only', buttonLabel: 'Red Flag' }
     ];
 }
 
@@ -645,7 +645,7 @@ function updateStatusFilterMenu() {
     const options = getStatusFilterOptions(currentView);
     const activeOption = options.find(option => option.value === currentStatusFilter) || options[0];
     currentStatusFilter = activeOption.value;
-    btn.textContent = activeOption.label;
+    btn.textContent = activeOption.buttonLabel || activeOption.label;
     menu.innerHTML = options.map(option => `
         <button type="button" class="trainer-flag-reason-item" onclick="chooseStatusFilter('${option.value}')">${option.label}</button>
     `).join('');
