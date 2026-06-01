@@ -113,6 +113,9 @@ if (isset($content_file) && is_file($content_file)) {
             </div>
         </div>
         <div class="ptabs">
+            <?php if ($_SESSION['role'] === 'admin'): ?>
+            <button class="ptab" id="ptab-summary" onclick="switchProviderTab('summary', this)">Summary</button>
+            <?php endif; ?>
             <button class="ptab active" id="ptab-courses" onclick="switchProviderTab('courses', this)">Course History</button>
             <?php if ($_SESSION['role'] === 'admin'): ?>
             <button class="ptab" id="ptab-status" onclick="switchProviderTab('status', this)">Status History</button>
@@ -121,6 +124,13 @@ if (isset($content_file) && is_file($content_file)) {
         </div>
 
         <div class="ptab-panels">
+            <?php if ($_SESSION['role'] === 'admin'): ?>
+            <div class="ptab-panel" id="providerTab-summary">
+                <div class="mb2">
+                    <div id="providerSummaryC"></div>
+                </div>
+            </div>
+            <?php endif; ?>
             <div class="ptab-panel active" id="providerTab-courses">
                 <div class="mb2">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
@@ -1233,6 +1243,7 @@ function setProviderModalLoading() {
     const yearHeading = document.getElementById('yearHeading');
     const ySel = document.getElementById('ySel');
     const histC = document.getElementById('histC');
+    const summaryC = document.getElementById('providerSummaryC');
     const statusHistC = document.getElementById('statusHistC');
     const provRemarksC = document.getElementById('provRemarksC');
 
@@ -1241,6 +1252,7 @@ function setProviderModalLoading() {
     if (yearHeading) yearHeading.textContent = 'Loading...';
     if (ySel) ySel.innerHTML = '<option value="all">All Years</option>';
     if (histC) histC.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted)">Loading provider details...</div>';
+    if (summaryC) summaryC.innerHTML = '';
     if (statusHistC) statusHistC.innerHTML = '';
     if (provRemarksC) provRemarksC.innerHTML = '';
 }
@@ -1254,7 +1266,7 @@ function renderProviderModal(provider) {
     if (yearHeading) yearHeading.textContent = '';
     renderExpertiseBubble(1);
     renderExpertiseBubble(2);
-    currentProviderTab = 'courses';
+    currentProviderTab = SERVER_IS_ADMIN ? 'summary' : 'courses';
 
     const ySel = document.getElementById('ySel');
     const years = Array.from(new Set((provider.courses || [])
@@ -1264,10 +1276,11 @@ function renderProviderModal(provider) {
 
     ySel.innerHTML = '<option value="all">All Years</option>' + years.map(year => `<option value="${year}">${year}</option>`).join('');
     ySel.value = 'all';
+    renderProviderSummaryTab();
     renderHistory();
     renderStatusHistory();
     renderProviderRemarks();
-    switchProviderTab('courses');
+    switchProviderTab(currentProviderTab);
 }
 
 function setTrainerModalLoading() {
@@ -1801,6 +1814,125 @@ function renderExpertiseBubble(which) {
     }
 }
 
+function buildProviderSummaryBuckets() {
+    const courses = Array.isArray(currentProviderDetail?.courses) ? currentProviderDetail.courses : [];
+    const buckets = new Map();
+
+    courses.forEach(course => {
+        const category = String(course.Item_Category || '').trim();
+        if (!category) return;
+        const pax = Number(course.participant_count || 0);
+        const existing = buckets.get(category) || { category, pax: 0, courses: 0 };
+        existing.pax += pax;
+        existing.courses += 1;
+        buckets.set(category, existing);
+    });
+
+    return Array.from(buckets.values()).sort((a, b) => b.pax - a.pax || b.courses - a.courses || a.category.localeCompare(b.category));
+}
+
+function splitTreemapItems(items) {
+    if (!items.length) return [[], []];
+    const total = items.reduce((sum, item) => sum + item.value, 0);
+    if (items.length === 1) return [items, []];
+
+    let left = [];
+    let right = items.slice();
+    let leftTotal = 0;
+    for (let i = 0; i < items.length; i++) {
+        const nextTotal = leftTotal + items[i].value;
+        if (left.length > 0 && nextTotal >= total / 2) break;
+        left.push(items[i]);
+        leftTotal = nextTotal;
+        right = items.slice(i + 1);
+    }
+
+    if (!left.length) {
+        left = [items[0]];
+        right = items.slice(1);
+    }
+
+    return [left, right];
+}
+
+function layoutTreemap(items, x, y, width, height, horizontal = true) {
+    if (!items.length) return [];
+    if (items.length === 1) {
+        return [{ ...items[0], x, y, width, height }];
+    }
+
+    const total = items.reduce((sum, item) => sum + item.value, 0) || 1;
+    const [firstGroup, secondGroup] = splitTreemapItems(items);
+    const firstTotal = firstGroup.reduce((sum, item) => sum + item.value, 0);
+    const firstRatio = firstTotal / total;
+
+    if (horizontal) {
+        const splitHeight = height * firstRatio;
+        return [
+            ...layoutTreemap(firstGroup, x, y, width, splitHeight, !horizontal),
+            ...layoutTreemap(secondGroup, x, y + splitHeight, width, height - splitHeight, !horizontal)
+        ];
+    }
+
+    const splitWidth = width * firstRatio;
+    return [
+        ...layoutTreemap(firstGroup, x, y, splitWidth, height, !horizontal),
+        ...layoutTreemap(secondGroup, x + splitWidth, y, width - splitWidth, height, !horizontal)
+    ];
+}
+
+function renderProviderSummaryTab() {
+    const summaryC = document.getElementById('providerSummaryC');
+    if (!summaryC || !currentProviderDetail) return;
+
+    const buckets = buildProviderSummaryBuckets();
+    if (!buckets.length) {
+        summaryC.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted)">No category data available yet</div>';
+        return;
+    }
+
+    const totalPax = buckets.reduce((sum, bucket) => sum + bucket.pax, 0) || 1;
+    const colors = ['#0080c6', '#0d9488', '#7c3aed', '#16a34a', '#f59e0b', '#dc2626', '#2563eb', '#0891b2'];
+    const nodes = layoutTreemap(
+        buckets.map((bucket, index) => ({
+            ...bucket,
+            value: bucket.pax,
+            color: colors[index % colors.length]
+        })),
+        0,
+        0,
+        100,
+        100,
+        true
+    );
+
+    summaryC.innerHTML = `
+        <div class="provider-summary-head">
+            <div>
+                <div class="provider-summary-title">Area of Expertise by Course Category</div>
+                <div class="provider-summary-subtitle">Treemap sized by total participant enrollments per category</div>
+            </div>
+            <div class="provider-summary-total">${buckets.length} categories · ${totalPax} pax</div>
+        </div>
+        <div class="provider-treemap" aria-label="Area of expertise treemap">
+            ${nodes.map(node => {
+                const percent = ((node.value / totalPax) * 100).toFixed(1);
+                const minVisible = node.width > 8 && node.height > 8;
+                const fontSize = Math.max(11, Math.min(18, Math.min(node.width, node.height) * 0.18));
+                return `
+                    <div class="provider-treemap-tile" style="left:${node.x}%;top:${node.y}%;width:${node.width}%;height:${node.height}%;background:${node.color};" title="${escapeHtml(node.category)} · ${percent}% · ${node.pax} pax">
+                        <div class="provider-treemap-overlay"></div>
+                        <div class="provider-treemap-label" style="font-size:${fontSize}px;">
+                            <div class="provider-treemap-name">${escapeHtml(node.category)}</div>
+                            ${minVisible ? `<div class="provider-treemap-meta">${percent}% · ${node.pax} pax</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+}
+
 function openStatusModal() {
     if (!currentProviderDetail) return;
     pendingStatus = currentProviderDetail.TP_Status || 'Active';
@@ -2096,8 +2228,8 @@ function closeParticipantsModal() {
 
 function switchProviderTab(tab, btn) {
     currentProviderTab = tab;
-    document.querySelectorAll('.ptab').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.ptab-panel').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('#provOv .ptab').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('#provOv .ptab-panel').forEach(el => el.classList.remove('active'));
 
     const button = btn || document.getElementById(`ptab-${tab}`);
     if (button) {

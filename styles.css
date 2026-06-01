@@ -398,6 +398,18 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 .hci{display:inline-flex;align-items:center;justify-content:center;width:12px;line-height:1}
 .hct{display:inline-block;min-width:0}
 .hc strong{color:var(--ink)}
+
+/* provider summary treemap */
+.provider-summary-head{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;margin-bottom:.9rem;flex-wrap:wrap}
+.provider-summary-title{font-family:'Calibri',sans-serif;font-weight:700;font-size:1rem;color:var(--ink);line-height:1.15}
+.provider-summary-subtitle{font-family:'Calibri',sans-serif;font-size:.78rem;color:var(--muted);margin-top:.15rem}
+.provider-summary-total{font-family:'Calibri',sans-serif;font-size:.78rem;font-weight:700;color:var(--blue);white-space:nowrap}
+.provider-treemap{position:relative;width:100%;height:480px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:linear-gradient(180deg,rgba(226,237,245,.55),rgba(255,255,255,.96))}
+.provider-treemap-tile{position:absolute;display:flex;align-items:flex-end;justify-content:flex-start;padding:.7rem;border:1px solid rgba(255,255,255,.38);overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1)}
+.provider-treemap-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.1))}
+.provider-treemap-label{position:relative;z-index:1;max-width:100%;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25);font-family:'Calibri',sans-serif;line-height:1.1}
+.provider-treemap-name{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.provider-treemap-meta{margin-top:.18rem;font-size:.8em;font-weight:700;opacity:.95;white-space:nowrap}
 /* pax button in history row — admin clickable */
 .pax-btn{display:grid;grid-template-columns:12px 40px;column-gap:.15rem;align-items:center;justify-content:start;width:52px;font-size:.75rem;font-family:'Calibri',sans-serif;font-weight:700;color:var(--muted);background:transparent;border:none;cursor:default;padding:0}
 .pax-btn .hct{text-align:left}
