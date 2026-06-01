@@ -326,7 +326,7 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 .bl-reason-ta{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:.52rem .7rem;font-family:'Calibri',sans-serif;font-size:.85rem;background:var(--card);outline:none;cursor:pointer}
 .bl-reason-ta:focus{border-color:var(--blue)}
 .trainer-flag-reason{position:relative}
-.trainer-flag-reason-btn{width:100%;text-align:left;border:1.5px solid var(--border);border-radius:8px;padding:.72rem .85rem;font-family:'Calibri',sans-serif;font-size:.88rem;background:var(--card);color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+.trainer-flag-reason-btn{width:100%;text-align:left;border:1.5px solid var(--border);border-radius:8px;padding:.4rem .7rem;font-family:'Calibri',sans-serif;font-size:.83rem;line-height:1.2;background:var(--card);color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:.75rem;min-height:calc(1.5em + .8rem + 3px)}
 .trainer-flag-reason-btn::after{content:'▾';font-size:.85rem;color:var(--muted)}
 .trainer-flag-reason-btn:focus{border-color:var(--blue);outline:none}
 .trainer-flag-reason-menu{display:none;position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;max-height:220px;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 14px 30px rgba(7,31,51,.18);padding:.35rem}
