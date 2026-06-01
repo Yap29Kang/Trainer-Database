@@ -2482,7 +2482,20 @@ function confirmImport() {
 }
 
 function downloadExport() {
-    showToast('📥 Download feature coming soon');
+    const query = getCurrentListQuery();
+    const params = new URLSearchParams({
+        search: query.search || '',
+        status: currentView === 'prov' ? (query.status || 'all') : 'all',
+        sort: query.sort || 'asc'
+    });
+
+    const url = 'api/download-providers.php?' + params.toString();
+    const link = document.createElement('a');
+    link.href = url;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
 }
 
 // Toast notifications
