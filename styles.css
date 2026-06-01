@@ -350,6 +350,10 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 .poc:hover{background:rgba(255,255,255,.28)}
 .pos{position:relative;padding:.65rem 1.45rem;border-bottom:1px solid var(--border);background:var(--cream);flex-shrink:0}
 .pos svg{position:absolute;left:1.9rem;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;width:14px;height:14px}
+.pos-controls{display:flex;gap:.5rem;align-items:center}
+.pos-controls .psi{flex:1;width:auto}
+.pdl{padding:.42rem .6rem;border-radius:8px;border:1.5px solid var(--border);background:var(--card);cursor:pointer;font-weight:700;color:var(--blue);font-family:'Calibri',sans-serif}
+.pdl:hover{background:#f6fbff}
 .psi{width:100%;border:1.5px solid var(--border);border-radius:8px;padding:.42rem .65rem .42rem 2.35rem;font-family:'Calibri',sans-serif;font-size:.85rem;background:var(--card);outline:none;transition:border-color .2s;color:var(--ink)}
 .psi:focus{border-color:var(--blue)}
 .pob{overflow-y:auto;flex:1;padding:.85rem 1.45rem}

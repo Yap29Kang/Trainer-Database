@@ -268,7 +268,10 @@ if (isset($content_file) && is_file($content_file)) {
         </div>
         <div class="pos">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-            <input class="psi" id="partSearch" type="text" placeholder="Search participants by name, department or course..." oninput="filterParticipants()">
+            <div class="pos-controls">
+                <input class="psi" id="partSearch" type="text" placeholder="Search participants by name, department or course..." oninput="filterParticipants()">
+                <button class="pdl" type="button" onclick="downloadParticipants()">Download</button>
+            </div>
         </div>
         <div class="pob">
             <table class="ptbl">
@@ -502,6 +505,8 @@ let currentTrainerDetail = null;
 let currentProviderTab = 'courses';
 let currentTrainerTab = 'providers';
 let currentParticipants = [];
+let currentParticipantsProviderId = null;
+let currentParticipantsItemId = null;
 let participantPage = 1;
 let participantSearch = '';
 const expandedParticipants = new Set();
@@ -1352,6 +1357,21 @@ function renderParticipantsModal(payload) {
     renderParticipants();
 }
 
+function downloadParticipants() {
+    const providerId = currentParticipantsProviderId || (currentProviderDetail ? currentProviderDetail.TP_ID : null);
+    if (!providerId) {
+        showToast('⚠️ Provider not selected');
+        return;
+    }
+
+    const url = new URL('api/download-participants.php', window.location.href);
+    url.searchParams.set('id', String(providerId));
+    if (currentParticipantsItemId) url.searchParams.set('item_id', String(currentParticipantsItemId));
+
+    // trigger download
+    window.location = url.toString();
+}
+
 // Open provider modal
 function openProviderModal(id) {
     const modal = document.getElementById('provOv');
@@ -2192,6 +2212,9 @@ function confirmStatus() {
 function openParticipantsModal(itemId, providerId) {
     // Use provided providerId or fall back to currentProviderDetail
     const actualProviderId = providerId || (currentProviderDetail ? currentProviderDetail.TP_ID : null);
+    // store for downloads
+    currentParticipantsProviderId = actualProviderId;
+    currentParticipantsItemId = itemId || null;
     
     if (!actualProviderId) {
         showToast('⚠️ Provider not selected');
