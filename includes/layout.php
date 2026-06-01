@@ -273,7 +273,7 @@ if (isset($content_file) && is_file($content_file)) {
         <div class="pob">
             <table class="ptbl">
                 <thead>
-                    <tr><th>#</th><th>Name</th><th>Department</th><th>Course</th><th>Completion Year</th></tr>
+                    <tr><th>#</th><th>Name</th><th>Department</th><th>Courses</th></tr>
                 </thead>
                 <tbody id="partBd"></tbody>
             </table>
@@ -504,6 +504,7 @@ let currentTrainerTab = 'providers';
 let currentParticipants = [];
 let participantPage = 1;
 let participantSearch = '';
+const expandedParticipants = new Set();
 let currentListPages = { prov: 1, train: 1 };
 const providerDetailCache = new Map();
 const providerDetailInflight = new Map();
@@ -1335,13 +1336,14 @@ function setParticipantsModalLoading() {
 
     if (title) title.textContent = 'Participants';
     if (subtitle) subtitle.textContent = 'Loading participant list...';
-    if (body) body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.4rem;color:var(--muted)">Loading participants...</td></tr>';
+    if (body) body.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:1.4rem;color:var(--muted)">Loading participants...</td></tr>';
     if (pager) pager.innerHTML = '';
     if (info) info.textContent = '';
 }
 
 function renderParticipantsModal(payload) {
     currentParticipants = Array.isArray(payload.participants) ? payload.participants : [];
+    expandedParticipants.clear();
     participantPage = 1;
     participantSearch = '';
     document.getElementById('partT').textContent = `Participants — ${payload.provider_name || currentProviderDetail?.TP_Name || '—'}` + (payload.course_name ? ` — ${payload.course_name}` : '');
@@ -2216,7 +2218,7 @@ function openParticipantsModal(itemId, providerId) {
         .catch(err => {
             console.error(err);
             document.getElementById('partS').textContent = 'Unable to load participants';
-            document.getElementById('partBd').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.4rem;color:var(--muted)">Could not load participant list</td></tr>';
+            document.getElementById('partBd').innerHTML = '<tr><td colspan="4" style="text-align:center;padding:1.4rem;color:var(--muted)">Could not load participant list</td></tr>';
             showToast('⚠️ Could not load participant list');
         });
 }
@@ -2269,17 +2271,80 @@ function filterParticipants() {
     renderParticipants();
 }
 
+function getParticipantGroupKey(row) {
+    const token = String(row.Participant_Token || '').trim();
+    if (token) return `tok:${token}`;
+
+    const id = String(row.Participant_ID || '').trim();
+    if (id) return `id:${id}`;
+
+    const name = String(row.Participant_Name || '').trim().toLowerCase();
+    const dept = String(row.Participant_Department || '').trim().toLowerCase();
+    return `name:${name}|dept:${dept}`;
+}
+
+function buildParticipantGroups(rows) {
+    const groups = new Map();
+
+    rows.forEach(row => {
+        const key = getParticipantGroupKey(row);
+        if (!groups.has(key)) {
+            groups.set(key, {
+                key,
+                Participant_Name: row.Participant_Name || '—',
+                Participant_Department: row.Participant_Department || '—',
+                courses: []
+            });
+        }
+
+        const group = groups.get(key);
+        group.courses.push({
+            Course_Name: row.Course_Name || '—',
+            Completion_Year: row.Completion_Year || '—'
+        });
+    });
+
+    const grouped = Array.from(groups.values());
+    grouped.forEach(group => {
+        group.courses.sort((a, b) => {
+            const yearA = Number(a.Completion_Year || 0);
+            const yearB = Number(b.Completion_Year || 0);
+            if (yearA !== yearB) return yearB - yearA;
+            return String(a.Course_Name || '').localeCompare(String(b.Course_Name || ''));
+        });
+        group.course_count = group.courses.length;
+    });
+
+    return grouped.sort((a, b) => String(a.Participant_Name || '').localeCompare(String(b.Participant_Name || '')));
+}
+
+function toggleParticipantExpand(key) {
+    if (!key) return;
+    if (expandedParticipants.has(key)) {
+        expandedParticipants.delete(key);
+    } else {
+        expandedParticipants.add(key);
+    }
+    renderParticipants();
+}
+
 function renderParticipants() {
     const body = document.getElementById('partBd');
     const pager = document.getElementById('pgBs');
     const info = document.getElementById('pgI');
     if (!body || !pager || !info) return;
 
-    const filtered = currentParticipants.filter(row => {
+    const grouped = buildParticipantGroups(currentParticipants);
+    const filtered = grouped.filter(group => {
         if (!participantSearch) return true;
-        return String(row.Participant_Name || '').toLowerCase().includes(participantSearch)
-            || String(row.Participant_Department || '').toLowerCase().includes(participantSearch)
-            || String(row.Course_Name || '').toLowerCase().includes(participantSearch);
+        const matchesIdentity = String(group.Participant_Name || '').toLowerCase().includes(participantSearch)
+            || String(group.Participant_Department || '').toLowerCase().includes(participantSearch);
+        if (matchesIdentity) return true;
+
+        return group.courses.some(course => {
+            return String(course.Course_Name || '').toLowerCase().includes(participantSearch)
+                || String(course.Completion_Year || '').toLowerCase().includes(participantSearch);
+        });
     });
 
     const pageSize = 10;
@@ -2288,15 +2353,25 @@ function renderParticipants() {
     const start = (participantPage - 1) * pageSize;
     const pageRows = filtered.slice(start, start + pageSize);
 
-    body.innerHTML = pageRows.length ? pageRows.map((row, idx) => `
-        <tr>
+    body.innerHTML = pageRows.length ? pageRows.map((group, idx) => {
+        const isExpanded = expandedParticipants.has(group.key);
+        const details = group.courses.map(course => `
+            <div class="part-course-row">
+                <span class="part-course-name">${escapeHtml(String(course.Course_Name || '—'))}</span>
+                <span class="part-course-year">${escapeHtml(String(course.Completion_Year || '—'))}</span>
+            </div>
+        `).join('');
+
+        return `
+        <tr class="part-row-summary ${isExpanded ? 'expanded' : ''}" onclick="toggleParticipantExpand(decodeURIComponent('${encodeURIComponent(group.key)}'))">
             <td>${start + idx + 1}</td>
-            <td><strong>${row.Participant_Name || '—'}</strong></td>
-            <td><span class="dtag">${row.Participant_Department || '—'}</span></td>
-            <td>${row.Course_Name || '—'}</td>
-            <td>${row.Completion_Year || '—'}</td>
+            <td><strong>${escapeHtml(String(group.Participant_Name || '—'))}</strong><span class="part-expand">${isExpanded ? '▾' : '▸'}</span></td>
+            <td><span class="dtag">${escapeHtml(String(group.Participant_Department || '—'))}</span></td>
+            <td><span class="part-course-count">${group.course_count} ${group.course_count === 1 ? 'course' : 'courses'}</span></td>
         </tr>
-    `).join('') : `<tr><td colspan="5" style="text-align:center;padding:1.4rem;color:var(--muted)">No participants found</td></tr>`;
+        ${isExpanded ? `<tr class="part-row-detail"><td colspan="4"><div class="part-detail-wrap"><div class="part-detail-head"><span>Course</span><span>Completion Year</span></div>${details}</div></td></tr>` : ''}
+        `;
+    }).join('') : `<tr><td colspan="4" style="text-align:center;padding:1.4rem;color:var(--muted)">No participants found</td></tr>`;
 
     info.textContent = filtered.length ? `Showing ${start + 1}-${Math.min(start + pageSize, filtered.length)} of ${filtered.length}` : 'Showing 0 of 0';
     pager.innerHTML = '';
