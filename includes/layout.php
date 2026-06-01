@@ -2489,7 +2489,7 @@ function downloadExport() {
         sort: query.sort || 'asc'
     });
 
-    const url = 'api/download-providers.php?' + params.toString();
+    const url = (currentView === 'train') ? 'api/download-trainers.php?' + params.toString() : 'api/download-providers.php?' + params.toString();
     const link = document.createElement('a');
     link.href = url;
     link.rel = 'noopener';
