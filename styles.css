@@ -367,6 +367,7 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 .part-detail-wrap{padding:.65rem .75rem .75rem;border-top:1px dashed var(--border);background:rgba(226,237,245,.35)}
 .part-detail-head,.part-course-row{display:grid;grid-template-columns:1fr 120px;column-gap:.8rem;align-items:center}
 .part-detail-head{font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:.45rem}
+.part-detail-head span:last-child{ text-align:right }
 .part-course-row{font-size:.8rem;padding:.24rem 0;border-top:1px solid rgba(200,220,234,.55)}
 .part-course-row:first-of-type{border-top:none}
 .part-course-name{color:var(--ink)}
