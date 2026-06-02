@@ -375,11 +375,19 @@ if (isset($content_file) && is_file($content_file)) {
             </div>
             <div class="ptab-panel" id="trainerTab-courses">
                 <div class="mb2">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                    <div class="trainer-history-bar">
                         <div id="trainerYearHeading"></div>
-                        <div class="mar">
-                            <span style="font-size:.75rem;color:var(--muted);font-family:'Calibri',sans-serif">Filter year:</span>
-                            <select class="ysel" id="trainerYSel" onchange="renderTrainerCourses()"><option value="all">All Years</option></select>
+                        <div class="trainer-history-actions">
+                            <div class="mar trainer-history-filter">
+                                <span style="font-size:.75rem;color:var(--muted);font-family:'Calibri',sans-serif">Filter year:</span>
+                                <select class="ysel" id="trainerYSel" onchange="renderTrainerCourses()"><option value="all">All Years</option></select>
+                            </div>
+                            <?php if ($_SESSION['role'] === 'admin'): ?>
+                            <button type="button" class="dl-btn trainer-download-btn" onclick="downloadTrainerCourses()">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                                Download
+                            </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div id="trainerCoursesC"></div>
@@ -2744,6 +2752,23 @@ function downloadProviderCourses() {
 
     const url = new URL('api/download-provider-courses.php', window.location.href);
     url.searchParams.set('id', String(currentProviderDetail.TP_ID));
+
+    const link = document.createElement('a');
+    link.href = url.toString();
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+}
+
+function downloadTrainerCourses() {
+    if (!currentTrainerDetail || !currentTrainerDetail.Trainer_ID) {
+        showToast('⚠️ Trainer not selected');
+        return;
+    }
+
+    const url = new URL('api/download-trainer-courses.php', window.location.href);
+    url.searchParams.set('id', String(currentTrainerDetail.Trainer_ID));
 
     const link = document.createElement('a');
     link.href = url.toString();
