@@ -133,11 +133,19 @@ if (isset($content_file) && is_file($content_file)) {
             <?php endif; ?>
             <div class="ptab-panel active" id="providerTab-courses">
                 <div class="mb2">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                    <div class="provider-history-bar">
                         <div id="yearHeading"></div>
-                        <div class="mar">
-                            <span style="font-size:.75rem;color:var(--muted);font-family:'Calibri',sans-serif">Filter year:</span>
-                            <select class="ysel" id="ySel" onchange="renderHistory()"><option value="all">All Years</option></select>
+                        <div class="provider-history-actions">
+                            <div class="mar provider-history-filter">
+                                <span style="font-size:.75rem;color:var(--muted);font-family:'Calibri',sans-serif">Filter year:</span>
+                                <select class="ysel" id="ySel" onchange="renderHistory()"><option value="all">All Years</option></select>
+                            </div>
+                            <?php if ($_SESSION['role'] === 'admin'): ?>
+                            <button type="button" class="dl-btn provider-download-btn" onclick="downloadProviderCourses()">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                                Download
+                            </button>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <div id="histC"></div>
@@ -2722,6 +2730,23 @@ function downloadExport() {
     const url = (currentView === 'train') ? 'api/download-trainers.php?' + params.toString() : 'api/download-providers.php?' + params.toString();
     const link = document.createElement('a');
     link.href = url;
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+}
+
+function downloadProviderCourses() {
+    if (!currentProviderDetail || !currentProviderDetail.TP_ID) {
+        showToast('⚠️ Provider not selected');
+        return;
+    }
+
+    const url = new URL('api/download-provider-courses.php', window.location.href);
+    url.searchParams.set('id', String(currentProviderDetail.TP_ID));
+
+    const link = document.createElement('a');
+    link.href = url.toString();
     link.rel = 'noopener';
     document.body.appendChild(link);
     link.click();

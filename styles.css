@@ -387,6 +387,10 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 .mab{display:flex;align-items:center;gap:.32rem;border:1.5px solid var(--border);background:transparent;border-radius:7px;padding:.35rem .8rem;font-family:'Calibri',sans-serif;font-size:.79rem;font-weight:700;cursor:pointer;transition:all .18s}
 .mab.rd{color:var(--red);border-color:var(--rbd)}.mab.rd:hover{background:var(--rbg)}
 .mar{margin-left:auto;display:flex;align-items:center;gap:.45rem}
+.provider-history-bar{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem}
+.provider-history-actions{display:flex;align-items:center;justify-content:space-between;gap:.75rem;min-width:0;flex:1}
+.provider-history-filter{margin-left:0;flex-shrink:0}
+.provider-download-btn{display:inline-flex;margin-left:0}
 .ysel{border:1.5px solid var(--border);border-radius:7px;padding:.33rem .6rem;font-family:'Calibri',sans-serif;font-size:.79rem;background:var(--card);color:var(--ink);outline:none;cursor:pointer}
 
 /* provider modal tabs */
