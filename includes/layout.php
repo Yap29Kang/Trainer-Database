@@ -471,11 +471,35 @@ if (isset($content_file) && is_file($content_file)) {
 
 <!-- SUCCESS MODAL -->
 <div class="uov" id="successOv" style="z-index:900" onclick="if(event.target===this)closeSuccess()">
-    <div class="uom" style="max-width: 400px; text-align: center; padding: 2rem 1.5rem;">
-        <div style="font-size: 3.5rem; margin-bottom: 1rem; line-height: 1;">✅</div>
-        <h3 style="margin: 0 0 0.5rem; color: var(--text);">Upload Successful</h3>
-        <p style="color: var(--muted); margin: 0 0 1.5rem; font-size: 0.95rem;">The database has been updated successfully.</p>
-        <button class="uc" style="width: 100%; justify-content: center; padding: 0.75rem;" onclick="closeSuccess()">OK</button>
+    <div class="uom" style="max-width: 480px; padding: 0; overflow: hidden; border-radius: 12px; background: var(--card); text-align: left; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+        <div style="background: var(--blue-lt); padding: 2.5rem 1.5rem 2rem; text-align: center;">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 64px; height: 64px; border-radius: 50%; background: var(--card); border: 1.5px solid var(--blue); color: var(--blue); margin-bottom: 1.25rem; box-shadow: 0 4px 10px rgba(0,128,198,0.15);">
+                <svg viewBox="0 0 24 24" width="32" height="32" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+            </div>
+            <h3 style="margin: 0; color: var(--blue-dk); font-size: 1.35rem; font-weight: 700; font-family: 'Calibri', sans-serif;">Upload successful</h3>
+        </div>
+        <div style="padding: 1.5rem;">
+            <div style="background: var(--paper); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.75rem;">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                <div style="font-size: 0.95rem; color: var(--ink); font-family: 'Calibri', sans-serif;"><strong id="successFileName" style="font-weight: 700;"></strong> <span style="color: var(--muted);" id="successFileSize"></span></div>
+            </div>
+            <div style="background: var(--paper); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.75rem;">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                <div style="font-size: 0.95rem; color: var(--ink); font-family: 'Calibri', sans-serif;" id="successCounts"></div>
+            </div>
+            <div style="background: var(--paper); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.75rem;">
+                <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color: var(--muted);"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <div style="font-size: 0.95rem; color: var(--ink); font-family: 'Calibri', sans-serif;"><span style="color: var(--muted);">Processed in </span><strong id="successTime" style="font-weight: 700;"></strong> <span style="color: var(--muted);" id="successDate"></span></div>
+            </div>
+            <p style="color: var(--muted); margin: 0 0 1.5rem; font-size: 0.9rem; text-align: center; line-height: 1.5; font-family: 'Calibri', sans-serif;">The database has been updated. Changes are reflected immediately across all provider cards.</p>
+            <div style="display: flex; gap: 0.75rem;">
+                <button class="ux" style="flex: 1; justify-content: center; padding: 0.75rem; font-size: 0.95rem; opacity: 0.5; pointer-events: none; border: 1px solid var(--border); background: transparent; color: var(--muted); border-radius: 7px; font-family: 'Calibri', sans-serif; font-weight: 700;">View providers</button>
+                <button class="uc" style="flex: 1; justify-content: center; padding: 0.75rem; background: var(--card); color: var(--blue); border: 1px solid var(--border); font-size: 0.95rem; display: flex; gap: 0.5rem; align-items: center; border-radius: 7px; font-family: 'Calibri', sans-serif; font-weight: 700; cursor: pointer;" onclick="closeSuccess()">
+                    <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Done
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -2605,6 +2629,7 @@ function performUpload() {
     document.getElementById('pf').style.width = '0';
     document.getElementById('plbl').textContent = 'Preparing preview…';
 
+    const uploadStartTime = performance.now();
     uploadWithProgress('api/upload.php', formData, function(e) {
         if (e.lengthComputable) {
             const percentComplete = (e.loaded / e.total) * 100;
@@ -2624,11 +2649,12 @@ function performUpload() {
             document.getElementById('plbl').textContent = 'Preview ready';
         } else if (result.success) {
             // fallback: no preview, treat as success
+            const timeTaken = ((performance.now() - uploadStartTime) / 1000).toFixed(1);
             document.getElementById('pf').style.width = '100%';
             document.getElementById('plbl').textContent = 'Upload complete ✓';
             setTimeout(() => {
                 showToast('✅ Database updated successfully!');
-                showSuccess();
+                showSuccess(result.stats || {}, timeTaken, selectedFile);
                 loadData();
                 updateStats();
             }, 700);
@@ -2734,6 +2760,7 @@ function confirmImport() {
     fill.style.width = '0';
     lbl.textContent = 'Uploading…';
 
+    const uploadStartTime = performance.now();
     uploadWithProgress('api/upload.php', formData, function(e) {
         if (e.lengthComputable) {
             const percentComplete = (e.loaded / e.total) * 100;
@@ -2748,13 +2775,14 @@ function confirmImport() {
     .then(parseUploadResponse)
     .then(result => {
         if (result.success) {
+            const timeTaken = ((performance.now() - uploadStartTime) / 1000).toFixed(1);
             fill.style.width = '100%';
             lbl.textContent = 'Upload complete ✓';
             setTimeout(() => {
                 // close preview without reopening upload
                 closeUploadPreview(false);
                 showToast('✅ Database updated successfully!');
-                showSuccess();
+                showSuccess(result.stats || {}, timeTaken, selectedFile);
                 loadData();
                 updateStats();
             }, 700);
@@ -2769,15 +2797,30 @@ function confirmImport() {
     });
 }
 
-function showSuccess() {
+function formatBytes(bytes, decimals = 1) {
+    if (!+bytes) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+}
+
+function showSuccess(stats, timeTaken, file) {
+    document.getElementById('successFileName').textContent = file.name;
+    document.getElementById('successFileSize').textContent = '· ' + formatBytes(file.size);
+    document.getElementById('successCounts').innerHTML = `<strong style="font-weight: 700;">${stats.providers_added || 0} providers</strong> and <strong style="font-weight: 700;">${stats.trainers_added || 0} trainers</strong> updated`;
+    document.getElementById('successTime').textContent = timeTaken + 's';
+    
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
+    document.getElementById('successDate').textContent = '· ' + formatter.format(now);
+    
     document.getElementById('successOv').classList.add('open');
 }
 
 function closeSuccess() {
-    document.getElementById('successOv').classList.remove('open');
-    closeUploadPreview(false);
-    closeUpload();
-    resetUpload();
+    window.location.reload();
 }
 
 function downloadExport() {
