@@ -404,7 +404,7 @@ function bulkInsertRows(PDO $pdo, $table, array $columns, array $rows, $ignoreCo
     $conflictSuffix = $ignoreConflicts && $driver === 'pgsql' ? ' ON CONFLICT DO NOTHING' : '';
     $inserted = 0;
 
-    foreach (chunkRows($rows, 200) as $chunk) {
+    foreach (chunkRows($rows, 1000) as $chunk) {
         $valuesSql = implode(', ', array_fill(0, count($chunk), $placeholders));
         $sql = sprintf('%s %s (%s) VALUES %s%s', $insertPrefix, $table, $columnList, $valuesSql, $conflictSuffix);
         $params = [];
@@ -430,7 +430,7 @@ function fetchInsertedItemMap(PDO $pdo, array $itemRows) {
     $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
     $map = [];
 
-    foreach (chunkRows($itemRows, 200) as $chunk) {
+    foreach (chunkRows($itemRows, 1000) as $chunk) {
         $placeholders = '(' . implode(', ', array_fill(0, 5, '?')) . ')';
         $valuesSql = implode(', ', array_fill(0, count($chunk), $placeholders));
         $chunkKeys = [];
@@ -489,7 +489,7 @@ function fetchIdMap(PDO $pdo, $table, $idColumn, $valueColumn, array $values) {
     }
 
     $map = [];
-    foreach (chunkRows($values, 500) as $chunk) {
+    foreach (chunkRows($values, 1000) as $chunk) {
         $placeholders = implode(', ', array_fill(0, count($chunk), '?'));
         $sql = sprintf('SELECT %s, %s FROM %s WHERE %s IN (%s)', $idColumn, $valueColumn, $table, $valueColumn, $placeholders);
         $stmt = $pdo->prepare($sql);

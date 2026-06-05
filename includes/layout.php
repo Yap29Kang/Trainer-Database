@@ -469,6 +469,16 @@ if (isset($content_file) && is_file($content_file)) {
     </div>
 </div>
 
+<!-- SUCCESS MODAL -->
+<div class="uov" id="successOv" style="z-index:900" onclick="if(event.target===this)closeSuccess()">
+    <div class="uom" style="max-width: 400px; text-align: center; padding: 2rem 1.5rem;">
+        <div style="font-size: 3.5rem; margin-bottom: 1rem; line-height: 1;">✅</div>
+        <h3 style="margin: 0 0 0.5rem; color: var(--text);">Upload Successful</h3>
+        <p style="color: var(--muted); margin: 0 0 1.5rem; font-size: 0.95rem;">The database has been updated successfully.</p>
+        <button class="uc" style="width: 100%; justify-content: center; padding: 0.75rem;" onclick="closeSuccess()">OK</button>
+    </div>
+</div>
+
 <!-- UPLOAD PREVIEW MODAL -->
 <div class="pov" id="upPreviewOv" onclick="if(event.target===this)closeUploadPreview()">
     <div class="pom">
@@ -2617,9 +2627,8 @@ function performUpload() {
             document.getElementById('pf').style.width = '100%';
             document.getElementById('plbl').textContent = 'Upload complete ✓';
             setTimeout(() => {
-                closeUpload();
                 showToast('✅ Database updated successfully!');
-                alert('Upload successful! The database has been updated.');
+                showSuccess();
                 loadData();
                 updateStats();
             }, 700);
@@ -2744,9 +2753,8 @@ function confirmImport() {
             setTimeout(() => {
                 // close preview without reopening upload
                 closeUploadPreview(false);
-                closeUpload();
                 showToast('✅ Database updated successfully!');
-                alert('Upload successful! The database has been updated.');
+                showSuccess();
                 loadData();
                 updateStats();
             }, 700);
@@ -2759,6 +2767,17 @@ function confirmImport() {
         showToast('❌ Upload error: ' + (err && err.message ? err.message : String(err || 'Unknown error')));
         prog.style.display = 'none';
     });
+}
+
+function showSuccess() {
+    document.getElementById('successOv').classList.add('open');
+}
+
+function closeSuccess() {
+    document.getElementById('successOv').classList.remove('open');
+    closeUploadPreview(false);
+    closeUpload();
+    resetUpload();
 }
 
 function downloadExport() {
