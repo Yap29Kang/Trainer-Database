@@ -2551,7 +2551,25 @@ function parseUploadResponse(response) {
             throw new Error((payload && payload.message) ? payload.message : ('Upload failed with status ' + response.status));
         }
 
-        return payload;
+    });
+}
+
+function uploadWithProgress(url, formData, onProgress) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', url, true);
+        xhr.upload.onprogress = onProgress;
+        xhr.onload = function() {
+            resolve({
+                ok: xhr.status >= 200 && xhr.status < 300,
+                status: xhr.status,
+                text: () => Promise.resolve(xhr.responseText)
+            });
+        };
+        xhr.onerror = function() {
+            reject(new Error('Network error during upload'));
+        };
+        xhr.send(formData);
     });
 }
 
@@ -2577,9 +2595,16 @@ function performUpload() {
     document.getElementById('pf').style.width = '0';
     document.getElementById('plbl').textContent = 'Preparing preview…';
 
-    fetch('api/upload.php', {
-        method: 'POST',
-        body: formData
+    uploadWithProgress('api/upload.php', formData, function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            document.getElementById('pf').style.width = percentComplete + '%';
+            if (percentComplete < 100) {
+                document.getElementById('plbl').textContent = 'Uploading preview (' + Math.round(percentComplete) + '%)…';
+            } else {
+                document.getElementById('plbl').textContent = 'Preparing preview…';
+            }
+        }
     })
     .then(parseUploadResponse)
     .then(result => {
@@ -2699,9 +2724,16 @@ function confirmImport() {
     fill.style.width = '0';
     lbl.textContent = 'Uploading…';
 
-    fetch('api/upload.php', {
-        method: 'POST',
-        body: formData
+    uploadWithProgress('api/upload.php', formData, function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = (e.loaded / e.total) * 100;
+            fill.style.width = percentComplete + '%';
+            if (percentComplete < 100) {
+                lbl.textContent = 'Uploading (' + Math.round(percentComplete) + '%)…';
+            } else {
+                lbl.textContent = 'Processing data…';
+            }
+        }
     })
     .then(parseUploadResponse)
     .then(result => {

@@ -224,7 +224,9 @@ function parseExcel($file_path) {
 
     require_once $autoloadPath;
 
-    $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file_path);
+    $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($file_path);
+    $reader->setReadDataOnly(true);
+    $spreadsheet = $reader->load($file_path);
     $worksheet = $spreadsheet->getActiveSheet();
     $rows = $worksheet->toArray('', true, true, false);
 
