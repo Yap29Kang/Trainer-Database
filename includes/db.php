@@ -475,7 +475,7 @@ function syncProviderExpertiseDefaults($tpId = null) {
     $stmt->execute();
     $rows = normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC));
 
-    $upd = $pdo->prepare('UPDATE TrainingProvider SET TP_FirstAoE = ?, TP_SecondAoE = ? WHERE TP_ID = ?');
+    $updateData = [];
     foreach ($rows as $row) {
         $providerId = (int)$row['TP_ID'];
         $calc = $expertiseMap[$providerId] ?? null;
@@ -490,7 +490,31 @@ function syncProviderExpertiseDefaults($tpId = null) {
         $secondNext = $secondCurrent !== '' ? $row['TP_SecondAoE'] : ($calc['second']['name'] ?? null);
 
         if ($firstNext !== $row['TP_FirstAoE'] || $secondNext !== $row['TP_SecondAoE']) {
-            $upd->execute([$firstNext, $secondNext, $providerId]);
+            $updateData[] = [$providerId, $firstNext, $secondNext];
+        }
+    }
+
+    if (!empty($updateData)) {
+        $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'pgsql') {
+            foreach (array_chunk($updateData, 1000) as $chunk) {
+                $values = [];
+                $params = [];
+                foreach ($chunk as $row) {
+                    $values[] = '(CAST(? AS INTEGER), CAST(? AS VARCHAR), CAST(? AS VARCHAR))';
+                    $params[] = $row[0];
+                    $params[] = $row[1];
+                    $params[] = $row[2];
+                }
+                $sql = 'UPDATE TrainingProvider AS tp SET TP_FirstAoE = v.first_aoe, TP_SecondAoE = v.second_aoe FROM (VALUES ' . implode(', ', $values) . ') AS v(id, first_aoe, second_aoe) WHERE tp.TP_ID = v.id';
+                $stmt = $pdo->prepare($sql);
+                $stmt->execute($params);
+            }
+        } else {
+            $upd = $pdo->prepare('UPDATE TrainingProvider SET TP_FirstAoE = ?, TP_SecondAoE = ? WHERE TP_ID = ?');
+            foreach ($updateData as $row) {
+                $upd->execute([$row[1], $row[2], $row[0]]);
+            }
         }
     }
 }

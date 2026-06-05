@@ -722,12 +722,49 @@ function processUploadData($data) {
     $participant_ids = fetchIdMap($pdo, 'Participant', 'Participant_ID', 'Participant_Name_Hash', $participantHashes);
 
     // Apply department updates once per participant instead of on every row.
+    // Optimization: Bulk update only changed departments to vastly improve processing speed.
     if (!empty($participant_departments)) {
-        $deptStmt = $pdo->prepare('UPDATE Participant SET Participant_Department = ? WHERE Participant_ID = ?');
+        $existingDepts = [];
+        foreach (array_chunk(array_values($participant_ids), 1000) as $chunk) {
+            $placeholders = implode(',', array_fill(0, count($chunk), '?'));
+            $stmt = $pdo->prepare("SELECT Participant_ID, Participant_Department FROM Participant WHERE Participant_ID IN ($placeholders)");
+            $stmt->execute($chunk);
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $existingDepts[(int)$row['Participant_ID']] = $row['Participant_Department'] ?? null;
+            }
+        }
+
+        $updateData = [];
         foreach ($participant_departments as $hash => $department) {
             $participantId = $participant_ids[$hash] ?? null;
             if ($participantId !== null) {
-                $deptStmt->execute([$department, $participantId]);
+                $currentDept = $existingDepts[(int)$participantId] ?? null;
+                if ($currentDept !== $department) {
+                    $updateData[] = [$participantId, $department];
+                }
+            }
+        }
+
+        if (!empty($updateData)) {
+            $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+            if ($driver === 'pgsql') {
+                foreach (array_chunk($updateData, 1000) as $chunk) {
+                    $values = [];
+                    $params = [];
+                    foreach ($chunk as $row) {
+                        $values[] = '(CAST(? AS INTEGER), CAST(? AS VARCHAR))';
+                        $params[] = $row[0];
+                        $params[] = $row[1];
+                    }
+                    $sql = 'UPDATE Participant AS p SET Participant_Department = v.dept FROM (VALUES ' . implode(', ', $values) . ') AS v(id, dept) WHERE p.Participant_ID = v.id';
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->execute($params);
+                }
+            } else {
+                $deptStmt = $pdo->prepare('UPDATE Participant SET Participant_Department = ? WHERE Participant_ID = ?');
+                foreach ($updateData as $row) {
+                    $deptStmt->execute([$row[1], $row[0]]);
+                }
             }
         }
     }
