@@ -2550,7 +2550,7 @@ function parseUploadResponse(response) {
         if (!response.ok) {
             throw new Error((payload && payload.message) ? payload.message : ('Upload failed with status ' + response.status));
         }
-
+        return payload;
     });
 }
 
@@ -2619,6 +2619,7 @@ function performUpload() {
             setTimeout(() => {
                 closeUpload();
                 showToast('✅ Database updated successfully!');
+                alert('Upload successful! The database has been updated.');
                 loadData();
                 updateStats();
             }, 700);
@@ -2745,6 +2746,7 @@ function confirmImport() {
                 closeUploadPreview(false);
                 closeUpload();
                 showToast('✅ Database updated successfully!');
+                alert('Upload successful! The database has been updated.');
                 loadData();
                 updateStats();
             }, 700);
