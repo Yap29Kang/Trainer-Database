@@ -493,7 +493,6 @@ if (isset($content_file) && is_file($content_file)) {
             </div>
             <p style="color: var(--muted); margin: 0 0 1.5rem; font-size: 0.9rem; text-align: center; line-height: 1.5; font-family: 'Calibri', sans-serif;">The database has been updated. Changes are reflected immediately across all provider cards.</p>
             <div style="display: flex; gap: 0.75rem;">
-                <button class="ux" style="flex: 1; justify-content: center; padding: 0.75rem; font-size: 0.95rem; opacity: 0.5; pointer-events: none; border: 1px solid var(--border); background: transparent; color: var(--muted); border-radius: 7px; font-family: 'Calibri', sans-serif; font-weight: 700;">View providers</button>
                 <button class="uc" style="flex: 1; justify-content: center; padding: 0.75rem; background: var(--card); color: var(--blue); border: 1px solid var(--border); font-size: 0.95rem; display: flex; gap: 0.5rem; align-items: center; border-radius: 7px; font-family: 'Calibri', sans-serif; font-weight: 700; cursor: pointer;" onclick="closeSuccess()">
                     <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                     Done
