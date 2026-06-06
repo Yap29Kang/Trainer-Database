@@ -216,6 +216,7 @@ function parseCSV($file_path) {
  * Parse Excel file using simple method (requires no external lib for basic xlsx)
  * For production, use PhpSpreadsheet library
  */
+
 function parseExcel($file_path) {
     $autoloadPath = __DIR__ . '/../vendor/autoload.php';
     if (!file_exists($autoloadPath)) {
@@ -224,17 +225,31 @@ function parseExcel($file_path) {
 
     require_once $autoloadPath;
 
+    $knownColumns = ['TP_Name', 'Trainer_Name', 'Item_Name', 'Participant_Name',
+                     'TP Name', 'Trainer Name', 'Item Name', 'Participant Name'];
+
+    // Step 1: read ONLY sheet names -- zero worksheet data loaded into memory.
     $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($file_path);
     $reader->setReadDataOnly(true);
-    $spreadsheet = $reader->load($file_path);
+    $sheetNames = $reader->listWorksheetNames($file_path);
 
     $data = [];
-    $sheetCount = $spreadsheet->getSheetCount();
 
-    // Iterate all sheets so multi-sheet workbooks are fully imported
-    for ($s = 0; $s < $sheetCount; $s++) {
-        $worksheet = $spreadsheet->getSheet($s);
+    // Step 2: load, process, and DISCARD one sheet at a time so peak memory
+    // stays bounded to a single sheet rather than the whole workbook.
+    foreach ($sheetNames as $sheetName) {
+        // Tell the reader to load ONLY this sheet -- the rest stays on disk.
+        $reader->setLoadSheetsOnly($sheetName);
+        $spreadsheet = $reader->load($file_path);
+
+        $worksheet = $spreadsheet->getActiveSheet();
         $rows = $worksheet->toArray('', true, true, false);
+
+        // Free the spreadsheet object IMMEDIATELY before processing rows so
+        // its memory is reclaimed before we accumulate parsed data.
+        $spreadsheet->disconnectWorksheets();
+        unset($spreadsheet, $worksheet);
+        gc_collect_cycles();
 
         if (empty($rows)) {
             continue;
@@ -242,10 +257,7 @@ function parseExcel($file_path) {
 
         $header = normalizeHeaders($rows[0]);
 
-        // Require at least one recognised column — skip sheets that look like
-        // cover pages or summary tabs with no importable data.
-        $knownColumns = ['TP_Name', 'Trainer_Name', 'Item_Name', 'Participant_Name',
-                         'TP Name', 'Trainer Name', 'Item Name', 'Participant Name'];
+        // Skip sheets that look like cover pages / summary tabs.
         $hasKnownColumn = false;
         foreach ($header as $h) {
             if (in_array(trim($h), $knownColumns, true)) {
@@ -254,13 +266,13 @@ function parseExcel($file_path) {
             }
         }
         if (!$hasKnownColumn) {
+            unset($rows, $header);
             continue;
         }
 
         for ($i = 1; $i < count($rows); $i++) {
             $row = $rows[$i];
 
-            // Keep row width aligned with header count
             if (count($row) < count($header)) {
                 $row = array_pad($row, count($header), '');
             } elseif (count($row) > count($header)) {
@@ -274,7 +286,6 @@ function parseExcel($file_path) {
 
             $assoc = normalizeImportedRow(canonicalizeRow($assoc));
 
-            // Skip completely empty rows
             $hasValue = false;
             foreach ($assoc as $value) {
                 if (trim((string)$value) !== '') {
@@ -288,6 +299,10 @@ function parseExcel($file_path) {
 
             $data[] = $assoc;
         }
+
+        // Release raw rows array before loading the next sheet.
+        unset($rows, $header);
+        gc_collect_cycles();
     }
 
     return $data;
