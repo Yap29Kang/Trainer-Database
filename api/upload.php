@@ -227,46 +227,67 @@ function parseExcel($file_path) {
     $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($file_path);
     $reader->setReadDataOnly(true);
     $spreadsheet = $reader->load($file_path);
-    $worksheet = $spreadsheet->getActiveSheet();
-    $rows = $worksheet->toArray('', true, true, false);
-
-    if (empty($rows)) {
-        return [];
-    }
-
-    $header = normalizeHeaders($rows[0]);
 
     $data = [];
-    for ($i = 1; $i < count($rows); $i++) {
-        $row = $rows[$i];
+    $sheetCount = $spreadsheet->getSheetCount();
 
-        // Keep row width aligned with header count
-        if (count($row) < count($header)) {
-            $row = array_pad($row, count($header), '');
-        } elseif (count($row) > count($header)) {
-            $row = array_slice($row, 0, count($header));
-        }
+    // Iterate all sheets so multi-sheet workbooks are fully imported
+    for ($s = 0; $s < $sheetCount; $s++) {
+        $worksheet = $spreadsheet->getSheet($s);
+        $rows = $worksheet->toArray('', true, true, false);
 
-        $assoc = array_combine($header, $row);
-        if ($assoc === false) {
+        if (empty($rows)) {
             continue;
         }
 
-        $assoc = normalizeImportedRow(canonicalizeRow($assoc));
+        $header = normalizeHeaders($rows[0]);
 
-        // Skip completely empty rows
-        $hasValue = false;
-        foreach ($assoc as $value) {
-            if (trim((string)$value) !== '') {
-                $hasValue = true;
+        // Require at least one recognised column — skip sheets that look like
+        // cover pages or summary tabs with no importable data.
+        $knownColumns = ['TP_Name', 'Trainer_Name', 'Item_Name', 'Participant_Name',
+                         'TP Name', 'Trainer Name', 'Item Name', 'Participant Name'];
+        $hasKnownColumn = false;
+        foreach ($header as $h) {
+            if (in_array(trim($h), $knownColumns, true)) {
+                $hasKnownColumn = true;
                 break;
             }
         }
-        if (!$hasValue) {
+        if (!$hasKnownColumn) {
             continue;
         }
 
-        $data[] = $assoc;
+        for ($i = 1; $i < count($rows); $i++) {
+            $row = $rows[$i];
+
+            // Keep row width aligned with header count
+            if (count($row) < count($header)) {
+                $row = array_pad($row, count($header), '');
+            } elseif (count($row) > count($header)) {
+                $row = array_slice($row, 0, count($header));
+            }
+
+            $assoc = array_combine($header, $row);
+            if ($assoc === false) {
+                continue;
+            }
+
+            $assoc = normalizeImportedRow(canonicalizeRow($assoc));
+
+            // Skip completely empty rows
+            $hasValue = false;
+            foreach ($assoc as $value) {
+                if (trim((string)$value) !== '') {
+                    $hasValue = true;
+                    break;
+                }
+            }
+            if (!$hasValue) {
+                continue;
+            }
+
+            $data[] = $assoc;
+        }
     }
 
     return $data;
@@ -730,7 +751,12 @@ function processUploadData($data) {
             $stmt = $pdo->prepare("SELECT Participant_ID, Participant_Department FROM Participant WHERE Participant_ID IN ($placeholders)");
             $stmt->execute($chunk);
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $existingDepts[(int)$row['Participant_ID']] = $row['Participant_Department'] ?? null;
+                // Normalize key casing so it works across all DB drivers
+                $rowNorm = array_change_key_case($row, CASE_UPPER);
+                $pid = (int)($rowNorm['PARTICIPANT_ID'] ?? 0);
+                if ($pid > 0) {
+                    $existingDepts[$pid] = $rowNorm['PARTICIPANT_DEPARTMENT'] ?? null;
+                }
             }
         }
 
