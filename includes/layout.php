@@ -220,11 +220,9 @@ if (isset($content_file) && is_file($content_file)) {
                 <div class="trainer-flag-reason">
                     <button type="button" class="trainer-flag-reason-btn" id="blReasonBtn" onclick="toggleBlacklistReasonMenu()">Select a reason</button>
                     <div class="trainer-flag-reason-menu" id="blReasonMenu">
-                        <button type="button" class="trainer-flag-reason-item" onclick="chooseBlacklistReason('Fraud / falsified records')">Fraud / falsified records</button>
-                        <button type="button" class="trainer-flag-reason-item" onclick="chooseBlacklistReason('Repeated complaints')">Repeated complaints</button>
-                        <button type="button" class="trainer-flag-reason-item" onclick="chooseBlacklistReason('Misconduct / unethical behavior')">Misconduct / unethical behavior</button>
-                        <button type="button" class="trainer-flag-reason-item" onclick="chooseBlacklistReason('Safety / compliance violations')">Safety / compliance violations</button>
-                        <button type="button" class="trainer-flag-reason-item" onclick="chooseBlacklistReason('Poor course delivery / performance')">Poor course delivery / performance</button>
+                        <button type="button" class="trainer-flag-reason-item" onclick="chooseBlacklistReason('Performance quality')">Performance quality</button>
+                        <button type="button" class="trainer-flag-reason-item" onclick="chooseBlacklistReason('Safety & compliance')">Safety & compliance</button>
+                        <button type="button" class="trainer-flag-reason-item" onclick="chooseBlacklistReason('Fraud & misconduct')">Fraud & misconduct</button>
                     </div>
                 </div>
             </div>
