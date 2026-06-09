@@ -47,6 +47,9 @@ RUN printf '%s\n' \
     'log_errors=On' \
     > /usr/local/etc/php/conf.d/uploads.ini
 
-EXPOSE 80
+# Change Apache to listen on 8080 for Cloud Run
+RUN sed -i 's/80/8080/g' /etc/apache2/ports.conf /etc/apache2/sites-available/000-default.conf
+
+EXPOSE 8080
 
 CMD ["apache2-foreground"]
