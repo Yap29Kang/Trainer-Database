@@ -231,6 +231,10 @@ function parseExcel($file_path) {
         'Item Title', 'Training Provider', 'Trainer/Speaker Name', 'Trainers/Speaker Name',
         'Full Name', 'Category', 'Department', 'Completion Date',
         'First Name', 'Last Name', 'Organisation Description', 'Category Description',
+        'Completion Date', 'Category Description', 'Trainer/Speaker Name',
+        'Item Type', 'Start Date', 'Active', 'Source', 'Business Unit',
+        'Price', 'Total Hours', 'Facility ID', 'Skillpool',
+        'User ID', 'Job Classification Description',
     ];
 
     // Step 1: read ONLY sheet names -- zero worksheet data loaded into memory.
