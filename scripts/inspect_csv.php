@@ -7,24 +7,43 @@ function normalizeHeaders($headers) {
 }
 
 function canonicalizeRow($row) {
+    $normalizeKey = function ($value) {
+        return strtolower(preg_replace('/[^a-z0-9]/', '', (string)$value));
+    };
+
     $aliases = [
         'TP_Name' => ['TP_Name', 'Training Provider'],
         'Trainer_Name' => ['Trainer_Name', 'Trainers/Speaker Name', 'Trainer', 'Speaker Name', 'Trainer/Speaker Name'],
-        'Item_Name' => ['Item_Name', 'Item Title', 'Course Name', 'Training Title', 'Item Title'],
-        'Item_Category' => ['Item_Category', 'Category'],
+        'Item_Name' => ['Item_Name', 'Item Title', 'Course Name', 'Training Title'],
+        'Item_Category' => ['Item_Category', 'Category', 'Category Description'],
         'Participant_Name' => ['Participant_Name', 'Full Name', 'Participant'],
-        'Participant_Department' => ['Participant_Department', 'Department'],
+        'Participant_Department' => ['Participant_Department', 'Department', 'Organisation Description'],
         'Completion_Date' => ['Completion_Date', 'Completion Date']
     ];
+
+    $lookup = [];
+    foreach ($row as $key => $value) {
+        $lookup[$normalizeKey($key)] = trim((string)$value);
+    }
 
     $normalized = [];
     foreach ($aliases as $target => $candidates) {
         $normalized[$target] = '';
         foreach ($candidates as $candidate) {
-            if (array_key_exists($candidate, $row) && trim((string)$row[$candidate]) !== '') {
-                $normalized[$target] = trim((string)$row[$candidate]);
+            $candidateKey = $normalizeKey($candidate);
+            if (array_key_exists($candidateKey, $lookup) && $lookup[$candidateKey] !== '') {
+                $normalized[$target] = $lookup[$candidateKey];
                 break;
             }
+        }
+    }
+
+    if ($normalized['Participant_Name'] === '') {
+        $firstName = $lookup[$normalizeKey('First Name')] ?? '';
+        $lastName = $lookup[$normalizeKey('Last Name')] ?? '';
+        $combined = trim($firstName . ' ' . $lastName);
+        if ($combined !== '') {
+            $normalized['Participant_Name'] = $combined;
         }
     }
 

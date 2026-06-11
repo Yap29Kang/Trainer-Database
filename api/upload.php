@@ -225,8 +225,13 @@ function parseExcel($file_path) {
 
     require_once $autoloadPath;
 
-    $knownColumns = ['TP_Name', 'Trainer_Name', 'Item_Name', 'Participant_Name',
-                     'TP Name', 'Trainer Name', 'Item Name', 'Participant Name'];
+    $knownColumns = [
+        'TP_Name', 'Trainer_Name', 'Item_Name', 'Participant_Name',
+        'TP Name', 'Trainer Name', 'Item Name', 'Participant Name',
+        'Item Title', 'Training Provider', 'Trainer/Speaker Name', 'Trainers/Speaker Name',
+        'Full Name', 'Category', 'Department', 'Completion Date',
+        'First Name', 'Last Name', 'Organisation Description', 'Category Description',
+    ];
 
     // Step 1: read ONLY sheet names -- zero worksheet data loaded into memory.
     $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($file_path);
@@ -331,11 +336,11 @@ function canonicalizeRow($row) {
         'Trainer_Name' => ['Trainer_Name', 'Trainers/Speaker Name', 'Trainer/Speaker Name', 'Trainer', 'Speaker Name'],
         'Trainer_Status' => ['Trainer_Status', 'Trainer Status', 'Status', 'Red Flag Status', 'Red Flag', 'Trainer Red Flag Status', 'Trainer Red Flag', 'Trainer_Status/Red Flag'],
         'Item_Name' => ['Item_Name', 'Item Title', 'Course Name', 'Training Title'],
-        'Item_Category' => ['Item_Category', 'Category'],
+        'Item_Category' => ['Item_Category', 'Category', 'Category Description'],
         'Item_Venue' => ['Item_Venue', 'Item Venue', 'Venue', 'Course Venue', 'Training Venue', 'Venue Name'],
         'Participant_Name' => ['Participant_Name', 'Participant Name', 'Full Name', 'Participant'],
         'Participant_User_ID' => ['User ID', 'User_ID', 'UserID'],
-        'Participant_Department' => ['Participant_Department', 'Department', 'Participant Department'],
+        'Participant_Department' => ['Participant_Department', 'Department', 'Participant Department', 'Organisation Description'],
         'Completion_Date' => ['Completion_Date', 'Completion Date', 'Course Completion Date', 'Date Completed']
     ];
 
@@ -353,6 +358,15 @@ function canonicalizeRow($row) {
                 $normalized[$target] = $lookup[$candidateKey];
                 break;
             }
+        }
+    }
+
+    if ($normalized['Participant_Name'] === '') {
+        $firstName = $lookup[$normalizeKey('First Name')] ?? '';
+        $lastName = $lookup[$normalizeKey('Last Name')] ?? '';
+        $combined = trim($firstName . ' ' . $lastName);
+        if ($combined !== '') {
+            $normalized['Participant_Name'] = $combined;
         }
     }
 
