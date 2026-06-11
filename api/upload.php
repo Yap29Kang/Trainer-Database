@@ -279,6 +279,12 @@ function parseExcel($file_path) {
             continue;
         }
 
+        if (!$hasKnownColumn) {
+            error_log("Skipped sheet '$sheetName', headers: " . implode(', ', $header));
+            unset($rows, $header);
+            continue;
+        }
+
         for ($i = 1; $i < count($rows); $i++) {
             $row = $rows[$i];
 
