@@ -36,7 +36,7 @@ require_once '../config.php';
 require_once '../includes/db.php';
 
 @set_time_limit(0);
-@ini_set('memory_limit', '512M');
+@ini_set('memory_limit', '2048M');
 
 // Keep API responses JSON-only even when PHP warnings/notices occur.
 ini_set('display_errors', '0');
