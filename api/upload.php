@@ -571,11 +571,24 @@ function fetchIdMap(PDO $pdo, $table, $idColumn, $valueColumn, array $values) {
  * Process uploaded data and insert into database
  */
 function processUploadData($data) {
-    global $pdo;
+    global $pdo, $file_name;
     
     if (empty($data)) {
         return ['success' => false, 'message' => 'File is empty'];
     }
+
+    $record_count = 0;
+    foreach ($data as $row) {
+        $row = normalizeImportedRow($row);
+        if (!empty($row['Item_Name']) && !empty($row['Participant_Name'])) {
+            $record_count++;
+        }
+    }
+
+    $clean_file_name = !empty($file_name) ? $file_name : 'imported_file.xlsx';
+    $stmt = $pdo->prepare("INSERT INTO Upload (Filename, Upload_Status, Record_Count) VALUES (?, 'active', ?) RETURNING Upload_ID");
+    $stmt->execute([$clean_file_name, $record_count]);
+    $upload_id = (int)$stmt->fetchColumn();
     
     $providers_added = 0;
     $trainers_added = 0;
@@ -855,11 +868,12 @@ function processUploadData($data) {
             $itemId,
             $participantId,
             normalizeDate($row['Completion_Date'] ?? null),
+            $upload_id,
         ];
     }
 
     if (!empty($enrollmentRows)) {
-        bulkInsertRows($pdo, 'Enrollment', ['Item_ID', 'Participant_ID', 'Completion_Date'], $enrollmentRows, true);
+        bulkInsertRows($pdo, 'Enrollment', ['Item_ID', 'Participant_ID', 'Completion_Date', 'Upload_ID'], $enrollmentRows, true);
     }
     
     $hasInserts = ($providers_added + $trainers_added + $courses_added + $participants_added) > 0;

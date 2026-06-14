@@ -566,5 +566,82 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .hidden{display:none!important}
 
+/* ── UPLOAD TABS & HISTORY ── */
+.u-tab-btn {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 0.85rem;
+    font-family: 'Calibri', sans-serif;
+    font-weight: 700;
+    font-size: 0.875rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    border-bottom: 2px solid transparent;
+}
+.u-tab-btn:hover {
+    color: var(--blue);
+    background: rgba(0, 128, 198, 0.04);
+}
+.u-tab-btn.active {
+    color: var(--blue);
+    border-bottom: 2px solid var(--blue);
+    background: var(--card);
+}
+.upload-hist-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card);
+    transition: box-shadow 0.2s;
+}
+.upload-hist-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 128, 198, 0.06);
+}
+.upload-info-box {
+    display: flex;
+    gap: 0.75rem;
+    background: #fffbeb;
+    border: 1px solid #fef3c7;
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1rem;
+    align-items: flex-start;
+    text-align: left;
+}
+.upload-info-box-text {
+    font-size: 0.82rem;
+    color: #92400e;
+    font-family: 'Calibri', sans-serif;
+    line-height: 1.4;
+}
+.upload-hist-remove-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.35rem 0.6rem;
+    font-family: 'Calibri', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--red);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    transition: background 0.15s, border-color 0.15s;
+}
+.upload-hist-remove-btn:hover {
+    background: var(--rbg);
+    border-color: var(--rbd);
+}
+
 @media(max-width:900px){.pg{grid-template-columns:repeat(2,1fr)}.tg{grid-template-columns:repeat(2,1fr)}.main{padding:1.2rem 1rem 2.5rem}.toolbar{padding:.62rem 1rem}header{padding:.85rem 1rem .8rem}}
 @media(max-width:560px){.pg{grid-template-columns:1fr}.tg{grid-template-columns:1fr}}

@@ -450,19 +450,73 @@ if (isset($content_file) && is_file($content_file)) {
      (included always so client-side toggles work even if session not yet persisted)
 ════════════════════════════ -->
 <div class="uov" id="upOv" onclick="if(event.target===this)closeUpload()">
-    <div class="uom">
-        <div class="uoh"><h3>Upload Excel Database</h3><button class="uoc" onclick="closeUpload()">✕</button></div>
-        <div class="uob">
-            <div class="dz" id="dz" onclick="document.getElementById('fi2').click()" ondragover="dragOver(event)" ondragleave="dragLeave()" ondrop="dropFile(event)">
-                <div class="di">📊</div>
-                <div class="dt">Drop your Excel file here</div>
-                <div class="ds">or <span onclick="event.stopPropagation();document.getElementById('fi2').click()">browse to upload</span></div>
-                <div style="margin-top:.45rem;font-size:.71rem;color:var(--muted);font-family:'Calibri',sans-serif">.xlsx · .xls · .csv</div>
+    <div class="uom" style="max-width: 520px; width: 100%;">
+        <!-- Header -->
+        <div class="uoh" style="background: var(--blue); color: #fff; padding: 1rem 1.45rem; border-radius: 14px 14px 0 0; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-family: 'Calibri', sans-serif; font-weight: 700; font-size: 1.05rem;">
+                <span style="font-size: 1.2rem;">📊</span>
+                <span>Manage Excel database</span>
             </div>
-            <input type="file" id="fi2" class="fi2" accept=".xlsx,.xls,.csv" onchange="fileSelected(event)">
-            <div class="finfo" id="finfo"><span>📄</span><span id="fn"></span></div>
-            <div class="uprog" id="uprog"><div class="pw"><div class="pf" id="pf"></div></div><div class="pl" id="plbl">Uploading…</div></div>
-            <div class="ua"><button class="ux" onclick="closeUpload()">Cancel</button><button class="uc" onclick="performUpload()">Update Database</button></div>
+            <button class="uoc" onclick="closeUpload()" style="background: rgba(255,255,255,0.15); border: none; border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff;">✕</button>
+        </div>
+
+        <!-- Tabs -->
+        <div style="display: flex; background: var(--cream); border-bottom: 1px solid var(--border);">
+            <button class="u-tab-btn active" id="utab-upload" onclick="switchUploadTab('upload')">
+                📄 Upload new file
+            </button>
+            <button class="u-tab-btn" id="utab-history" onclick="switchUploadTab('history')">
+                ⏳ Upload history <span id="upHistBadge" style="background: var(--blue); color: white; border-radius: 12px; padding: 1px 6px; font-size: 0.72rem; margin-left: 2px; font-weight: 700;">0</span>
+            </button>
+        </div>
+
+        <!-- Tab Content: Upload -->
+        <div class="uob" id="upContent-upload">
+            <div class="dz" id="dz" onclick="document.getElementById('fi2').click()" ondragover="dragOver(event)" ondragleave="dragLeave()" ondrop="dropFile(event)" style="border: 2px dashed var(--border); border-radius: 10px; padding: 2.5rem 1.4rem; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--card); margin-bottom: 1rem;">
+                <div class="di" style="font-size: 2.2rem; margin-bottom: 0.55rem; color: var(--blue);">📁</div>
+                <div class="dt" style="font-family: 'Calibri', sans-serif; font-weight: 700; font-size: 0.95rem; margin-bottom: 0.22rem; color: var(--ink);">Drop your Excel file here</div>
+                <div class="ds" style="font-size: 0.8rem; color: var(--muted); font-family: 'Calibri', sans-serif;">or <span style="color: var(--blue); font-weight: 700; text-decoration: underline;">click to browse</span></div>
+                <div style="margin-top: 0.45rem; font-size: 0.72rem; color: var(--muted); font-family: 'Calibri', sans-serif;">.xlsx · .xls · .csv</div>
+            </div>
+            <input type="file" id="fi2" class="fi2" accept=".xlsx,.xls,.csv" onchange="fileSelected(event)" style="display: none;">
+            
+            <div class="finfo" id="finfo" style="display: none; margin-bottom: 1rem; padding: 0.5rem 0.75rem; background: var(--gbg); border: 1px solid var(--gbd); border-radius: 7px; font-size: 0.85rem; color: var(--green); align-items: center; gap: 0.38rem; font-family: 'Calibri', sans-serif;">
+                <span>📄</span>
+                <span id="fn" style="font-weight: 700; word-break: break-all;"></span>
+            </div>
+
+            <!-- Info box -->
+            <div class="upload-info-box">
+                <span style="color: #d97706; font-size: 1.1rem; line-height: 1; margin-top: 2px;">⚠️</span>
+                <div class="upload-info-box-text">
+                    The file is processed and discarded — only record metadata is saved.<br>
+                    Uploading a new file marks the previous one as replaced.
+                </div>
+            </div>
+
+            <div class="uprog" id="uprog" style="display: none; margin-bottom: 1rem;">
+                <div class="pw" style="height: 5px; background: var(--cream); border-radius: 4px; overflow: hidden; margin-bottom: 0.38rem;">
+                    <div class="pf" id="pf" style="height: 100%; background: var(--blue); border-radius: 4px; width: 0; transition: width 0.22s;"></div>
+                </div>
+                <div class="pl" id="plbl" style="font-size: 0.75rem; color: var(--muted); text-align: center; font-family: 'Calibri', sans-serif;">Uploading…</div>
+            </div>
+
+            <div class="ua" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                <button class="ux" onclick="closeUpload()">Cancel</button>
+                <button class="uc" onclick="performUpload()">📤 Upload file</button>
+            </div>
+        </div>
+
+        <!-- Tab Content: History -->
+        <div class="uob" id="upContent-history" style="display: none;">
+            <div id="uploadHistoryList" style="max-height: 280px; overflow-y: auto; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 4px; min-height: 120px;">
+                <!-- History items populated dynamically -->
+            </div>
+            
+            <div class="ua" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                <button class="ux" onclick="closeUpload()">Cancel</button>
+                <button class="uc" onclick="closeUpload()">✓ Done</button>
+            </div>
         </div>
     </div>
 </div>
@@ -2549,6 +2603,8 @@ function openUpload() {
     document.getElementById('upOv').classList.add('open');
     document.body.style.overflow = 'hidden';
     resetUpload();
+    switchUploadTab('upload');   // always open on Upload tab
+    loadUploadHistory();         // pre-load so the badge count is fresh
 }
 
 function closeUpload() {
@@ -2562,6 +2618,102 @@ function resetUpload() {
     document.getElementById('pf').style.width = '0';
     document.getElementById('fi2').value = '';
     selectedFile = null;
+}
+
+// ── Upload modal tab switching ──
+function switchUploadTab(tab) {
+    document.querySelectorAll('.u-tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
+    var activeBtn = document.getElementById('utab-' + tab);
+    if (activeBtn) activeBtn.classList.add('active');
+
+    var uploadPanel  = document.getElementById('upContent-upload');
+    var historyPanel = document.getElementById('upContent-history');
+    if (uploadPanel)  uploadPanel.style.display  = (tab === 'upload')  ? '' : 'none';
+    if (historyPanel) historyPanel.style.display  = (tab === 'history') ? '' : 'none';
+
+    if (tab === 'history') loadUploadHistory();
+}
+
+// ── Load and render upload history ──
+function loadUploadHistory() {
+    var list  = document.getElementById('uploadHistoryList');
+    var badge = document.getElementById('upHistBadge');
+    if (!list) return;
+
+    list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-family:\'Calibri\',sans-serif;font-size:0.85rem;">Loading…</div>';
+
+    fetch('api/get-uploads.php')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.success) {
+                list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--red);font-family:\'Calibri\',sans-serif;font-size:0.85rem;">Failed to load history.</div>';
+                return;
+            }
+            var uploads = data.uploads || [];
+            if (badge) badge.textContent = uploads.length;
+
+            if (!uploads.length) {
+                list.innerHTML = '<div style="text-align:center;padding:2rem 1rem;color:var(--muted);font-family:\'Calibri\',sans-serif;font-size:0.85rem;">No uploads yet. Use the Upload tab to import data.</div>';
+                return;
+            }
+
+            list.innerHTML = uploads.map(function(u) {
+                var date = '—';
+                if (u.Upload_Date) {
+                    try { date = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(u.Upload_Date)); } catch(e) {}
+                }
+                var isActive = u.UI_Status === 'Active';
+                var badgeStyle = isActive
+                    ? 'background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;'
+                    : 'background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;';
+                var safeName = escHtml(u.Filename);
+                var filenameAttr = safeName.replace(/"/g, '&quot;');
+                return '<div class="upload-hist-item">' +
+                    '<div style="display:flex;align-items:center;gap:0.65rem;min-width:0;">' +
+                        '<span style="font-size:1.35rem;flex-shrink:0;">&#128202;</span>' +
+                        '<div style="min-width:0;">' +
+                            '<div style="font-family:\'Calibri\',sans-serif;font-weight:700;font-size:0.87rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;" title="' + filenameAttr + '">' + safeName + '</div>' +
+                            '<div style="font-size:0.73rem;color:var(--muted);font-family:\'Calibri\',sans-serif;">' + u.Record_Count.toLocaleString() + ' records · ' + date + '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">' +
+                        '<span style="' + badgeStyle + 'border-radius:10px;padding:2px 8px;font-size:0.72rem;font-weight:700;font-family:\'Calibri\',sans-serif;">' + escHtml(u.UI_Status) + '</span>' +
+                        '<button class="upload-hist-remove-btn" onclick="removeUpload(' + u.Upload_ID + ',' + JSON.stringify(u.Filename) + ')">&#128465; Remove</button>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+        })
+        .catch(function() {
+            list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--red);font-family:\'Calibri\',sans-serif;font-size:0.85rem;">Error loading history.</div>';
+        });
+}
+
+// ── Remove an upload and its enrollment data ──
+function removeUpload(uploadId, filename) {
+    if (!confirm('Remove all data imported from "' + filename + '"?\n\nThis will permanently delete all enrollment records from this upload and cannot be undone.')) return;
+
+    fetch('api/remove-upload.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ upload_id: uploadId })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.success) {
+            showToast('\u2705 Upload data removed successfully');
+            loadUploadHistory();
+            loadData();
+            updateStats();
+        } else {
+            showToast('\u274C ' + (data.error || 'Failed to remove upload'));
+        }
+    })
+    .catch(function() { showToast('\u274C Error communicating with server'); });
+}
+
+// ── HTML-escape helper ──
+function escHtml(str) {
+    return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function parseUploadResponse(response) {

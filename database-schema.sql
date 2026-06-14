@@ -145,11 +145,20 @@ CREATE TABLE IF NOT EXISTS Participant (
     Participant_Department VARCHAR(255)
 );
 
+CREATE TABLE IF NOT EXISTS Upload (
+    Upload_ID SERIAL PRIMARY KEY,
+    Filename VARCHAR(255) NOT NULL,
+    Upload_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Upload_Status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (Upload_Status IN ('active', 'removed')),
+    Record_Count INT NOT NULL DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS Enrollment (
     Enrollment_ID SERIAL PRIMARY KEY,
     Item_ID INT,
     Participant_ID INT,
     Completion_Date DATE,
+    Upload_ID INT,
 
     -- preserve previous uniqueness constraint so canonical enrollments remain unique
     UNIQUE (Item_ID, Participant_ID),
@@ -162,7 +171,11 @@ CREATE TABLE IF NOT EXISTS Enrollment (
     FOREIGN KEY (Participant_ID)
         REFERENCES Participant(Participant_ID)
         ON DELETE CASCADE
-        ON UPDATE CASCADE
+        ON UPDATE CASCADE,
+
+    FOREIGN KEY (Upload_ID)
+        REFERENCES Upload(Upload_ID)
+        ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_enrollment_item_id ON Enrollment (Item_ID);
