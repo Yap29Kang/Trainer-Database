@@ -579,7 +579,6 @@ function processUploadData($data) {
 
     $record_count = 0;
     foreach ($data as $row) {
-        $row = normalizeImportedRow($row);
         if (!empty($row['Item_Name']) && !empty($row['Participant_Name'])) {
             $record_count++;
         }
@@ -606,32 +605,24 @@ function processUploadData($data) {
     $assignment_pairs = [];
     
     foreach ($data as $idx => $row) {
-        $row = array_map('trim', $row); // Trim whitespace
         $row = normalizeImportedRow($row);
         
         $validRows[] = $row;
         
-        // Provider
         $provider_key = $row['TP_Name'];
+        $trainer_key = $row['Trainer_Name'];
+        
         if (!isset($providers_map[$provider_key])) {
-            $providers_map[$provider_key] = [
-                'name' => $row['TP_Name']
-            ];
+            $providers_map[$provider_key] = ['name' => $provider_key];
         }
         
-        // Trainer
-        $trainer_key = $row['Trainer_Name'];
         $trainerStatus = trim((string)($row['Trainer_Status'] ?? ''));
-        $trainerStatus = $trainerStatus === '' ? 'Active' : $trainerStatus;
+        if ($trainerStatus === '') $trainerStatus = 'Active';
+        
         if (!isset($trainers_map[$trainer_key])) {
-            $trainers_map[$trainer_key] = [
-                'name' => $row['Trainer_Name'],
-                'status' => $trainerStatus
-            ];
-        } elseif (trim((string)($trainers_map[$trainer_key]['status'] ?? '')) === '' && $trainerStatus !== '') {
-            $trainers_map[$trainer_key]['status'] = $trainerStatus;
+            $trainers_map[$trainer_key] = ['name' => $trainer_key, 'status' => $trainerStatus];
         }
-
+        
         $assignment_pairs[$provider_key . '|' . $trainer_key] = [$provider_key, $trainer_key];
 
         if (!empty($row['Item_Name'])) {
@@ -650,13 +641,15 @@ function processUploadData($data) {
         $participantIdentity = participantIdentityValue($row);
         if ($participantIdentity !== '' && !empty($row['Item_Name'])) {
             $participantHash = participantNameHash($participantIdentity);
-            $participant_inputs[$participantHash] = [
-                'name' => $row['Participant_Name'],
-                'identity' => $participantIdentity,
-                'hash' => $participantHash,
-                'token' => generateParticipantToken(),
-                'encrypted' => encryptParticipantName($row['Participant_Name']),
-            ];
+            if (!isset($participant_inputs[$participantHash])) {
+                $participant_inputs[$participantHash] = [
+                    'name' => $row['Participant_Name'],
+                    'identity' => $participantIdentity,
+                    'hash' => $participantHash,
+                    'token' => generateParticipantToken(),
+                    'encrypted' => encryptParticipantName($row['Participant_Name']),
+                ];
+            }
 
             $department = trim((string)($row['Participant_Department'] ?? ''));
             if ($department !== '') {

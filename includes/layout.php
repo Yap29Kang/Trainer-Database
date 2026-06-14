@@ -485,14 +485,7 @@ if (isset($content_file) && is_file($content_file)) {
                 <span id="fn" style="font-weight: 700; word-break: break-all;"></span>
             </div>
 
-            <!-- Info box -->
-            <div class="upload-info-box">
-                <span style="color: #d97706; font-size: 1.1rem; line-height: 1; margin-top: 2px;">⚠️</span>
-                <div class="upload-info-box-text">
-                    The file is processed and discarded — only record metadata is saved.<br>
-                    Uploading a new file marks the previous one as replaced.
-                </div>
-            </div>
+
 
             <div class="uprog" id="uprog" style="display: none; margin-bottom: 1rem;">
                 <div class="pw" style="height: 5px; background: var(--cream); border-radius: 4px; overflow: hidden; margin-bottom: 0.38rem;">
@@ -2762,8 +2755,7 @@ function performUpload() {
         return;
     }
 
-    if (selectedFile.size > PREVIEW_SIZE_LIMIT_BYTES) {
-        showToast('ℹ️ Large file detected. Skipping preview to speed up import.');
+    if (selectedFile.size > PREVIEW_SIZE_LIMIT_BYTES || selectedFile.name.endsWith('.csv')) {
         confirmImport();
         return;
     }
