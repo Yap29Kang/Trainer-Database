@@ -547,25 +547,7 @@ if (isset($content_file) && is_file($content_file)) {
     </div>
 </div>
 
-<!-- UPLOAD PREVIEW MODAL -->
-<div class="pov" id="upPreviewOv" onclick="if(event.target===this)closeUploadPreview()">
-    <div class="pom">
-        <div class="poh">
-            <div>
-                <h3 id="upPreviewTitle">Upload Preview</h3>
-                <p id="upPreviewSummary"></p>
-            </div>
-            <button class="poc" onclick="closeUploadPreview()">✕</button>
-        </div>
-        <div class="pob" id="upPreviewBody" style="max-height:40vh;overflow:auto;padding:.5rem">
-            <!-- Sample rows table inserted here -->
-        </div>
-        <div style="display:flex;gap:.5rem;justify-content:flex-end;padding:.75rem">
-            <button class="ux" onclick="closeUploadPreview()">Cancel</button>
-            <button class="uc" id="confirmImportBtn" onclick="confirmImport()">Confirm Import</button>
-        </div>
-    </div>
-</div>
+
 
 <!-- LOGIN MODAL -->
 <div class="lgov" id="loginOv" onclick="if(event.target===this)closeLoginModal()">
@@ -616,7 +598,7 @@ const participantListInflight = new Map();
 let pendingStatus = '';
 let pendingBlacklistReason = '';
 let currentStatusFilter = 'all';
-let uploadPreviewActive = false;
+
 let pendingExpertiseId = null;
 let pendingExpertiseWhich = 1;
 let allCategories = [];
@@ -2755,138 +2737,12 @@ function performUpload() {
         return;
     }
 
-    if (selectedFile.size > PREVIEW_SIZE_LIMIT_BYTES || selectedFile.name.endsWith('.csv')) {
-        confirmImport();
-        return;
-    }
-
-    // Send preview request first
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    formData.append('preview', '1');
-
-    const prog = document.getElementById('uprog');
-    prog.style.display = 'block';
-    document.getElementById('pf').style.width = '0';
-    document.getElementById('plbl').textContent = 'Preparing preview…';
-
-    const uploadStartTime = performance.now();
-    uploadWithProgress('api/upload.php', formData, function(e) {
-        if (e.lengthComputable) {
-            const percentComplete = (e.loaded / e.total) * 100;
-            document.getElementById('pf').style.width = percentComplete + '%';
-            if (percentComplete < 100) {
-                document.getElementById('plbl').textContent = 'Uploading preview (' + Math.round(percentComplete) + '%)…';
-            } else {
-                document.getElementById('plbl').textContent = 'Preparing preview…';
-            }
-        }
-    })
-    .then(parseUploadResponse)
-    .then(result => {
-        if (result.success && result.preview) {
-            // show preview modal
-            showUploadPreview(result);
-            document.getElementById('plbl').textContent = 'Preview ready';
-        } else if (result.success) {
-            // fallback: no preview, treat as success
-            const timeTaken = ((performance.now() - uploadStartTime) / 1000).toFixed(1);
-            document.getElementById('pf').style.width = '100%';
-            document.getElementById('plbl').textContent = 'Upload complete ✓';
-            setTimeout(() => {
-                showToast('✅ Database updated successfully!');
-                showSuccess(result.stats || {}, timeTaken, selectedFile);
-                loadData();
-                updateStats();
-            }, 700);
-        } else {
-            showToast('❌ ' + (result.message || 'Preview failed'));
-            prog.style.display = 'none';
-        }
-    })
-    .catch(err => {
-        showToast('❌ Upload error: ' + (err && err.message ? err.message : String(err || 'Unknown error')));
-        prog.style.display = 'none';
-    });
+    confirmImport();
 }
 
-function showUploadPreview(result) {
-    const body = document.getElementById('upPreviewBody');
-    const summary = document.getElementById('upPreviewSummary');
-    body.innerHTML = '';
-    summary.textContent = `${result.counts.total_rows} rows — ${result.counts.unique_providers} providers · ${result.counts.unique_trainers} trainers · ${result.counts.unique_courses} courses`;
 
-    const rows = result.sample_rows || [];
-    if (rows.length) {
-    const tbl = document.createElement('table');
-    // allow table to size to content so horizontal scroll can appear
-    tbl.style.width = 'max-content';
-    tbl.style.borderCollapse = 'collapse';
-        const thead = document.createElement('thead');
-        const headerRow = document.createElement('tr');
-        ['TP_Name','Trainer_Name','Item_Name','Item_Category','Participant_Name','Participant_Department','Completion_Date'].forEach(h => {
-            const th = document.createElement('th'); th.textContent = h; th.style.borderBottom = '1px solid #ddd'; th.style.padding = '.25rem'; headerRow.appendChild(th);
-        });
-        thead.appendChild(headerRow);
-        tbl.appendChild(thead);
-        const tb = document.createElement('tbody');
-        rows.forEach(r => {
-            const tr = document.createElement('tr');
-            ['TP_Name','Trainer_Name','Item_Name','Item_Category','Participant_Name','Participant_Department','Completion_Date'].forEach(k => {
-                const td = document.createElement('td'); td.textContent = r[k] || ''; td.style.padding = '.25rem'; tr.appendChild(td);
-            });
-            tb.appendChild(tr);
-        });
-        tbl.appendChild(tb);
-        body.appendChild(tbl);
 
-        // enable horizontal scrolling with mouse wheel when vertical scroll isn't available
-        // or when user holds Shift (standard behaviour), improving discoverability
-        body.addEventListener('wheel', function(e) {
-            try {
-                const canScrollVertically = body.scrollHeight > body.clientHeight + 1;
-                const canScrollHorizontally = body.scrollWidth > body.clientWidth + 1;
-                if (!canScrollHorizontally) return; // nothing to do
 
-                // If there's no vertical overflow, map vertical wheel to horizontal scroll
-                if (!canScrollVertically || e.shiftKey) {
-                    e.preventDefault();
-                    body.scrollLeft += e.deltaY;
-                }
-                // otherwise allow normal vertical scrolling
-            } catch (err) {
-                console.error('Preview wheel handler error', err);
-            }
-        }, { passive: false });
-    } else {
-        body.innerHTML = '<div style="padding:1rem;color:var(--muted)">No sample rows available</div>';
-    }
-
-    // show any missing rows info
-    if (result.rows_with_missing_required && result.rows_with_missing_required.length) {
-        const warn = document.createElement('div');
-        warn.style.color = 'var(--red)';
-        warn.style.marginTop = '.5rem';
-        warn.textContent = 'Rows with missing required fields: ' + result.rows_with_missing_required.join(', ');
-        body.appendChild(warn);
-    }
-
-    // Hide the upload modal behind and show preview on top
-    hideUploadModalKeepState();
-    uploadPreviewActive = true;
-    document.getElementById('upPreviewOv').classList.add('open');
-}
-
-function closeUploadPreview(reopen = true) {
-    document.getElementById('upPreviewOv').classList.remove('open');
-    // hide progress if still visible
-    document.getElementById('uprog').style.display = 'none';
-    uploadPreviewActive = false;
-    if (reopen) {
-        // return to upload modal preserving selected file
-        revealUploadModalKeepState();
-    }
-}
 
 function confirmImport() {
     // perform final upload (no preview flag)

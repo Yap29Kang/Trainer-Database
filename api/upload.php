@@ -247,13 +247,74 @@ function parseExcel($file_path) {
     // Step 2: load, process, and DISCARD one sheet at a time so peak memory
     // stays bounded to a single sheet rather than the whole workbook.
     foreach ($sheetNames as $sheetName) {
-        // Tell the reader to load ONLY this sheet -- the rest stays on disk.
         $reader->setLoadSheetsOnly($sheetName);
         $spreadsheet = $reader->load($file_path);
 
         $worksheet = $spreadsheet->getActiveSheet();
-        $rows = $worksheet->toArray('', true, true, false);
-
+        
+        $rows = [];
+        $row_iterator = $worksheet->getRowIterator();
+        $row_num = 0;
+        
+        foreach ($row_iterator as $row) {
+            $cell_iterator = $row->getCellIterator();
+            $cells = [];
+            foreach ($cell_iterator as $cell) {
+                $cells[] = $cell->getValue();
+            }
+            
+            if ($row_num === 0) {
+                $header = normalizeHeaders($cells);
+                
+                // Skip sheets that look like cover pages / summary tabs.
+                $hasKnownColumn = false;
+                foreach ($header as $h) {
+                    if (in_array(trim($h), $knownColumns, true)) {
+                        $hasKnownColumn = true;
+                        break;
+                    }
+                }
+                if (!$hasKnownColumn) {
+                    unset($rows, $header);
+                    $spreadsheet->disconnectWorksheets();
+                    unset($spreadsheet, $worksheet);
+                    gc_collect_cycles();
+                    continue 2;
+                }
+            } else {
+                if (count($cells) < count($header)) {
+                    $cells = array_pad($cells, count($header), '');
+                } elseif (count($cells) > count($header)) {
+                    $cells = array_slice($cells, 0, count($header));
+                }
+                
+                $assoc = array_combine($header, $cells);
+                if ($assoc !== false) {
+                    $assoc = normalizeImportedRow(canonicalizeRow($assoc));
+                    
+                    $hasValue = false;
+                    foreach ($assoc as $value) {
+                        if (trim((string)$value) !== '') {
+                            $hasValue = true;
+                            break;
+                        }
+                    }
+                    if (!$hasValue) {
+                        $row_num++;
+                        continue;
+                    }
+                    
+                    $rows[] = $assoc;
+                }
+            }
+            $row_num++;
+            
+            // Free memory at regular intervals
+            if ($row_num % 1000 === 0) {
+                gc_collect_cycles();
+            }
+        }
+        
         // Free the spreadsheet object IMMEDIATELY before processing rows so
         // its memory is reclaimed before we accumulate parsed data.
         $spreadsheet->disconnectWorksheets();
@@ -263,61 +324,8 @@ function parseExcel($file_path) {
         if (empty($rows)) {
             continue;
         }
-
-        $header = normalizeHeaders($rows[0]);
-
-        // Skip sheets that look like cover pages / summary tabs.
-        $hasKnownColumn = false;
-        foreach ($header as $h) {
-            if (in_array(trim($h), $knownColumns, true)) {
-                $hasKnownColumn = true;
-                break;
-            }
-        }
-        if (!$hasKnownColumn) {
-            unset($rows, $header);
-            continue;
-        }
-
-        if (!$hasKnownColumn) {
-            error_log("Skipped sheet '$sheetName', headers: " . implode(', ', $header));
-            unset($rows, $header);
-            continue;
-        }
-
-        for ($i = 1; $i < count($rows); $i++) {
-            $row = $rows[$i];
-
-            if (count($row) < count($header)) {
-                $row = array_pad($row, count($header), '');
-            } elseif (count($row) > count($header)) {
-                $row = array_slice($row, 0, count($header));
-            }
-
-            $assoc = array_combine($header, $row);
-            if ($assoc === false) {
-                continue;
-            }
-
-            $assoc = normalizeImportedRow(canonicalizeRow($assoc));
-
-            $hasValue = false;
-            foreach ($assoc as $value) {
-                if (trim((string)$value) !== '') {
-                    $hasValue = true;
-                    break;
-                }
-            }
-            if (!$hasValue) {
-                continue;
-            }
-
-            $data[] = $assoc;
-        }
-
-        // Release raw rows array before loading the next sheet.
-        unset($rows, $header);
-        gc_collect_cycles();
+        
+        $data = array_merge($data, $rows);
     }
 
     return $data;
@@ -861,12 +869,11 @@ function processUploadData($data) {
             $itemId,
             $participantId,
             normalizeDate($row['Completion_Date'] ?? null),
-            $upload_id,
         ];
     }
 
     if (!empty($enrollmentRows)) {
-        bulkInsertRows($pdo, 'Enrollment', ['Item_ID', 'Participant_ID', 'Completion_Date', 'Upload_ID'], $enrollmentRows, true);
+        bulkInsertRows($pdo, 'Enrollment', ['Item_ID', 'Participant_ID', 'Completion_Date'], $enrollmentRows, true);
     }
     
     $hasInserts = ($providers_added + $trainers_added + $courses_added + $participants_added) > 0;

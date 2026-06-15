@@ -158,7 +158,6 @@ CREATE TABLE IF NOT EXISTS Enrollment (
     Item_ID INT,
     Participant_ID INT,
     Completion_Date DATE,
-    Upload_ID INT,
 
     -- preserve previous uniqueness constraint so canonical enrollments remain unique
     UNIQUE (Item_ID, Participant_ID),
@@ -171,11 +170,7 @@ CREATE TABLE IF NOT EXISTS Enrollment (
     FOREIGN KEY (Participant_ID)
         REFERENCES Participant(Participant_ID)
         ON DELETE CASCADE
-        ON UPDATE CASCADE,
-
-    FOREIGN KEY (Upload_ID)
-        REFERENCES Upload(Upload_ID)
-        ON DELETE CASCADE
+        ON UPDATE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_enrollment_item_id ON Enrollment (Item_ID);
