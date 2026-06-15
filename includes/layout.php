@@ -2637,23 +2637,29 @@ function loadUploadHistory() {
                 if (u.Upload_Date) {
                     try { date = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(u.Upload_Date)); } catch(e) {}
                 }
-                var isActive = u.UI_Status === 'Active';
-                var badgeStyle = isActive
-                    ? 'background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;'
-                    : 'background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;';
+                var isRemoved = u.UI_Status === 'Removed';
+                // Active = green badge; Removed = grey badge
+                var badgeStyle = isRemoved
+                    ? 'background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;'
+                    : 'background:#dcfce7;color:#16a34a;border:1px solid #86efac;';
+                // Dim the entire row for removed uploads
+                var rowOpacity = isRemoved ? 'opacity:0.55;' : '';
+                var nameStyle = isRemoved
+                    ? 'font-family:\'Calibri\',sans-serif;font-weight:700;font-size:0.87rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;text-decoration:line-through;'
+                    : 'font-family:\'Calibri\',sans-serif;font-weight:700;font-size:0.87rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;';
                 var safeName = escHtml(u.Filename);
                 var filenameAttr = safeName.replace(/"/g, '&quot;');
-                return '<div class="upload-hist-item">' +
+                return '<div class="upload-hist-item" style="' + rowOpacity + '">' +
                     '<div style="display:flex;align-items:center;gap:0.65rem;min-width:0;">' +
                         '<span style="font-size:1.35rem;flex-shrink:0;">&#128202;</span>' +
                         '<div style="min-width:0;">' +
-                            '<div style="font-family:\'Calibri\',sans-serif;font-weight:700;font-size:0.87rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;" title="' + filenameAttr + '">' + safeName + '</div>' +
-                            '<div style="font-size:0.73rem;color:var(--muted);font-family:\'Calibri\',sans-serif;">' + u.Record_Count.toLocaleString() + ' records · ' + date + '</div>' +
+                            '<div style="' + nameStyle + '" title="' + filenameAttr + '">' + safeName + '</div>' +
+                            '<div style="font-size:0.73rem;color:var(--muted);font-family:\'Calibri\',sans-serif;">' + (isRemoved ? '0' : u.Record_Count.toLocaleString()) + ' records · ' + date + '</div>' +
                         '</div>' +
                     '</div>' +
                     '<div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">' +
                         '<span style="' + badgeStyle + 'border-radius:10px;padding:2px 8px;font-size:0.72rem;font-weight:700;font-family:\'Calibri\',sans-serif;">' + escHtml(u.UI_Status) + '</span>' +
-                        '<button class="upload-hist-remove-btn" onclick="removeUpload(' + u.Upload_ID + ',' + JSON.stringify(u.Filename) + ')">&#128465; Remove</button>' +
+                        (!isRemoved ? '<button class="upload-hist-remove-btn" onclick="removeUpload(' + u.Upload_ID + ',' + JSON.stringify(u.Filename) + ')">&#128465; Remove</button>' : '') +
                     '</div>' +
                 '</div>';
             }).join('');
@@ -2676,9 +2682,7 @@ function removeUpload(uploadId, filename) {
     .then(function(data) {
         if (data.success) {
             showToast('\u2705 Upload data removed successfully');
-            loadUploadHistory();
-            loadData();
-            updateStats();
+            setTimeout(function() { window.location.reload(); }, 1000);
         } else {
             showToast('\u274C ' + (data.error || 'Failed to remove upload'));
         }

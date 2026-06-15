@@ -20,15 +20,15 @@ if (!isset($pdo) || $pdo === null) {
 }
 
 try {
-    // We retrieve uploads with status = 'active'
-    $stmt = $pdo->query("SELECT Upload_ID, Filename, Upload_Date, Upload_Status, Record_Count FROM Upload WHERE Upload_Status = 'active' ORDER BY Upload_Date DESC");
+    // Retrieve all uploads ordered by date (most recent first)
+    $stmt = $pdo->query("SELECT Upload_ID, Filename, Upload_Date, Upload_Status, Record_Count FROM Upload ORDER BY Upload_Date DESC");
     $uploads = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Normalize casing for cross-DB driver support
     $normalizedUploads = [];
-    foreach ($uploads as $index => $upload) {
+    foreach ($uploads as $upload) {
         $norm = array_change_key_case($upload, CASE_UPPER);
-        $status = ($index === 0) ? 'Active' : 'Replaced';
+        $status = ($norm['UPLOAD_STATUS'] === 'removed') ? 'Removed' : 'Active';
         
         $normalizedUploads[] = [
             'Upload_ID' => (int)($norm['UPLOAD_ID'] ?? 0),

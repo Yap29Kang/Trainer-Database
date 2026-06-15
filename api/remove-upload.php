@@ -31,11 +31,7 @@ if (!$uploadId) {
 try {
     $pdo->beginTransaction();
     
-    // Delete the enrollments corresponding to this upload
-    $stmt1 = $pdo->prepare("DELETE FROM Enrollment WHERE Upload_ID = ?");
-    $stmt1->execute([$uploadId]);
-    
-    // Now update the Upload status to 'removed' and Record_Count to 0
+    // Update the Upload status to 'removed' and Record_Count to 0
     $stmt2 = $pdo->prepare("UPDATE Upload SET Upload_Status = 'removed', Record_Count = 0 WHERE Upload_ID = ?");
     $stmt2->execute([$uploadId]);
     
