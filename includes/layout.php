@@ -514,7 +514,7 @@ if (isset($content_file) && is_file($content_file)) {
     </div>
 </div>
 
-<!-- REMOVE UPLOAD CONFIRM MODAL -->
+<!-- REMOVE CONFIRM MODAL -->
 <div class="uov" id="removeConfirmOv" style="z-index:1100;" onclick="if(event.target===this)closeRemoveConfirm()">
     <div class="uom" style="max-width:420px;width:100%;padding:0;overflow:hidden;border-radius:12px;background:var(--card);box-shadow:0 10px 30px rgba(0,0,0,0.22);">
         <div style="padding:1.5rem 1.5rem 0;">
@@ -2701,7 +2701,10 @@ function removeUpload(uploadId, filename) {
     var fnEl = document.getElementById('removeConfirmFilename');
     if (fnEl) fnEl.textContent = '\u201C' + filename + '\u201D';
     var btn = document.getElementById('removeConfirmBtn');
-    if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Yes, remove'; }
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Yes, remove';
+    }
     var ov = document.getElementById('removeConfirmOv');
     if (ov) { ov.classList.add('open'); document.body.style.overflow = 'hidden'; }
 }
