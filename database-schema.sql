@@ -101,8 +101,25 @@ CREATE TABLE IF NOT EXISTS Assignment (
         ON UPDATE CASCADE
 );
 
-    CREATE INDEX IF NOT EXISTS idx_assignment_tp_id ON Assignment (TP_ID);
-    CREATE INDEX IF NOT EXISTS idx_assignment_trainer_id ON Assignment (Trainer_ID);
+CREATE INDEX IF NOT EXISTS idx_assignment_tp_id ON Assignment (TP_ID);
+CREATE INDEX IF NOT EXISTS idx_assignment_trainer_id ON Assignment (Trainer_ID);
+
+CREATE TABLE IF NOT EXISTS Participant (
+    Participant_ID SERIAL PRIMARY KEY,
+    Participant_Token VARCHAR(64) NOT NULL UNIQUE,
+    Participant_Name_Hash CHAR(64) NOT NULL UNIQUE,
+    Participant_Name_Encrypted TEXT NOT NULL,
+    Participant_Department VARCHAR(255)
+);
+
+-- Upload must be defined before Item since Item.Upload_ID references it
+CREATE TABLE IF NOT EXISTS Upload (
+    Upload_ID SERIAL PRIMARY KEY,
+    Filename VARCHAR(255) NOT NULL,
+    Upload_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    Upload_Status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (Upload_Status IN ('active', 'removed')),
+    Record_Count INT NOT NULL DEFAULT 0
+);
 
 CREATE TABLE IF NOT EXISTS Item (
     Item_ID SERIAL PRIMARY KEY,
@@ -125,11 +142,12 @@ CREATE TABLE IF NOT EXISTS Item (
         ON DELETE CASCADE
         ON UPDATE CASCADE,
 
+    -- CASCADE: if an Upload row is ever hard-deleted, its Items are deleted too
+    -- NOT NULL + CASCADE is consistent; SET NULL would conflict with NOT NULL
     FOREIGN KEY (Upload_ID)
         REFERENCES Upload(Upload_ID)
-        ON DELETE SET NULL,
+        ON DELETE CASCADE
         ON UPDATE CASCADE,
-
 
     -- Ensures Trainer is assigned to that Provider
     CONSTRAINT fk_assignment_validation
@@ -144,22 +162,6 @@ CREATE INDEX IF NOT EXISTS idx_item_tp_id ON Item (TP_ID);
 CREATE INDEX IF NOT EXISTS idx_item_trainer_id ON Item (Trainer_ID);
 CREATE INDEX IF NOT EXISTS idx_item_tp_trainer ON Item (TP_ID, Trainer_ID);
 CREATE INDEX IF NOT EXISTS idx_item_category ON Item (Item_Category);
-
-CREATE TABLE IF NOT EXISTS Participant (
-    Participant_ID SERIAL PRIMARY KEY,
-    Participant_Token VARCHAR(64) NOT NULL UNIQUE,
-    Participant_Name_Hash CHAR(64) NOT NULL UNIQUE,
-    Participant_Name_Encrypted TEXT NOT NULL,
-    Participant_Department VARCHAR(255)
-);
-
-CREATE TABLE IF NOT EXISTS Upload (
-    Upload_ID SERIAL PRIMARY KEY,
-    Filename VARCHAR(255) NOT NULL,
-    Upload_Date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    Upload_Status VARCHAR(20) NOT NULL DEFAULT 'active' CHECK (Upload_Status IN ('active', 'removed')),
-    Record_Count INT NOT NULL DEFAULT 0
-);
 
 CREATE TABLE IF NOT EXISTS Enrollment (
     Enrollment_ID SERIAL PRIMARY KEY,
