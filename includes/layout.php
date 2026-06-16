@@ -514,6 +514,30 @@ if (isset($content_file) && is_file($content_file)) {
     </div>
 </div>
 
+<!-- REMOVE CONFIRM MODAL -->
+<div class="uov" id="removeConfirmOv" style="z-index:1100;" onclick="if(event.target===this)closeRemoveConfirm()">
+    <div class="uom" style="max-width:420px;width:100%;padding:0;overflow:hidden;border-radius:12px;background:var(--card);box-shadow:0 10px 30px rgba(0,0,0,0.22);">
+        <div style="padding:1.5rem 1.5rem 0;">
+            <div style="display:flex;align-items:center;gap:0.65rem;margin-bottom:0.9rem;">
+                <div style="width:36px;height:36px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#ef4444" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                </div>
+                <div style="font-family:'Calibri',sans-serif;font-weight:700;font-size:1.05rem;color:var(--ink);">Remove upload data?</div>
+            </div>
+            <p style="font-size:0.875rem;color:var(--muted);font-family:'Calibri',sans-serif;line-height:1.55;margin:0 0 0.25rem;">All enrollment records imported from</p>
+            <p id="removeConfirmFilename" style="font-size:0.875rem;font-weight:700;color:var(--ink);font-family:'Calibri',sans-serif;margin:0 0 0.75rem;word-break:break-all;"></p>
+            <p style="font-size:0.875rem;color:var(--muted);font-family:'Calibri',sans-serif;line-height:1.55;margin:0 0 1.25rem;">will be permanently deleted. <strong style="color:var(--ink);">This cannot be undone.</strong></p>
+        </div>
+        <div style="display:flex;gap:0.6rem;padding:0 1.5rem 1.5rem;">
+            <button class="ux" style="flex:1;justify-content:center;" onclick="closeRemoveConfirm()">Cancel</button>
+            <button id="removeConfirmBtn" onclick="confirmRemoveUpload()" style="flex:1;justify-content:center;background:#ef4444;color:#fff;border:none;border-radius:7px;font-family:'Calibri',sans-serif;font-weight:700;font-size:0.92rem;padding:0.6rem 1rem;cursor:pointer;display:flex;align-items:center;gap:0.4rem;">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                Yes, remove
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- SUCCESS MODAL -->
 <div class="uov" id="successOv" style="z-index:900" onclick="if(event.target===this)closeSuccess()">
     <div class="uom" style="max-width: 480px; padding: 0; overflow: hidden; border-radius: 12px; background: var(--card); text-align: left; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
@@ -2639,21 +2663,25 @@ function loadUploadHistory() {
                 }
                 var isRemoved = u.UI_Status === 'Removed';
                 var badgeStyle = isRemoved
-                    ? 'background:#fee2e2;color:#ef4444;border:1px solid #fca5a5;'
-                    : 'background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;';
+                    ? 'background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;'
+                    : 'background:#dcfce7;color:#16a34a;border:1px solid #86efac;';
+                var rowOpacity = isRemoved ? 'opacity:0.55;' : '';
+                var nameStyle = isRemoved
+                    ? 'font-family:\'Calibri\',sans-serif;font-weight:700;font-size:0.87rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;text-decoration:line-through;'
+                    : 'font-family:\'Calibri\',sans-serif;font-weight:700;font-size:0.87rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;';
                 var safeName = escHtml(u.Filename);
                 var filenameAttr = safeName.replace(/"/g, '&quot;');
-                return '<div class="upload-hist-item">' +
+                return '<div class="upload-hist-item" style="' + rowOpacity + '">' +
                     '<div style="display:flex;align-items:center;gap:0.65rem;min-width:0;">' +
                         '<span style="font-size:1.35rem;flex-shrink:0;">&#128202;</span>' +
                         '<div style="min-width:0;">' +
-                            '<div style="font-family:\'Calibri\',sans-serif;font-weight:700;font-size:0.87rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;" title="' + filenameAttr + '">' + safeName + '</div>' +
-                            '<div style="font-size:0.73rem;color:var(--muted);font-family:\'Calibri\',sans-serif;">' + u.Record_Count.toLocaleString() + ' records · ' + date + '</div>' +
+                            '<div style="' + nameStyle + '" title="' + filenameAttr + '">' + safeName + '</div>' +
+                            '<div style="font-size:0.73rem;color:var(--muted);font-family:\'Calibri\',sans-serif;">' + (isRemoved ? '0' : u.Record_Count.toLocaleString()) + ' records · ' + date + '</div>' +
                         '</div>' +
                     '</div>' +
                     '<div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">' +
                         '<span style="' + badgeStyle + 'border-radius:10px;padding:2px 8px;font-size:0.72rem;font-weight:700;font-family:\'Calibri\',sans-serif;">' + escHtml(u.UI_Status) + '</span>' +
-                        '<button class="upload-hist-remove-btn" onclick="removeUpload(' + u.Upload_ID + ',' + JSON.stringify(u.Filename) + ')">&#128465; Remove</button>' +
+                        (!isRemoved ? '<button class="upload-hist-remove-btn" data-uid="' + u.Upload_ID + '" data-fname="' + filenameAttr + '" onclick="removeUpload(+this.dataset.uid, this.dataset.fname)">&#128465; Remove</button>' : '') +
                     '</div>' +
                 '</div>';
             }).join('');
@@ -2664,16 +2692,47 @@ function loadUploadHistory() {
 }
 
 // ── Remove an upload and its enrollment data ──
+// ── Remove an upload and its enrollment data ──
+var _pendingRemoveId   = null;
+var _pendingRemoveName = null;
+
 function removeUpload(uploadId, filename) {
-    if (!confirm('Remove all data imported from "' + filename + '"?\n\nThis will permanently delete all enrollment records from this upload and cannot be undone.')) return;
+    _pendingRemoveId   = uploadId;
+    _pendingRemoveName = filename;
+    var fnEl = document.getElementById('removeConfirmFilename');
+    if (fnEl) fnEl.textContent = '\u201C' + filename + '\u201D';
+    var btn = document.getElementById('removeConfirmBtn');
+    if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Yes, remove';
+    }
+    var ov = document.getElementById('removeConfirmOv');
+    if (ov) { ov.classList.add('open'); document.body.style.overflow = 'hidden'; }
+}
+
+function closeRemoveConfirm() {
+    var ov = document.getElementById('removeConfirmOv');
+    if (ov) ov.classList.remove('open');
+    document.body.style.overflow = '';
+    _pendingRemoveId   = null;
+    _pendingRemoveName = null;
+}
+
+function confirmRemoveUpload() {
+    if (!_pendingRemoveId) return;
+    var uploadId = _pendingRemoveId;
+    var btn = document.getElementById('removeConfirmBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Removing\u2026'; }
 
     fetch('api/remove-upload.php', {
         method: 'POST',
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ upload_id: uploadId })
     })
     .then(function(r) { return r.json(); })
     .then(function(data) {
+        closeRemoveConfirm();
         if (data.success) {
             showToast('\u2705 Upload data removed successfully');
             setTimeout(function() { window.location.reload(); }, 1000);
@@ -2681,7 +2740,10 @@ function removeUpload(uploadId, filename) {
             showToast('\u274C ' + (data.error || 'Failed to remove upload'));
         }
     })
-    .catch(function() { showToast('\u274C Error communicating with server'); });
+    .catch(function() {
+        closeRemoveConfirm();
+        showToast('\u274C Error communicating with server');
+    });
 }
 
 // ── HTML-escape helper ──
