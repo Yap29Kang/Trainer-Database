@@ -524,17 +524,13 @@ if (isset($content_file) && is_file($content_file)) {
                 </div>
                 <div style="font-family:'Calibri',sans-serif;font-weight:700;font-size:1.05rem;color:var(--ink);">Remove upload data?</div>
             </div>
-            <p style="font-size:0.875rem;color:var(--muted);font-family:'Calibri',sans-serif;line-height:1.55;margin:0 0 0.4rem;">
-                All enrollment records imported from
-            </p>
+            <p style="font-size:0.875rem;color:var(--muted);font-family:'Calibri',sans-serif;line-height:1.55;margin:0 0 0.25rem;">All enrollment records imported from</p>
             <p id="removeConfirmFilename" style="font-size:0.875rem;font-weight:700;color:var(--ink);font-family:'Calibri',sans-serif;margin:0 0 0.75rem;word-break:break-all;"></p>
-            <p style="font-size:0.875rem;color:var(--muted);font-family:'Calibri',sans-serif;line-height:1.55;margin:0 0 1.25rem;">
-                will be permanently deleted. <strong style="color:var(--ink);">This cannot be undone.</strong>
-            </p>
+            <p style="font-size:0.875rem;color:var(--muted);font-family:'Calibri',sans-serif;line-height:1.55;margin:0 0 1.25rem;">will be permanently deleted. <strong style="color:var(--ink);">This cannot be undone.</strong></p>
         </div>
         <div style="display:flex;gap:0.6rem;padding:0 1.5rem 1.5rem;">
             <button class="ux" style="flex:1;justify-content:center;" onclick="closeRemoveConfirm()">Cancel</button>
-            <button id="removeConfirmBtn" style="flex:1;justify-content:center;background:#ef4444;color:#fff;border:none;border-radius:7px;font-family:'Calibri',sans-serif;font-weight:700;font-size:0.92rem;padding:0.6rem 1rem;cursor:pointer;display:flex;align-items:center;gap:0.4rem;" onclick="confirmRemoveUpload()">
+            <button id="removeConfirmBtn" onclick="confirmRemoveUpload()" style="flex:1;justify-content:center;background:#ef4444;color:#fff;border:none;border-radius:7px;font-family:'Calibri',sans-serif;font-weight:700;font-size:0.92rem;padding:0.6rem 1rem;cursor:pointer;display:flex;align-items:center;gap:0.4rem;">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                 Yes, remove
             </button>
@@ -2666,7 +2662,6 @@ function loadUploadHistory() {
                     try { date = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(u.Upload_Date)); } catch(e) {}
                 }
                 var isRemoved = u.UI_Status === 'Removed';
-                // Active = green badge; Removed = grey badge
                 var badgeStyle = isRemoved
                     ? 'background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;'
                     : 'background:#dcfce7;color:#16a34a;border:1px solid #86efac;';
@@ -2697,14 +2692,16 @@ function loadUploadHistory() {
 }
 
 // ── Remove an upload and its enrollment data ──
-var _pendingRemoveId = null;
+var _pendingRemoveId   = null;
 var _pendingRemoveName = null;
 
 function removeUpload(uploadId, filename) {
-    _pendingRemoveId = uploadId;
+    _pendingRemoveId   = uploadId;
     _pendingRemoveName = filename;
     var fnEl = document.getElementById('removeConfirmFilename');
     if (fnEl) fnEl.textContent = '\u201C' + filename + '\u201D';
+    var btn = document.getElementById('removeConfirmBtn');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Yes, remove'; }
     var ov = document.getElementById('removeConfirmOv');
     if (ov) { ov.classList.add('open'); document.body.style.overflow = 'hidden'; }
 }
@@ -2713,7 +2710,7 @@ function closeRemoveConfirm() {
     var ov = document.getElementById('removeConfirmOv');
     if (ov) ov.classList.remove('open');
     document.body.style.overflow = '';
-    _pendingRemoveId = null;
+    _pendingRemoveId   = null;
     _pendingRemoveName = null;
 }
 
@@ -2721,7 +2718,7 @@ function confirmRemoveUpload() {
     if (!_pendingRemoveId) return;
     var uploadId = _pendingRemoveId;
     var btn = document.getElementById('removeConfirmBtn');
-    if (btn) { btn.disabled = true; btn.textContent = 'Removing…'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Removing\u2026'; }
 
     fetch('api/remove-upload.php', {
         method: 'POST',
@@ -2737,7 +2734,6 @@ function confirmRemoveUpload() {
             setTimeout(function() { window.location.reload(); }, 1000);
         } else {
             showToast('\u274C ' + (data.error || 'Failed to remove upload'));
-            if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Yes, remove'; }
         }
     })
     .catch(function() {
