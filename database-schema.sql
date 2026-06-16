@@ -109,6 +109,7 @@ CREATE TABLE IF NOT EXISTS Item (
 
     TP_ID INT NOT NULL,
     Trainer_ID INT NOT NULL,
+    Upload_ID INT NOT NULL,
 
     Item_Name VARCHAR(255) NOT NULL,
     Item_Venue VARCHAR(255),
@@ -124,6 +125,12 @@ CREATE TABLE IF NOT EXISTS Item (
         ON DELETE CASCADE
         ON UPDATE CASCADE,
 
+    FOREIGN KEY (Upload_ID)
+        REFERENCES Upload(Upload_ID)
+        ON DELETE SET NULL,
+        ON UPDATE CASCADE,
+
+
     -- Ensures Trainer is assigned to that Provider
     CONSTRAINT fk_assignment_validation
         FOREIGN KEY (TP_ID, Trainer_ID)
@@ -132,6 +139,7 @@ CREATE TABLE IF NOT EXISTS Item (
         ON UPDATE CASCADE
 );
 
+CREATE INDEX IF NOT EXISTS idx_item_upload_id ON Item (Upload_ID);
 CREATE INDEX IF NOT EXISTS idx_item_tp_id ON Item (TP_ID);
 CREATE INDEX IF NOT EXISTS idx_item_trainer_id ON Item (Trainer_ID);
 CREATE INDEX IF NOT EXISTS idx_item_tp_trainer ON Item (TP_ID, Trainer_ID);

@@ -773,6 +773,15 @@ function processUploadData($data) {
     $itemMap = fetchInsertedItemMap($pdo, array_values($itemInsertRows));
     $courses_added = count($itemInsertRows);
 
+    // Tag every Item created by this upload so it can be deleted when the upload is removed
+    if (!empty($itemMap) && $upload_id > 0) {
+        foreach (array_chunk(array_values($itemMap), 1000) as $chunk) {
+            $placeholders = implode(',', array_fill(0, count($chunk), '?'));
+            $updStmt = $pdo->prepare("UPDATE Item SET Upload_ID = ? WHERE Item_ID IN ($placeholders)");
+            $updStmt->execute(array_merge([$upload_id], $chunk));
+        }
+    }
+
     // Participants are unique by hash, so they can also be resolved and inserted in bulk.
     $participantHashes = array_keys($participant_inputs);
     $participant_ids = fetchIdMap($pdo, 'Participant', 'Participant_ID', 'Participant_Name_Hash', $participantHashes);

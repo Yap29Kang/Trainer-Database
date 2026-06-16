@@ -30,13 +30,23 @@ if (!$uploadId) {
 
 try {
     $pdo->beginTransaction();
-    
-    // Update the Upload status to 'removed' and Record_Count to 0
+
+    // Delete all Items linked to this upload — Enrollments auto-cascade via FK
+    $stmtDel = $pdo->prepare("DELETE FROM Item WHERE Upload_ID = ?");
+    $stmtDel->execute([$uploadId]);
+
+    // Soft-delete the Upload record and zero the count
     $stmt2 = $pdo->prepare("UPDATE Upload SET Upload_Status = 'removed', Record_Count = 0 WHERE Upload_ID = ?");
     $stmt2->execute([$uploadId]);
-    
+
+    // If no active uploads remain, also purge any Items that predate Upload_ID tracking (Upload_ID IS NULL)
+    $stmtActive = $pdo->query("SELECT COUNT(*) FROM Upload WHERE Upload_Status = 'active'");
+    if ((int)$stmtActive->fetchColumn() === 0) {
+        $pdo->exec("DELETE FROM Item WHERE Upload_ID IS NULL");
+    }
+
     $pdo->commit();
-    
+
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
     if ($pdo->inTransaction()) {
