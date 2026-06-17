@@ -31,23 +31,74 @@ if (!$uploadId) {
 try {
     $pdo->beginTransaction();
 
-    // Delete all Items linked to this upload — Enrollments auto-cascade via FK
-    $stmtDel = $pdo->prepare("DELETE FROM Item WHERE Upload_ID = ?");
-    $stmtDel->execute([$uploadId]);
+    // ── Step 1: Delete Items for this upload ──────────────────────────────────
+    // Enrollments auto-cascade via FK (Item → Enrollment ON DELETE CASCADE)
+    $pdo->prepare("DELETE FROM Item WHERE Upload_ID = ?")
+        ->execute([$uploadId]);
 
-    // Soft-delete the Upload record and zero the count
-    $stmt2 = $pdo->prepare("UPDATE Upload SET Upload_Status = 'removed', Record_Count = 0 WHERE Upload_ID = ?");
-    $stmt2->execute([$uploadId]);
-
-    // If no active uploads remain, also purge any Items that predate Upload_ID tracking (Upload_ID IS NULL)
-    $stmtActive = $pdo->query("SELECT COUNT(*) FROM Upload WHERE Upload_Status = 'active'");
-    if ((int)$stmtActive->fetchColumn() === 0) {
+    // ── Step 1b: Legacy cleanup ───────────────────────────────────────────────
+    // Items imported before Upload_ID tracking was added have Upload_ID = NULL.
+    // If no other active uploads remain, purge those too.
+    $stmtOtherActive = $pdo->prepare(
+        "SELECT COUNT(*) FROM Upload WHERE Upload_Status = 'active' AND Upload_ID != ?"
+    );
+    $stmtOtherActive->execute([$uploadId]);
+    if ((int)$stmtOtherActive->fetchColumn() === 0) {
         $pdo->exec("DELETE FROM Item WHERE Upload_ID IS NULL");
     }
+
+    // ── Step 2: Delete orphaned Participants ──────────────────────────────────
+    // Participants with no remaining Enrollments after the Items were deleted
+    $pdo->exec(
+        "DELETE FROM Participant
+         WHERE NOT EXISTS (
+             SELECT 1 FROM Enrollment
+             WHERE Enrollment.Participant_ID = Participant.Participant_ID
+         )"
+    );
+
+    // ── Step 3: Delete orphaned Assignments ───────────────────────────────────
+    // Assignments where the TP+Trainer pair no longer has any Items
+    $pdo->exec(
+        "DELETE FROM Assignment
+         WHERE NOT EXISTS (
+             SELECT 1 FROM Item
+             WHERE Item.TP_ID      = Assignment.TP_ID
+               AND Item.Trainer_ID = Assignment.Trainer_ID
+         )"
+    );
+
+    // ── Step 4: Delete orphaned Trainers ──────────────────────────────────────
+    // Trainers no longer in any Assignment
+    // Cascades: TrainerStatus, TrainerRemark
+    $pdo->exec(
+        "DELETE FROM Trainer
+         WHERE NOT EXISTS (
+             SELECT 1 FROM Assignment
+             WHERE Assignment.Trainer_ID = Trainer.Trainer_ID
+         )"
+    );
+
+    // ── Step 5: Delete orphaned Training Providers ────────────────────────────
+    // Providers no longer in any Assignment
+    // Cascades: TrainingProviderStatus, TrainingProviderRemark
+    $pdo->exec(
+        "DELETE FROM TrainingProvider
+         WHERE NOT EXISTS (
+             SELECT 1 FROM Assignment
+             WHERE Assignment.TP_ID = TrainingProvider.TP_ID
+         )"
+    );
+
+    // ── Step 6: Soft-delete the Upload record ─────────────────────────────────
+    $pdo->prepare(
+        "UPDATE Upload SET Upload_Status = 'removed', Record_Count = 0 WHERE Upload_ID = ?"
+    )->execute([$uploadId]);
 
     $pdo->commit();
 
     echo json_encode(['success' => true]);
+
 } catch (Exception $e) {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();

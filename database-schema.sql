@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS Item (
 
     TP_ID INT NOT NULL,
     Trainer_ID INT NOT NULL,
-    Upload_ID INT NOT NULL,
+    Upload_ID INT NULL,
 
     Item_Name VARCHAR(255) NOT NULL,
     Item_Venue VARCHAR(255),
