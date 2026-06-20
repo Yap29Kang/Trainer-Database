@@ -185,3 +185,52 @@ CREATE TABLE IF NOT EXISTS Enrollment (
 
 CREATE INDEX IF NOT EXISTS idx_enrollment_item_id ON Enrollment (Item_ID);
 CREATE INDEX IF NOT EXISTS idx_enrollment_participant_id ON Enrollment (Participant_ID);
+
+-- COMPLAINT TABLE
+CREATE TABLE IF NOT EXISTS Complaint (
+    case_id TEXT PRIMARY KEY,
+    date_of_complaint DATE NOT NULL,
+    employee_name TEXT NOT NULL,
+    employee_id TEXT NOT NULL,
+    department VARCHAR(255),
+    learnops TEXT NOT NULL,
+    training_provider_id INT NOT NULL,
+    complaint_category TEXT NOT NULL CHECK (complaint_category IN ('Performance Quality', 'Safety & Compliance', 'Fraud & Misconduct')),
+    complaint_summary TEXT NOT NULL,
+    priority TEXT NOT NULL CHECK (priority IN ('Low', 'Medium', 'High')),
+    status TEXT NOT NULL CHECK (status IN ('Open', 'Under Review', 'Closed')),
+    ldcm_decision TEXT CHECK (ldcm_decision IN ('No Action', 'LDCM Decision', 'Blacklist')),
+    decision_date DATE,
+    remarks TEXT,
+    
+    FOREIGN KEY (training_provider_id)
+        REFERENCES TrainingProvider(TP_ID)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE
+);
+
+CREATE OR REPLACE FUNCTION set_complaint_case_id()
+RETURNS TRIGGER AS $$
+DECLARE
+    current_yr TEXT;
+    next_val INT;
+BEGIN
+    current_yr := to_char(CURRENT_DATE, 'YYYY');
+    
+    SELECT COALESCE(MAX(CAST(SUBSTRING(case_id FROM 11 FOR 3) AS INT)), 0) + 1
+    INTO next_val
+    FROM Complaint
+    WHERE SUBSTRING(case_id FROM 6 FOR 4) = current_yr;
+    
+    NEW.case_id := 'LDCM-' || current_yr || '-' || LPAD(next_val::TEXT, 3, '0');
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_set_complaint_case_id ON Complaint;
+CREATE TRIGGER trigger_set_complaint_case_id
+BEFORE INSERT ON Complaint
+FOR EACH ROW
+WHEN (NEW.case_id IS NULL)
+EXECUTE FUNCTION set_complaint_case_id();

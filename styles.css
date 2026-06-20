@@ -645,3 +645,27 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 
 @media(max-width:900px){.pg{grid-template-columns:repeat(2,1fr)}.tg{grid-template-columns:repeat(2,1fr)}.main{padding:1.2rem 1rem 2.5rem}.toolbar{padding:.62rem 1rem}header{padding:.85rem 1rem .8rem}}
 @media(max-width:560px){.pg{grid-template-columns:1fr}.tg{grid-template-columns:1fr}}
+
+/* ── COMPLAINT FLOATING ACTION BUTTON ── */
+.fab-complaint {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--red);
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 14px rgba(184, 28, 28, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.fab-complaint:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(184, 28, 28, 0.5);
+}

@@ -573,6 +573,208 @@ if (isset($content_file) && is_file($content_file)) {
 
 
 
+<!-- ════════════════════════════════════
+     COMPLAINT MODAL
+════════════════════════════════════ -->
+<div class="uov" id="complaintOv" onclick="if(event.target===this)closeComplaintModal()">
+    <div class="uom" style="max-width: 800px; width: 100%;">
+        <!-- Header -->
+        <div class="uoh" style="background: var(--blue); color: #fff; padding: 1rem 1.45rem; border-radius: 14px 14px 0 0; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 0.5rem; font-family: 'Calibri', sans-serif; font-weight: 700; font-size: 1.05rem;">
+                <span style="font-size: 1.2rem;">🚩</span>
+                <span>Complaints</span>
+            </div>
+            <button class="uoc" onclick="closeComplaintModal()" style="background: rgba(255,255,255,0.15); border: none; border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff;">✕</button>
+        </div>
+
+        <!-- Tabs -->
+        <div style="display: flex; background: var(--cream); border-bottom: 1px solid var(--border);">
+            <button class="u-tab-btn active" id="ctab-new" onclick="switchComplaintTab('new')">
+                New complaint
+            </button>
+            <button class="u-tab-btn" id="ctab-update" onclick="switchComplaintTab('update')">
+                Update status
+            </button>
+        </div>
+
+        <!-- Tab Content: New Complaint -->
+        <div class="uob" id="compContent-new">
+            <form id="newComplaintForm" onsubmit="submitNewComplaint(event)">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                    <div>
+                        <label class="stm-label">Date of Complaint *</label>
+                        <input type="date" id="compDate" class="si" style="width:100%;margin-top:0.25rem" required>
+                    </div>
+                    <div>
+                        <label class="stm-label">Priority *</label>
+                        <select id="compPriority" class="si" style="width:100%;margin-top:0.25rem" required>
+                            <option value="">Select Priority</option>
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="stm-label">Employee Name *</label>
+                        <input type="text" id="compEmpName" class="si" style="width:100%;margin-top:0.25rem" required>
+                    </div>
+                    <div>
+                        <label class="stm-label">Employee ID *</label>
+                        <input type="text" id="compEmpId" class="si" style="width:100%;margin-top:0.25rem" required>
+                    </div>
+                    <div>
+                        <label class="stm-label">Department *</label>
+                        <select id="compDept" class="si" style="width:100%;margin-top:0.25rem" required>
+                            <option value="">Select Department</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="stm-label">LearnOps *</label>
+                        <select id="compLearnOps" class="si" style="width:100%;margin-top:0.25rem" required>
+                            <option value="">Select LearnOps</option>
+                            <option value="Ali">Ali</option>
+                            <option value="Abu">Abu</option>
+                            <option value="Abeng">Abeng</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="stm-label">Training Provider *</label>
+                        <div style="position:relative;">
+                            <input type="text" id="compTpSearch" class="si" style="width:100%;margin-top:0.25rem" placeholder="Type to search..." autocomplete="off" required oninput="filterCompTp('compTpSearch', 'compTpDropdown', 'compTpId')">
+                            <input type="hidden" id="compTpId" required>
+                            <div id="compTpDropdown" class="trainer-flag-reason-menu" style="width:100%;margin-top:2px;"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="stm-label">Complaint Category *</label>
+                        <select id="compCategory" class="si" style="width:100%;margin-top:0.25rem" required>
+                            <option value="">Select Category</option>
+                            <option value="Performance Quality">Performance Quality</option>
+                            <option value="Safety & Compliance">Safety & Compliance</option>
+                            <option value="Fraud & Misconduct">Fraud & Misconduct</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="margin-bottom:1rem;">
+                    <label class="stm-label">Complaint Summary *</label>
+                    <textarea id="compSummary" class="remark-input" rows="3" style="width:100%;margin-top:0.25rem" required></textarea>
+                </div>
+                <div class="ua" style="display: flex; gap: 0.5rem; justify-content:flex-end;">
+                    <button type="button" class="ux" onclick="closeComplaintModal()">Cancel</button>
+                    <button type="submit" class="uc">Submit Complaint</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Tab Content: Update status -->
+        <div class="uob" id="compContent-update" style="display: none;">
+            <div id="compListSection">
+                <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
+                    <input type="text" id="compSearchInput" class="si" placeholder="Search complaints..." style="flex:1" oninput="fetchComplaints()">
+                </div>
+                <div id="compListContainer" style="max-height: 400px; overflow-y: auto;">
+                    <!-- Complaints list inserted here -->
+                </div>
+            </div>
+
+            <!-- Edit Complaint Form (Hidden initially) -->
+            <div id="compEditSection" style="display:none;">
+                <div style="display:flex;align-items:center;margin-bottom:1rem;gap:0.5rem;">
+                    <button type="button" class="ux" onclick="showComplaintList()" style="padding:4px 8px;">← Back</button>
+                    <h4 style="margin:0;font-family:'Calibri',sans-serif;">Editing Case: <span id="editCompCaseId"></span></h4>
+                </div>
+                <form id="editComplaintForm" onsubmit="submitEditComplaint(event)">
+                    <input type="hidden" id="editCompCaseIdHidden">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                        <div>
+                            <label class="stm-label">Date of Complaint *</label>
+                            <input type="date" id="editCompDate" class="si" style="width:100%;margin-top:0.25rem" required>
+                        </div>
+                        <div>
+                            <label class="stm-label">Priority *</label>
+                            <select id="editCompPriority" class="si" style="width:100%;margin-top:0.25rem" required>
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="stm-label">Employee Name *</label>
+                            <input type="text" id="editCompEmpName" class="si" style="width:100%;margin-top:0.25rem" required>
+                        </div>
+                        <div>
+                            <label class="stm-label">Employee ID *</label>
+                            <input type="text" id="editCompEmpId" class="si" style="width:100%;margin-top:0.25rem" required>
+                        </div>
+                        <div>
+                            <label class="stm-label">Department *</label>
+                            <select id="editCompDept" class="si" style="width:100%;margin-top:0.25rem" required></select>
+                        </div>
+                        <div>
+                            <label class="stm-label">LearnOps *</label>
+                            <select id="editCompLearnOps" class="si" style="width:100%;margin-top:0.25rem" required>
+                                <option value="Ali">Ali</option>
+                                <option value="Abu">Abu</option>
+                                <option value="Abeng">Abeng</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="stm-label">Training Provider *</label>
+                            <div style="position:relative;">
+                                <input type="text" id="editCompTpSearch" class="si" style="width:100%;margin-top:0.25rem" autocomplete="off" required oninput="filterCompTp('editCompTpSearch', 'editCompTpDropdown', 'editCompTpId')">
+                                <input type="hidden" id="editCompTpId" required>
+                                <div id="editCompTpDropdown" class="trainer-flag-reason-menu" style="width:100%;margin-top:2px;"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="stm-label">Complaint Category *</label>
+                            <select id="editCompCategory" class="si" style="width:100%;margin-top:0.25rem" required>
+                                <option value="Performance Quality">Performance Quality</option>
+                                <option value="Safety & Compliance">Safety & Compliance</option>
+                                <option value="Fraud & Misconduct">Fraud & Misconduct</option>
+                            </select>
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label class="stm-label">Complaint Summary *</label>
+                            <textarea id="editCompSummary" class="remark-input" rows="2" style="width:100%;margin-top:0.25rem" required></textarea>
+                        </div>
+
+                        <!-- Update Status Specific Fields -->
+                        <div>
+                            <label class="stm-label">Status *</label>
+                            <select id="editCompStatus" class="si" style="width:100%;margin-top:0.25rem" required>
+                                <option value="Open">Open</option>
+                                <option value="Under Review">Under Review</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="stm-label">LDCM Decision *</label>
+                            <select id="editCompDecision" class="si" style="width:100%;margin-top:0.25rem" required>
+                                <option value="No Action">No Action</option>
+                                <option value="LDCM Decision">LDCM Decision</option>
+                                <option value="Blacklist">Blacklist</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="stm-label">Decision Date *</label>
+                            <input type="date" id="editCompDecisionDate" class="si" style="width:100%;margin-top:0.25rem" required>
+                        </div>
+                        <div style="grid-column: span 2;">
+                            <label class="stm-label">Description (Remarks)</label>
+                            <textarea id="editCompRemarks" class="remark-input" rows="2" style="width:100%;margin-top:0.25rem"></textarea>
+                        </div>
+                    </div>
+                    <div class="ua" style="display: flex; gap: 0.5rem; justify-content:flex-end;">
+                        <button type="button" class="ux" onclick="showComplaintList()">Cancel</button>
+                        <button type="submit" class="uc">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- LOGIN MODAL -->
 <div class="lgov" id="loginOv" onclick="if(event.target===this)closeLoginModal()">
     <div class="lgm">
@@ -3163,6 +3365,201 @@ window.addEventListener('DOMContentLoaded', () => {
     loadData();
     updateStats();
 });
+
+// Complaints Logic
+let complaintsCache = [];
+function openComplaintModal() {
+    const ov = document.getElementById('complaintOv');
+    if (ov) {
+        ov.classList.add('open');
+        syncBodyLock();
+        fetchDepartments();
+        switchComplaintTab('new');
+    }
+}
+function closeComplaintModal() {
+    const ov = document.getElementById('complaintOv');
+    if (ov) {
+        ov.classList.remove('open');
+        syncBodyLock();
+    }
+}
+function switchComplaintTab(tab) {
+    document.getElementById('ctab-new').classList.toggle('active', tab === 'new');
+    document.getElementById('ctab-update').classList.toggle('active', tab === 'update');
+    document.getElementById('compContent-new').style.display = tab === 'new' ? 'block' : 'none';
+    document.getElementById('compContent-update').style.display = tab === 'update' ? 'block' : 'none';
+    
+    if (tab === 'update') {
+        showComplaintList();
+        fetchComplaints();
+    } else {
+        document.getElementById('newComplaintForm').reset();
+        document.getElementById('compTpId').value = '';
+    }
+}
+function fetchDepartments() {
+    fetch('api/get-departments.php').then(r => r.json()).then(res => {
+        if(res.success) {
+            const opts = '<option value="">Select Department</option>' + res.data.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
+            document.getElementById('compDept').innerHTML = opts;
+            const currentEditVal = document.getElementById('editCompDept').value;
+            document.getElementById('editCompDept').innerHTML = opts;
+            if (currentEditVal) document.getElementById('editCompDept').value = currentEditVal;
+        }
+    }).catch(console.error);
+}
+function filterCompTp(inputId, dropdownId, hiddenId) {
+    const term = document.getElementById(inputId).value.toLowerCase();
+    const dd = document.getElementById(dropdownId);
+    if (!term) {
+        dd.innerHTML = '';
+        dd.classList.remove('open');
+        document.getElementById(hiddenId).value = '';
+        return;
+    }
+    const matches = allData.filter(d => (d.TP_Name||'').toLowerCase().includes(term)).slice(0, 5);
+    if(matches.length === 0) {
+        dd.innerHTML = '<div style="padding:0.5rem;color:var(--muted)">No matches found</div>';
+    } else {
+        dd.innerHTML = matches.map(d => `<button type="button" class="trainer-flag-reason-item" onclick="selectCompTp('${escapeHtml(d.TP_Name).replace(/'/g, "\\'")}', ${d.TP_ID}, '${inputId}', '${dropdownId}', '${hiddenId}')">${escapeHtml(d.TP_Name)}</button>`).join('');
+    }
+    dd.classList.add('open');
+}
+function selectCompTp(name, id, inputId, dropdownId, hiddenId) {
+    document.getElementById(inputId).value = name;
+    document.getElementById(hiddenId).value = id;
+    document.getElementById(dropdownId).classList.remove('open');
+}
+function submitNewComplaint(e) {
+    e.preventDefault();
+    const data = {
+        date_of_complaint: document.getElementById('compDate').value,
+        employee_name: document.getElementById('compEmpName').value,
+        employee_id: document.getElementById('compEmpId').value,
+        department: document.getElementById('compDept').value,
+        learnops: document.getElementById('compLearnOps').value,
+        training_provider_id: document.getElementById('compTpId').value,
+        complaint_category: document.getElementById('compCategory').value,
+        complaint_summary: document.getElementById('compSummary').value,
+        priority: document.getElementById('compPriority').value,
+        status: 'Open'
+    };
+    if (!data.training_provider_id) {
+        showToast('Please select a valid Training Provider'); return;
+    }
+    fetch('api/submit-complaint.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).then(r => r.json()).then(res => {
+        if(res.success) {
+            showToast('✓ Complaint submitted successfully');
+            closeComplaintModal();
+            loadData();
+        } else {
+            showToast('⚠️ ' + (res.error || 'Failed to submit'));
+        }
+    }).catch(console.error);
+}
+function fetchComplaints() {
+    const term = document.getElementById('compSearchInput').value;
+    fetch('api/get-complaints.php?search=' + encodeURIComponent(term))
+    .then(r => r.json()).then(res => {
+        if(res.success) {
+            complaintsCache = res.data;
+            renderComplaintList();
+        }
+    }).catch(console.error);
+}
+function renderComplaintList() {
+    const c = document.getElementById('compListContainer');
+    if (!complaintsCache.length) {
+        c.innerHTML = '<div style="padding:1rem;color:var(--muted);text-align:center;">No complaints found</div>';
+        return;
+    }
+    c.innerHTML = complaintsCache.map(comp => `
+        <div style="border:1px solid var(--border);border-radius:6px;padding:0.75rem;margin-bottom:0.5rem;background:var(--paper);cursor:pointer;" onclick="loadEditComplaint('${comp.case_id}')">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">
+                <strong>${escapeHtml(comp.case_id)}</strong>
+                <span style="font-size:0.8rem;background:var(--blue-lt);color:var(--blue-dk);padding:2px 6px;border-radius:4px;">${escapeHtml(comp.status)}</span>
+            </div>
+            <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.25rem;">${escapeHtml(comp.tp_name || 'Unknown TP')}</div>
+            <div style="font-size:0.85rem;color:var(--ink);">${escapeHtml(comp.complaint_category)} - ${escapeHtml(comp.priority)} Priority</div>
+        </div>
+    `).join('');
+}
+function showComplaintList() {
+    document.getElementById('compListSection').style.display = 'block';
+    document.getElementById('compEditSection').style.display = 'none';
+}
+function loadEditComplaint(caseId) {
+    const comp = complaintsCache.find(c => c.case_id === caseId);
+    if (!comp) return;
+    
+    document.getElementById('editCompCaseId').textContent = comp.case_id;
+    document.getElementById('editCompCaseIdHidden').value = comp.case_id;
+    document.getElementById('editCompDate').value = comp.date_of_complaint || '';
+    document.getElementById('editCompPriority').value = comp.priority || '';
+    document.getElementById('editCompEmpName').value = comp.employee_name || '';
+    document.getElementById('editCompEmpId').value = comp.employee_id || '';
+    
+    // Attempt to set department immediately if loaded, otherwise wait for fetchDepartments
+    const deptSel = document.getElementById('editCompDept');
+    if (deptSel.options.length > 0) {
+        deptSel.value = comp.department || '';
+    } else {
+        // Just store it, fetchDepartments will set it
+        deptSel.dataset.pendingValue = comp.department || '';
+    }
+    
+    document.getElementById('editCompLearnOps').value = comp.learnops || '';
+    document.getElementById('editCompTpSearch').value = comp.tp_name || '';
+    document.getElementById('editCompTpId').value = comp.training_provider_id || '';
+    document.getElementById('editCompCategory').value = comp.complaint_category || '';
+    document.getElementById('editCompSummary').value = comp.complaint_summary || '';
+    
+    document.getElementById('editCompStatus').value = comp.status || 'Open';
+    document.getElementById('editCompDecision').value = comp.ldcm_decision || 'No Action';
+    document.getElementById('editCompDecisionDate').value = comp.decision_date || '';
+    document.getElementById('editCompRemarks').value = comp.remarks || '';
+
+    document.getElementById('compListSection').style.display = 'none';
+    document.getElementById('compEditSection').style.display = 'block';
+}
+function submitEditComplaint(e) {
+    e.preventDefault();
+    const data = {
+        case_id: document.getElementById('editCompCaseIdHidden').value,
+        date_of_complaint: document.getElementById('editCompDate').value,
+        employee_name: document.getElementById('editCompEmpName').value,
+        employee_id: document.getElementById('editCompEmpId').value,
+        department: document.getElementById('editCompDept').value,
+        learnops: document.getElementById('editCompLearnOps').value,
+        training_provider_id: document.getElementById('editCompTpId').value,
+        complaint_category: document.getElementById('editCompCategory').value,
+        complaint_summary: document.getElementById('editCompSummary').value,
+        priority: document.getElementById('editCompPriority').value,
+        status: document.getElementById('editCompStatus').value,
+        ldcm_decision: document.getElementById('editCompDecision').value,
+        decision_date: document.getElementById('editCompDecisionDate').value,
+        remarks: document.getElementById('editCompRemarks').value
+    };
+    fetch('api/update-complaint.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    }).then(r => r.json()).then(res => {
+        if(res.success) {
+            showToast('✓ Complaint updated successfully');
+            fetchComplaints();
+            showComplaintList();
+            if (data.ldcm_decision === 'Blacklist') loadData();
+        } else {
+            showToast('⚠️ ' + (res.error || 'Failed to update'));
+        }
+    }).catch(console.error);
+}
 </script>
 
 </body>
