@@ -455,7 +455,7 @@ if (isset($content_file) && is_file($content_file)) {
         <div class="uoh" style="background: var(--blue); color: #fff; padding: 1rem 1.45rem; border-radius: 14px 14px 0 0; display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 0.5rem; font-family: 'Calibri', sans-serif; font-weight: 700; font-size: 1.05rem;">
                 <span style="font-size: 1.2rem;">📊</span>
-                <span>Manage Excel database</span>
+                <span>Manage Database</span>
             </div>
             <button class="uoc" onclick="closeUpload()" style="background: rgba(255,255,255,0.15); border: none; border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff;">✕</button>
         </div>
@@ -683,89 +683,91 @@ if (isset($content_file) && is_file($content_file)) {
                     <button type="button" class="ux" onclick="showComplaintList()" style="padding:4px 8px;">← Back</button>
                     <h4 style="margin:0;font-family:'Calibri',sans-serif;">Editing Case: <span id="editCompCaseId"></span></h4>
                 </div>
-                <form id="editComplaintForm" onsubmit="submitEditComplaint(event)">
-                    <input type="hidden" id="editCompCaseIdHidden">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
-                        <div>
-                            <label class="stm-label">Date of Complaint *</label>
-                            <input type="date" id="editCompDate" class="si" style="width:100%;margin-top:0.25rem" required>
-                        </div>
-                        <div>
-                            <label class="stm-label">Priority *</label>
-                            <select id="editCompPriority" class="si" style="width:100%;margin-top:0.25rem" required>
-                                <option value="Low">Low</option>
-                                <option value="Medium">Medium</option>
-                                <option value="High">High</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="stm-label">Employee Name *</label>
-                            <input type="text" id="editCompEmpName" class="si" style="width:100%;margin-top:0.25rem" required>
-                        </div>
-                        <div>
-                            <label class="stm-label">Employee ID *</label>
-                            <input type="text" id="editCompEmpId" class="si" style="width:100%;margin-top:0.25rem" required>
-                        </div>
-                        <div>
-                            <label class="stm-label">Department *</label>
-                            <select id="editCompDept" class="si" style="width:100%;margin-top:0.25rem" required></select>
-                        </div>
-                        <div>
-                            <label class="stm-label">LearnOps *</label>
-                            <select id="editCompLearnOps" class="si" style="width:100%;margin-top:0.25rem" required>
-                                <option value="Ali">Ali</option>
-                                <option value="Abu">Abu</option>
-                                <option value="Abeng">Abeng</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="stm-label">Training Provider *</label>
-                            <div style="position:relative;">
-                                <input type="text" id="editCompTpSearch" class="si" style="width:100%;margin-top:0.25rem" autocomplete="off" required oninput="filterCompTp('editCompTpSearch', 'editCompTpDropdown', 'editCompTpId')">
-                                <input type="hidden" id="editCompTpId" required>
-                                <div id="editCompTpDropdown" class="trainer-flag-reason-menu" style="width:100%;margin-top:2px;"></div>
+                <form id="editComplaintForm" onsubmit="submitEditComplaint(event)" style="display: flex; flex-direction: column; max-height: 60vh;">
+                    <div style="overflow-y: auto; padding-right: 0.5rem; flex: 1;">
+                        <input type="hidden" id="editCompCaseIdHidden">
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                            <div>
+                                <label class="stm-label">Date of Complaint *</label>
+                                <input type="date" id="editCompDate" class="si" style="width:100%;margin-top:0.25rem" required>
+                            </div>
+                            <div>
+                                <label class="stm-label">Priority *</label>
+                                <select id="editCompPriority" class="si" style="width:100%;margin-top:0.25rem" required>
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="stm-label">Employee Name *</label>
+                                <input type="text" id="editCompEmpName" class="si" style="width:100%;margin-top:0.25rem" required>
+                            </div>
+                            <div>
+                                <label class="stm-label">Employee ID *</label>
+                                <input type="text" id="editCompEmpId" class="si" style="width:100%;margin-top:0.25rem" required>
+                            </div>
+                            <div>
+                                <label class="stm-label">Department *</label>
+                                <select id="editCompDept" class="si" style="width:100%;margin-top:0.25rem" required></select>
+                            </div>
+                            <div>
+                                <label class="stm-label">LearnOps *</label>
+                                <select id="editCompLearnOps" class="si" style="width:100%;margin-top:0.25rem" required>
+                                    <option value="Ali">Ali</option>
+                                    <option value="Abu">Abu</option>
+                                    <option value="Abeng">Abeng</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="stm-label">Training Provider *</label>
+                                <div style="position:relative;">
+                                    <input type="text" id="editCompTpSearch" class="si" style="width:100%;margin-top:0.25rem" autocomplete="off" required oninput="filterCompTp('editCompTpSearch', 'editCompTpDropdown', 'editCompTpId')">
+                                    <input type="hidden" id="editCompTpId" required>
+                                    <div id="editCompTpDropdown" class="trainer-flag-reason-menu" style="width:100%;margin-top:2px;"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="stm-label">Complaint Category *</label>
+                                <select id="editCompCategory" class="si" style="width:100%;margin-top:0.25rem" required>
+                                    <option value="Performance Quality">Performance Quality</option>
+                                    <option value="Safety & Compliance">Safety & Compliance</option>
+                                    <option value="Fraud & Misconduct">Fraud & Misconduct</option>
+                                </select>
+                            </div>
+                            <div style="grid-column: span 2;">
+                                <label class="stm-label">Complaint Summary *</label>
+                                <textarea id="editCompSummary" class="remark-input" rows="2" style="width:100%;margin-top:0.25rem" required></textarea>
+                            </div>
+
+                            <!-- Update Status Specific Fields -->
+                            <div>
+                                <label class="stm-label">Status *</label>
+                                <select id="editCompStatus" class="si" style="width:100%;margin-top:0.25rem" required>
+                                    <option value="Open">Open</option>
+                                    <option value="Under Review">Under Review</option>
+                                    <option value="Closed">Closed</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="stm-label">LDCM Decision *</label>
+                                <select id="editCompDecision" class="si" style="width:100%;margin-top:0.25rem" required>
+                                    <option value="No Action">No Action</option>
+                                    <option value="LDCM Decision">LDCM Decision</option>
+                                    <option value="Blacklist">Blacklist</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="stm-label">Decision Date *</label>
+                                <input type="date" id="editCompDecisionDate" class="si" style="width:100%;margin-top:0.25rem" required>
+                            </div>
+                            <div style="grid-column: span 2;">
+                                <label class="stm-label">Description (Remarks)</label>
+                                <textarea id="editCompRemarks" class="remark-input" rows="2" style="width:100%;margin-top:0.25rem"></textarea>
                             </div>
                         </div>
-                        <div>
-                            <label class="stm-label">Complaint Category *</label>
-                            <select id="editCompCategory" class="si" style="width:100%;margin-top:0.25rem" required>
-                                <option value="Performance Quality">Performance Quality</option>
-                                <option value="Safety & Compliance">Safety & Compliance</option>
-                                <option value="Fraud & Misconduct">Fraud & Misconduct</option>
-                            </select>
-                        </div>
-                        <div style="grid-column: span 2;">
-                            <label class="stm-label">Complaint Summary *</label>
-                            <textarea id="editCompSummary" class="remark-input" rows="2" style="width:100%;margin-top:0.25rem" required></textarea>
-                        </div>
-
-                        <!-- Update Status Specific Fields -->
-                        <div>
-                            <label class="stm-label">Status *</label>
-                            <select id="editCompStatus" class="si" style="width:100%;margin-top:0.25rem" required>
-                                <option value="Open">Open</option>
-                                <option value="Under Review">Under Review</option>
-                                <option value="Closed">Closed</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="stm-label">LDCM Decision *</label>
-                            <select id="editCompDecision" class="si" style="width:100%;margin-top:0.25rem" required>
-                                <option value="No Action">No Action</option>
-                                <option value="LDCM Decision">LDCM Decision</option>
-                                <option value="Blacklist">Blacklist</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="stm-label">Decision Date *</label>
-                            <input type="date" id="editCompDecisionDate" class="si" style="width:100%;margin-top:0.25rem" required>
-                        </div>
-                        <div style="grid-column: span 2;">
-                            <label class="stm-label">Description (Remarks)</label>
-                            <textarea id="editCompRemarks" class="remark-input" rows="2" style="width:100%;margin-top:0.25rem"></textarea>
-                        </div>
                     </div>
-                    <div class="ua" style="display: flex; gap: 0.5rem; justify-content:flex-end;">
+                    <div class="ua" style="display: flex; gap: 0.5rem; justify-content:flex-end; padding-top: 1rem; border-top: 1px solid var(--border); margin-top: 0.5rem; flex-shrink: 0;">
                         <button type="button" class="ux" onclick="showComplaintList()">Cancel</button>
                         <button type="submit" class="uc">Save Changes</button>
                     </div>

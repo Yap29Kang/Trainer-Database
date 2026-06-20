@@ -1,7 +1,7 @@
 <?php
 require_once 'config.php';
 
-$page_title = 'Trainer Database - ' . ucfirst($_SESSION['role']);
+$page_title = 'Trainer Dashboard - ' . ucfirst($_SESSION['role']);
 $content_file = 'views/' . $_SESSION['role'] . '.php';
 
 // Set up the main content area
