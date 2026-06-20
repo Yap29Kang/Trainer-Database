@@ -8,7 +8,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $page_title ?? 'Trainer Database'; ?></title>
+    <title><?php echo $page_title ?? 'SEB Trainer Dashboard'; ?></title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -17,7 +17,7 @@
 <!-- HEADER -->
 <header>
     <div class="hdr-top">
-        <div class="logo">Trainer<span> Database</span></div>
+        <div class="logo">Trainer<span> Dashboard</span></div>
         <div style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
             <button class="hdr-btn" id="authHdrBtn" onclick="handleAuthButton()">
                 <?php echo ($_SESSION['role'] === 'admin' ? 'Log Out' : 'Log In'); ?>
@@ -38,7 +38,7 @@
     <div class="hdr-upload-wrap">
         <button class="hdr-btn" id="upHdrBtn" onclick="openUpload()" style="<?php echo ($_SESSION['role'] === 'admin' ? 'display:inline-flex;' : 'display:none;'); ?>">
             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
-            Upload Excel
+            Manage Database
         </button>
     </div>
 </header>
@@ -2234,7 +2234,7 @@ function renderProviderSummaryTab() {
         <div class="provider-summary-head">
             <div>
                 <div class="provider-summary-title">Area of Expertise by Course Category</div>
-                <div class="provider-summary-subtitle">Treemap sized by total participant enrollments per category</div>
+                <div class="provider-summary-subtitle">Heatmap populated based on total number of participants enrollment</div>
             </div>
             <div class="provider-summary-total">${buckets.length} categories · ${totalPax} pax</div>
         </div>
@@ -3365,7 +3365,217 @@ window.addEventListener('DOMContentLoaded', () => {
     loadData();
     updateStats();
 });
+</script>
 
+<?php if ($_SESSION['role'] === 'admin'): ?>
+<button class="fab-complaint" onclick="openComplaintModal()" title="Complaints">
+    <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+</button>
+<?php endif; ?>
+
+<!-- Complaint Modal -->
+<div class="ov" id="complaintOv">
+    <div class="pm" style="max-width:800px">
+        <div class="mh">
+            <div>
+                <div class="mpn">Complaints & Feedback</div>
+                <div style="font-size:0.8rem;color:rgba(255,255,255,0.7);font-family:'Calibri',sans-serif">Manage trainer & provider complaints</div>
+            </div>
+            <button class="mc" onclick="closeComplaintModal()">×</button>
+        </div>
+        <div class="ptabs">
+            <button class="ptab active" id="ctab-new" onclick="switchComplaintTab('new')">New Complaint</button>
+            <button class="ptab" id="ctab-update" onclick="switchComplaintTab('update')">Update Status</button>
+        </div>
+        
+        <!-- New Complaint Tab -->
+        <div class="mb2" id="compContent-new">
+            <form id="newComplaintForm" onsubmit="submitNewComplaint(event)">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Date of Complaint *</label>
+                        <input type="date" id="compDate" class="si" required style="width:100%">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Priority *</label>
+                        <select id="compPriority" class="si" required style="width:100%">
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Employee Name *</label>
+                        <input type="text" id="compEmpName" class="si" required style="width:100%">
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Employee ID *</label>
+                        <input type="text" id="compEmpId" class="si" required style="width:100%">
+                    </div>
+                </div>
+                
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Department *</label>
+                        <select id="compDept" class="si" required style="width:100%">
+                            <option value="">Loading...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">LearnOps Assigned</label>
+                        <input type="text" id="compLearnOps" class="si" style="width:100%">
+                    </div>
+                </div>
+                
+                <div style="margin-bottom:1rem;position:relative;">
+                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Training Provider *</label>
+                    <input type="text" id="compTpSearch" class="si" placeholder="Search provider name..." required style="width:100%" oninput="filterCompTp('compTpSearch', 'compTpDropdown', 'compTpId')">
+                    <input type="hidden" id="compTpId">
+                    <div id="compTpDropdown" class="trainer-flag-reason-menu" style="top:calc(100% - 4px);width:100%"></div>
+                </div>
+                
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Complaint Category *</label>
+                    <input type="text" id="compCategory" class="si" placeholder="E.g., Poor content, unprofessional..." required style="width:100%">
+                </div>
+                
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Complaint Summary</label>
+                    <textarea id="compSummary" class="si" rows="3" style="width:100%;resize:vertical;"></textarea>
+                </div>
+                
+                <div style="display:flex;justify-content:flex-end;gap:0.5rem;">
+                    <button type="button" class="stm-cancel" onclick="document.getElementById('newComplaintForm').reset();document.getElementById('compTpId').value=''">Clear</button>
+                    <button type="submit" class="stm-confirm">Submit Complaint</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Update Status Tab -->
+        <div class="mb2" id="compContent-update" style="display:none;">
+            <!-- List Section -->
+            <div id="compListSection">
+                <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+                    <input type="text" id="compSearchInput" class="si" placeholder="Search Case ID, Provider, Employee..." style="width:100%">
+                    <button type="button" class="vb" onclick="fetchComplaints()">Search</button>
+                </div>
+                <div id="compListContainer" style="max-height:400px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:0.5rem;background:var(--cream);">
+                    <!-- Dynamic list -->
+                </div>
+            </div>
+            
+            <!-- Edit Section -->
+            <div id="compEditSection" style="display:none;">
+                <button type="button" onclick="showComplaintList()" style="background:transparent;border:none;color:var(--blue);cursor:pointer;font-weight:700;font-size:0.85rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.3rem;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg> Back to List
+                </button>
+                
+                <form id="editComplaintForm" onsubmit="submitEditComplaint(event)">
+                    <div style="background:var(--cream);padding:0.8rem;border-radius:8px;border-left:3px solid var(--blue);margin-bottom:1rem;font-family:'Calibri',sans-serif;display:flex;justify-content:space-between;align-items:center;">
+                        <div><strong style="color:var(--ink);">Case ID:</strong> <span id="editCompCaseId" style="color:var(--blue);font-weight:700;"></span></div>
+                        <input type="hidden" id="editCompCaseIdHidden">
+                    </div>
+
+                    <!-- Repeated Form Fields for Edit -->
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                        <div>
+                            <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Date of Complaint *</label>
+                            <input type="date" id="editCompDate" class="si" required style="width:100%">
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Priority *</label>
+                            <select id="editCompPriority" class="si" required style="width:100%">
+                                <option value="Low">Low</option>
+                                <option value="Medium">Medium</option>
+                                <option value="High">High</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                        <div>
+                            <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Employee Name *</label>
+                            <input type="text" id="editCompEmpName" class="si" required style="width:100%">
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Employee ID *</label>
+                            <input type="text" id="editCompEmpId" class="si" required style="width:100%">
+                        </div>
+                    </div>
+                    
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                        <div>
+                            <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Department *</label>
+                            <select id="editCompDept" class="si" required style="width:100%"></select>
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">LearnOps Assigned</label>
+                            <input type="text" id="editCompLearnOps" class="si" style="width:100%">
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom:1rem;position:relative;">
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Training Provider *</label>
+                        <input type="text" id="editCompTpSearch" class="si" required style="width:100%" oninput="filterCompTp('editCompTpSearch', 'editCompTpDropdown', 'editCompTpId')">
+                        <input type="hidden" id="editCompTpId">
+                        <div id="editCompTpDropdown" class="trainer-flag-reason-menu" style="top:calc(100% - 4px);width:100%"></div>
+                    </div>
+                    
+                    <div style="margin-bottom:1rem;">
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Complaint Category *</label>
+                        <input type="text" id="editCompCategory" class="si" required style="width:100%">
+                    </div>
+                    
+                    <div style="margin-bottom:1rem;">
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Complaint Summary</label>
+                        <textarea id="editCompSummary" class="si" rows="2" style="width:100%;resize:vertical;"></textarea>
+                    </div>
+
+                    <!-- Update Fields -->
+                    <hr style="border:0;border-top:1px solid var(--border);margin:1.5rem 0;">
+                    
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem;">
+                        <div>
+                            <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Status</label>
+                            <select id="editCompStatus" class="si" style="width:100%">
+                                <option value="Open">Open</option>
+                                <option value="Investigating">Investigating</option>
+                                <option value="Resolved">Resolved</option>
+                                <option value="Closed">Closed</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">LDCM Decision</label>
+                            <select id="editCompDecision" class="si" style="width:100%">
+                                <option value="No Action">No Action</option>
+                                <option value="Pending Review">Pending Review</option>
+                                <option value="Blacklist">Blacklist</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Decision Date</label>
+                            <input type="date" id="editCompDecisionDate" class="si" style="width:100%">
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:1.5rem;">
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Remarks</label>
+                        <textarea id="editCompRemarks" class="si" rows="3" style="width:100%;resize:vertical;"></textarea>
+                    </div>
+
+                    <div style="display:flex;justify-content:flex-end;gap:0.5rem;">
+                        <button type="submit" class="stm-confirm">Save Updates</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
 // Complaints Logic
 let complaintsCache = [];
 function openComplaintModal() {
