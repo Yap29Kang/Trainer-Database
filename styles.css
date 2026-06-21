@@ -673,3 +673,10 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
     transform: translateY(-3px);
     box-shadow: 0 6px 20px rgba(184, 28, 28, 0.5);
 }
+
+/* ── COMPLAINT MODAL FORM INPUTS ── */
+/* Override the large left padding from .si (designed for the search bar with icon).
+   Complaint form fields have no left icon, so use standard symmetric padding. */
+#complaintOv .si {
+    padding-left: 0.7rem;
+}
