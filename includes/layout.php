@@ -603,7 +603,7 @@ if (isset($content_file) && is_file($content_file)) {
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
                     <div>
                         <label class="stm-label">Date of Complaint *</label>
-                        <input type="date" id="compDate" class="si" style="width:100%;margin-top:0.25rem" required>
+                        <input type="date" id="compDate" class="si" style="width:100%;margin-top:0.25rem" max="<?php echo date('Y-m-d'); ?>" required>
                     </div>
                     <div>
                         <label class="stm-label">Priority *</label>
@@ -624,7 +624,7 @@ if (isset($content_file) && is_file($content_file)) {
                     </div>
                     <div>
                         <label class="stm-label">Department *</label>
-                        <select id="compDept" class="si" style="width:100%;margin-top:0.25rem" required>
+                        <select id="compDept" class="si" style="width:100%;margin-top:0.25rem" required size="5">
                             <option value="">Select Department</option>
                         </select>
                     </div>
@@ -689,7 +689,7 @@ if (isset($content_file) && is_file($content_file)) {
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
                             <div>
                                 <label class="stm-label">Date of Complaint *</label>
-                                <input type="date" id="editCompDate" class="si" style="width:100%;margin-top:0.25rem" required>
+                                <input type="date" id="editCompDate" class="si" style="width:100%;margin-top:0.25rem" max="<?php echo date('Y-m-d'); ?>" required>
                             </div>
                             <div>
                                 <label class="stm-label">Priority *</label>
@@ -709,7 +709,7 @@ if (isset($content_file) && is_file($content_file)) {
                             </div>
                             <div>
                                 <label class="stm-label">Department *</label>
-                                <select id="editCompDept" class="si" style="width:100%;margin-top:0.25rem" required></select>
+                                <select id="editCompDept" class="si" style="width:100%;margin-top:0.25rem" required size="5"></select>
                             </div>
                             <div>
                                 <label class="stm-label">LearnOps *</label>
