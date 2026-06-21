@@ -624,9 +624,13 @@ if (isset($content_file) && is_file($content_file)) {
                     </div>
                     <div>
                         <label class="stm-label">Department *</label>
-                        <select id="compDept" class="si" style="width:100%;margin-top:0.25rem" required>
-                            <option value="">Select Department</option>
-                        </select>
+                        <div class="dept-select-wrap" style="position:relative;margin-top:0.25rem;">
+                            <button type="button" id="compDeptBtn" class="si dept-select-btn" style="width:100%" onclick="toggleDeptMenu('compDeptMenu','compDeptBtn')">
+                                <span id="compDeptLabel" class="dept-select-placeholder">Select Department</span>
+                            </button>
+                            <input type="hidden" id="compDept">
+                            <div id="compDeptMenu" class="trainer-flag-reason-menu" style="width:100%;"></div>
+                        </div>
                     </div>
                     <div>
                         <label class="stm-label">LearnOps *</label>
@@ -709,7 +713,13 @@ if (isset($content_file) && is_file($content_file)) {
                             </div>
                             <div>
                                 <label class="stm-label">Department *</label>
-                                <select id="editCompDept" class="si" style="width:100%;margin-top:0.25rem" required></select>
+                                <div class="dept-select-wrap" style="position:relative;margin-top:0.25rem;">
+                                    <button type="button" id="editCompDeptBtn" class="si dept-select-btn" style="width:100%" onclick="toggleDeptMenu('editCompDeptMenu','editCompDeptBtn')">
+                                        <span id="editCompDeptLabel" class="dept-select-placeholder">Select Department</span>
+                                    </button>
+                                    <input type="hidden" id="editCompDept">
+                                    <div id="editCompDeptMenu" class="trainer-flag-reason-menu" style="width:100%;"></div>
+                                </div>
                             </div>
                             <div>
                                 <label class="stm-label">LearnOps *</label>
@@ -3580,6 +3590,7 @@ window.addEventListener('DOMContentLoaded', () => {
 <script>
 // Complaints Logic
 let complaintsCache = [];
+let departmentsCache = [];
 function openComplaintModal() {
     const ov = document.getElementById('complaintOv');
     if (ov) {
@@ -3594,6 +3605,7 @@ function closeComplaintModal() {
     if (ov) {
         ov.classList.remove('open');
         syncBodyLock();
+        closeAllDeptMenus();
     }
 }
 function switchComplaintTab(tab) {
@@ -3608,19 +3620,68 @@ function switchComplaintTab(tab) {
     } else {
         document.getElementById('newComplaintForm').reset();
         document.getElementById('compTpId').value = '';
+        setDeptValue('compDept', 'compDeptLabel', '');
     }
 }
 function fetchDepartments() {
     fetch('api/get-departments.php').then(r => r.json()).then(res => {
         if(res.success) {
-            const opts = '<option value="">Select Department</option>' + res.data.map(d => `<option value="${escapeHtml(d)}">${escapeHtml(d)}</option>`).join('');
-            document.getElementById('compDept').innerHTML = opts;
-            const currentEditVal = document.getElementById('editCompDept').value;
-            document.getElementById('editCompDept').innerHTML = opts;
-            if (currentEditVal) document.getElementById('editCompDept').value = currentEditVal;
+            departmentsCache = res.data;
+            renderDeptMenu('compDeptMenu', 'compDept', 'compDeptLabel');
+            renderDeptMenu('editCompDeptMenu', 'editCompDept', 'editCompDeptLabel');
+            const editHidden = document.getElementById('editCompDept');
+            if (editHidden.dataset.pendingValue) {
+                setDeptValue('editCompDept', 'editCompDeptLabel', editHidden.dataset.pendingValue);
+                delete editHidden.dataset.pendingValue;
+            }
         }
     }).catch(console.error);
 }
+function renderDeptMenu(menuId, hiddenId, labelId) {
+    const btnId = menuId.replace('Menu', 'Btn');
+    document.getElementById(menuId).innerHTML = departmentsCache.map(d => {
+        const safe = escapeHtml(d).replace(/'/g, "\\'");
+        return `<button type="button" class="trainer-flag-reason-item" onclick="selectDept('${hiddenId}','${labelId}','${menuId}','${btnId}','${safe}')">${escapeHtml(d)}</button>`;
+    }).join('');
+}
+function toggleDeptMenu(menuId, btnId) {
+    const menu = document.getElementById(menuId);
+    const wasOpen = menu.classList.contains('open');
+    closeAllDeptMenus();
+    if (!wasOpen) {
+        menu.classList.add('open');
+        document.getElementById(btnId).classList.add('open');
+    }
+}
+function closeAllDeptMenus() {
+    ['compDeptMenu', 'editCompDeptMenu'].forEach(menuId => {
+        const menu = document.getElementById(menuId);
+        const btn = document.getElementById(menuId.replace('Menu', 'Btn'));
+        if (menu) menu.classList.remove('open');
+        if (btn) btn.classList.remove('open');
+    });
+}
+function setDeptValue(hiddenId, labelId, value) {
+    document.getElementById(hiddenId).value = value || '';
+    const label = document.getElementById(labelId);
+    if (value) {
+        label.textContent = value;
+        label.classList.remove('dept-select-placeholder');
+    } else {
+        label.textContent = 'Select Department';
+        label.classList.add('dept-select-placeholder');
+    }
+}
+function selectDept(hiddenId, labelId, menuId, btnId, value) {
+    setDeptValue(hiddenId, labelId, value);
+    document.getElementById(menuId).classList.remove('open');
+    document.getElementById(btnId).classList.remove('open');
+}
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dept-select-wrap')) {
+        closeAllDeptMenus();
+    }
+});
 function filterCompTp(inputId, dropdownId, hiddenId) {
     const term = document.getElementById(inputId).value.toLowerCase();
     const dd = document.getElementById(dropdownId);
@@ -3657,6 +3718,9 @@ function submitNewComplaint(e) {
         priority: document.getElementById('compPriority').value,
         status: 'Open'
     };
+    if (!data.department) {
+        showToast('Please select a Department'); return;
+    }
     if (!data.training_provider_id) {
         showToast('Please select a valid Training Provider'); return;
     }
@@ -3717,12 +3781,11 @@ function loadEditComplaint(caseId) {
     document.getElementById('editCompEmpId').value = comp.employee_id || '';
     
     // Attempt to set department immediately if loaded, otherwise wait for fetchDepartments
-    const deptSel = document.getElementById('editCompDept');
-    if (deptSel.options.length > 0) {
-        deptSel.value = comp.department || '';
+    if (departmentsCache.length > 0) {
+        setDeptValue('editCompDept', 'editCompDeptLabel', comp.department || '');
     } else {
         // Just store it, fetchDepartments will set it
-        deptSel.dataset.pendingValue = comp.department || '';
+        document.getElementById('editCompDept').dataset.pendingValue = comp.department || '';
     }
     
     document.getElementById('editCompLearnOps').value = comp.learnops || '';
@@ -3757,6 +3820,9 @@ function submitEditComplaint(e) {
         decision_date: document.getElementById('editCompDecisionDate').value,
         remarks: document.getElementById('editCompRemarks').value
     };
+    if (!data.department) {
+        showToast('Please select a Department'); return;
+    }
     fetch('api/update-complaint.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
