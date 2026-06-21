@@ -636,9 +636,8 @@ if (isset($content_file) && is_file($content_file)) {
                         <label class="stm-label">LearnOps *</label>
                         <select id="compLearnOps" class="si" style="width:100%;margin-top:0.25rem" required>
                             <option value="">Select LearnOps</option>
-                            <option value="Ali">Ali</option>
-                            <option value="Abu">Abu</option>
-                            <option value="Abeng">Abeng</option>
+                            <option value="Nur Suzyla">Nur Suzyla</option>
+                            <option value="Felicia">Felicia</option>
                         </select>
                     </div>
                     <div>
@@ -724,9 +723,8 @@ if (isset($content_file) && is_file($content_file)) {
                             <div>
                                 <label class="stm-label">LearnOps *</label>
                                 <select id="editCompLearnOps" class="si" style="width:100%;margin-top:0.25rem" required>
-                                    <option value="Ali">Ali</option>
-                                    <option value="Abu">Abu</option>
-                                    <option value="Abeng">Abeng</option>
+                                    <option value="Nur Suzyla">Nur Suzyla</option>
+                                    <option value="Felicia">Felicia</option>
                                 </select>
                             </div>
                             <div>
