@@ -336,7 +336,7 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 .dept-select-btn{appearance:none;-webkit-appearance:none;display:flex;align-items:center;justify-content:space-between;gap:.5rem;cursor:pointer;color:var(--ink);text-align:left}
 .dept-select-btn::after{content:'▾';font-size:.8rem;color:var(--muted);flex-shrink:0;transition:transform .15s ease}
 .dept-select-btn.open::after{transform:rotate(180deg)}
-.dept-select-btn .dept-select-placeholder{color:#8aaabb}
+.dept-select-btn .dept-select-placeholder{color:#8aaabb; margin-left: -8px;}
 .stm-actions{display:flex;gap:.6rem;margin-top:1.25rem}
 .stm-cancel,.stm-confirm{flex:1;border:none;border-radius:8px;padding:.75rem 1rem;font-family:'Calibri',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer}
 .stm-cancel{background:var(--cream);color:var(--ink)}
