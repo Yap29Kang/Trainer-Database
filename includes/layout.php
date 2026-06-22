@@ -672,8 +672,12 @@ if (isset($content_file) && is_file($content_file)) {
         <!-- Tab Content: Update status -->
         <div class="uob" id="compContent-update" style="display: none;">
             <div id="compListSection">
-                <div style="display:flex; gap:0.5rem; margin-bottom:1rem;">
-                    <input type="text" id="compSearchInput" class="si" placeholder="Search complaints..." style="flex:1" oninput="fetchComplaints()">
+                <div style="display:flex; gap:0.5rem; margin-bottom:1rem; align-items:center;">
+                    <input type="text" id="compSearchInput" class="si" placeholder="Search complaints..." style="flex:0 1 240px" oninput="fetchComplaints()">
+                    <button type="button" class="dl-btn" style="display:inline-flex;margin-left:auto;" onclick="downloadComplaints()">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                        Download
+                    </button>
                 </div>
                 <div id="compListContainer" style="max-height: 400px; overflow-y: auto;">
                     <!-- Complaints list inserted here -->
@@ -3134,6 +3138,19 @@ function downloadTrainerCourses() {
 
     const url = new URL('api/download-trainer-courses.php', window.location.href);
     url.searchParams.set('id', String(currentTrainerDetail.Trainer_ID));
+
+    const link = document.createElement('a');
+    link.href = url.toString();
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+}
+
+function downloadComplaints() {
+    const term = document.getElementById('compSearchInput').value;
+    const url = new URL('api/download-complaints.php', window.location.href);
+    if (term) url.searchParams.set('search', term);
 
     const link = document.createElement('a');
     link.href = url.toString();
