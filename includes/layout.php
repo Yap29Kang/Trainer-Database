@@ -2,6 +2,12 @@
 /**
  * Common layout template
  */
+
+$currentYear = date('Y');
+$yearOptions = '';
+for ($y = $currentYear; $y >= 2020; $y--) {
+    $yearOptions .= "<option value='$y'>$y</option>";
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -672,8 +678,19 @@ if (isset($content_file) && is_file($content_file)) {
         <!-- Tab Content: Update status -->
         <div class="uob" id="compContent-update" style="display: none;">
             <div id="compListSection">
-                <div style="display:flex; gap:0.5rem; margin-bottom:1rem; align-items:center;">
-                    <input type="text" id="compSearchInput" class="si" placeholder="Search complaints..." style="flex:0 1 620px" oninput="fetchComplaints()">
+                <div style="display:flex; gap:0.5rem; margin-bottom:1rem; align-items:center; flex-wrap:wrap;">
+                    <input type="text" id="compSearchInput" class="si" placeholder="Search complaints..." style="flex:0 1 200px" oninput="fetchComplaints()">
+                    <select id="compFilterYear" class="si" style="flex:0 1 100px">
+                        <option value="">All Years</option>
+                        <?php echo $yearOptions; ?>
+                    </select>
+                    <select id="compFilterStatus" class="si" style="flex:0 1 120px">
+                        <option value="">All Status</option>
+                        <option value="Open">Open</option>
+                        <option value="Investigating">Investigating</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Closed">Closed</option>
+                    </select>
                     <button type="button" class="dl-btn" style="display:inline-flex;margin-left:auto;" onclick="downloadComplaints()">
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                         Download
@@ -3489,12 +3506,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     <input type="text" id="compSearchInput" class="si" placeholder="Search Case ID, Provider, Employee..." style="flex:0 1 200px">
                     <select id="compFilterYear" class="si" style="flex:0 1 100px">
                         <option value="">All Years</option>
-                        <?php
-                        $currentYear = date('Y');
-                        for ($y = $currentYear; $y >= 2020; $y--) {
-                            echo "<option value='$y'>$y</option>";
-                        }
-                        ?>
+                        <?php echo $yearOptions; ?>
                     </select>
                     <select id="compFilterStatus" class="si" style="flex:0 1 120px">
                         <option value="">All Status</option>
