@@ -3503,11 +3503,11 @@ window.addEventListener('DOMContentLoaded', () => {
             <div id="compListSection">
                 <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;">
                     <input type="text" id="compSearchInput" class="si" placeholder="Search Case ID, Provider, Employee..." style="flex:0 1 200px">
-                    <select id="compFilterYear" class="si" style="flex:0 1 100px">
+                    <select id="compFilterYear" class="si" style="flex:0 1 100px" onchange="fetchComplaints()">
                         <option value="">All Years</option>
                         <?php echo $yearOptions; ?>
                     </select>
-                    <select id="compFilterStatus" class="si" style="flex:0 1 120px">
+                    <select id="compFilterStatus" class="si" style="flex:0 1 120px" onchange="fetchComplaints()">
                         <option value="">All Status</option>
                         <option value="Open">Open</option>
                         <option value="Under Review">Under Review</option>
