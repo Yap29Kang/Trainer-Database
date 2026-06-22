@@ -673,7 +673,7 @@ if (isset($content_file) && is_file($content_file)) {
         <div class="uob" id="compContent-update" style="display: none;">
             <div id="compListSection">
                 <div style="display:flex; gap:0.5rem; margin-bottom:1rem; align-items:center;">
-                    <input type="text" id="compSearchInput" class="si" placeholder="Search complaints..." style="flex:0 1 240px" oninput="fetchComplaints()">
+                    <input type="text" id="compSearchInput" class="si" placeholder="Search complaints..." style="flex:0 1 500px" oninput="fetchComplaints()">
                     <button type="button" class="dl-btn" style="display:inline-flex;margin-left:auto;" onclick="downloadComplaints()">
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                         Download
