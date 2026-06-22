@@ -3485,8 +3485,24 @@ window.addEventListener('DOMContentLoaded', () => {
         <div class="mb2" id="compContent-update" style="display:none;">
             <!-- List Section -->
             <div id="compListSection">
-                <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
-                    <input type="text" id="compSearchInput" class="si" placeholder="Search Case ID, Provider, Employee..." style="width:100%">
+                <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;">
+                    <input type="text" id="compSearchInput" class="si" placeholder="Search Case ID, Provider, Employee..." style="flex:0 1 200px">
+                    <select id="compFilterYear" class="si" style="flex:0 1 100px">
+                        <option value="">All Years</option>
+                        <?php
+                        $currentYear = date('Y');
+                        for ($y = $currentYear; $y >= 2020; $y--) {
+                            echo "<option value='$y'>$y</option>";
+                        }
+                        ?>
+                    </select>
+                    <select id="compFilterStatus" class="si" style="flex:0 1 120px">
+                        <option value="">All Status</option>
+                        <option value="Open">Open</option>
+                        <option value="Investigating">Investigating</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Closed">Closed</option>
+                    </select>
                     <button type="button" class="vb" onclick="fetchComplaints()">Search</button>
                 </div>
                 <div id="compListContainer" style="max-height:400px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:0.5rem;background:var(--cream);">
@@ -3755,7 +3771,14 @@ function submitNewComplaint(e) {
 }
 function fetchComplaints() {
     const term = document.getElementById('compSearchInput').value;
-    fetch('api/get-complaints.php?search=' + encodeURIComponent(term))
+    const year = document.getElementById('compFilterYear').value;
+    const status = document.getElementById('compFilterStatus').value;
+    
+    let params = 'search=' + encodeURIComponent(term);
+    if (year) params += '&year=' + encodeURIComponent(year);
+    if (status) params += '&status=' + encodeURIComponent(status);
+    
+    fetch('api/get-complaints.php?' + params)
     .then(r => r.json()).then(res => {
         if(res.success) {
             complaintsCache = res.data;
@@ -3775,6 +3798,7 @@ function renderComplaintList() {
                 <strong>${escapeHtml(comp.case_id)}</strong>
                 <span style="font-size:0.8rem;background:var(--blue-lt);color:var(--blue-dk);padding:2px 6px;border-radius:4px;">${escapeHtml(comp.status)}</span>
             </div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.15rem;">📅 ${escapeHtml(comp.date_of_complaint || 'N/A')}</div>
             <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.25rem;">${escapeHtml(comp.tp_name || 'Unknown TP')}</div>
             <div style="font-size:0.85rem;color:var(--ink);">${escapeHtml(comp.complaint_category)} - ${escapeHtml(comp.priority)} Priority</div>
         </div>
