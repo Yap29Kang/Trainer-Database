@@ -687,8 +687,7 @@ if (isset($content_file) && is_file($content_file)) {
                     <select id="compFilterStatus" class="si" style="flex:0 1 120px">
                         <option value="">All Status</option>
                         <option value="Open">Open</option>
-                        <option value="Investigating">Investigating</option>
-                        <option value="Resolved">Resolved</option>
+                        <option value="Under Review">Under Review</option>
                         <option value="Closed">Closed</option>
                     </select>
                     <button type="button" class="dl-btn" style="display:inline-flex;margin-left:auto;" onclick="downloadComplaints()">
@@ -3511,8 +3510,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     <select id="compFilterStatus" class="si" style="flex:0 1 120px">
                         <option value="">All Status</option>
                         <option value="Open">Open</option>
-                        <option value="Investigating">Investigating</option>
-                        <option value="Resolved">Resolved</option>
+                        <option value="Under Review">Under Review</option>
                         <option value="Closed">Closed</option>
                     </select>
                     <button type="button" class="vb" onclick="fetchComplaints()">Search</button>
@@ -3597,8 +3595,7 @@ window.addEventListener('DOMContentLoaded', () => {
                             <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Status</label>
                             <select id="editCompStatus" class="si" style="width:100%">
                                 <option value="Open">Open</option>
-                                <option value="Investigating">Investigating</option>
-                                <option value="Resolved">Resolved</option>
+                                <option value="Under Review">Under Review</option>
                                 <option value="Closed">Closed</option>
                             </select>
                         </div>
