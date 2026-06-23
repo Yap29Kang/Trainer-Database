@@ -607,12 +607,17 @@ if (isset($content_file) && is_file($content_file)) {
                     </div>
                     <div>
                         <label class="stm-label">Priority *</label>
-                        <select id="compPriority" class="si" style="width:100%;margin-top:0.25rem" required>
-                            <option value="">Select Priority</option>
-                            <option value="Low">Low</option>
-                            <option value="Medium">Medium</option>
-                            <option value="High">High</option>
-                        </select>
+                        <div class="csel-wrap" style="position:relative;margin-top:0.25rem;">
+                            <button type="button" id="compPriorityBtn" class="si dept-select-btn" style="width:100%" onclick="toggleCsel('compPriorityMenu','compPriorityBtn')">
+                                <span id="compPriorityLabel" class="dept-select-placeholder">Select Priority</span>
+                            </button>
+                            <input type="hidden" id="compPriority" required>
+                            <div id="compPriorityMenu" class="trainer-flag-reason-menu" style="width:100%;">
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compPriority','compPriorityLabel','compPriorityMenu','compPriorityBtn','Low')">Low</button>
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compPriority','compPriorityLabel','compPriorityMenu','compPriorityBtn','Medium')">Medium</button>
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compPriority','compPriorityLabel','compPriorityMenu','compPriorityBtn','High')">High</button>
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label class="stm-label">Employee Name *</label>
@@ -634,11 +639,16 @@ if (isset($content_file) && is_file($content_file)) {
                     </div>
                     <div>
                         <label class="stm-label">LearnOps *</label>
-                        <select id="compLearnOps" class="si" style="width:100%;margin-top:0.25rem" required>
-                            <option value="">Select LearnOps</option>
-                            <option value="Nur Suzyla">Nur Suzyla</option>
-                            <option value="Felicia">Felicia</option>
-                        </select>
+                        <div class="csel-wrap" style="position:relative;margin-top:0.25rem;">
+                            <button type="button" id="compLearnOpsBtn" class="si dept-select-btn" style="width:100%" onclick="toggleCsel('compLearnOpsMenu','compLearnOpsBtn')">
+                                <span id="compLearnOpsLabel" class="dept-select-placeholder">Select LearnOps</span>
+                            </button>
+                            <input type="hidden" id="compLearnOps" required>
+                            <div id="compLearnOpsMenu" class="trainer-flag-reason-menu" style="width:100%;">
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Nur Suzyla')">Nur Suzyla</button>
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Felicia')">Felicia</button>
+                            </div>
+                        </div>
                     </div>
                     <div>
                         <label class="stm-label">Training Provider *</label>
@@ -650,12 +660,17 @@ if (isset($content_file) && is_file($content_file)) {
                     </div>
                     <div>
                         <label class="stm-label">Complaint Category *</label>
-                        <select id="compCategory" class="si" style="width:100%;margin-top:0.25rem" required>
-                            <option value="">Select Category</option>
-                            <option value="Performance Quality">Performance Quality</option>
-                            <option value="Safety & Compliance">Safety & Compliance</option>
-                            <option value="Fraud & Misconduct">Fraud & Misconduct</option>
-                        </select>
+                        <div class="csel-wrap" style="position:relative;margin-top:0.25rem;">
+                            <button type="button" id="compCategoryBtn" class="si dept-select-btn" style="width:100%" onclick="toggleCsel('compCategoryMenu','compCategoryBtn')">
+                                <span id="compCategoryLabel" class="dept-select-placeholder">Select Category</span>
+                            </button>
+                            <input type="hidden" id="compCategory" required>
+                            <div id="compCategoryMenu" class="trainer-flag-reason-menu" style="width:100%;">
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compCategory','compCategoryLabel','compCategoryMenu','compCategoryBtn','Performance Quality')">Performance Quality</button>
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compCategory','compCategoryLabel','compCategoryMenu','compCategoryBtn','Safety &amp; Compliance')">Safety &amp; Compliance</button>
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compCategory','compCategoryLabel','compCategoryMenu','compCategoryBtn','Fraud &amp; Misconduct')">Fraud &amp; Misconduct</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div style="margin-bottom:1rem;">
@@ -734,11 +749,17 @@ if (isset($content_file) && is_file($content_file)) {
                             </div>
                             <div>
                                 <label class="stm-label">Priority *</label>
-                                <select id="editCompPriority" class="si" style="width:100%;margin-top:0.25rem" required>
-                                    <option value="Low">Low</option>
-                                    <option value="Medium">Medium</option>
-                                    <option value="High">High</option>
-                                </select>
+                                <div class="csel-wrap" style="position:relative;margin-top:0.25rem;">
+                                    <button type="button" id="editCompPriorityBtn" class="si dept-select-btn" style="width:100%" onclick="toggleCsel('editCompPriorityMenu','editCompPriorityBtn')">
+                                        <span id="editCompPriorityLabel" class="dept-select-placeholder">Select Priority</span>
+                                    </button>
+                                    <input type="hidden" id="editCompPriority" required>
+                                    <div id="editCompPriorityMenu" class="trainer-flag-reason-menu" style="width:100%;">
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompPriority','editCompPriorityLabel','editCompPriorityMenu','editCompPriorityBtn','Low')">Low</button>
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompPriority','editCompPriorityLabel','editCompPriorityMenu','editCompPriorityBtn','Medium')">Medium</button>
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompPriority','editCompPriorityLabel','editCompPriorityMenu','editCompPriorityBtn','High')">High</button>
+                                    </div>
+                                </div>
                             </div>
                             <div>
                                 <label class="stm-label">Employee Name *</label>
@@ -760,10 +781,16 @@ if (isset($content_file) && is_file($content_file)) {
                             </div>
                             <div>
                                 <label class="stm-label">LearnOps *</label>
-                                <select id="editCompLearnOps" class="si" style="width:100%;margin-top:0.25rem" required>
-                                    <option value="Nur Suzyla">Nur Suzyla</option>
-                                    <option value="Felicia">Felicia</option>
-                                </select>
+                                <div class="csel-wrap" style="position:relative;margin-top:0.25rem;">
+                                    <button type="button" id="editCompLearnOpsBtn" class="si dept-select-btn" style="width:100%" onclick="toggleCsel('editCompLearnOpsMenu','editCompLearnOpsBtn')">
+                                        <span id="editCompLearnOpsLabel" class="dept-select-placeholder">Select LearnOps</span>
+                                    </button>
+                                    <input type="hidden" id="editCompLearnOps" required>
+                                    <div id="editCompLearnOpsMenu" class="trainer-flag-reason-menu" style="width:100%;">
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompLearnOps','editCompLearnOpsLabel','editCompLearnOpsMenu','editCompLearnOpsBtn','Nur Suzyla')">Nur Suzyla</button>
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompLearnOps','editCompLearnOpsLabel','editCompLearnOpsMenu','editCompLearnOpsBtn','Felicia')">Felicia</button>
+                                    </div>
+                                </div>
                             </div>
                             <div>
                                 <label class="stm-label">Training Provider *</label>
@@ -775,11 +802,17 @@ if (isset($content_file) && is_file($content_file)) {
                             </div>
                             <div>
                                 <label class="stm-label">Complaint Category *</label>
-                                <select id="editCompCategory" class="si" style="width:100%;margin-top:0.25rem" required>
-                                    <option value="Performance Quality">Performance Quality</option>
-                                    <option value="Safety & Compliance">Safety & Compliance</option>
-                                    <option value="Fraud & Misconduct">Fraud & Misconduct</option>
-                                </select>
+                                <div class="csel-wrap" style="position:relative;margin-top:0.25rem;">
+                                    <button type="button" id="editCompCategoryBtn" class="si dept-select-btn" style="width:100%" onclick="toggleCsel('editCompCategoryMenu','editCompCategoryBtn')">
+                                        <span id="editCompCategoryLabel" class="dept-select-placeholder">Select Category</span>
+                                    </button>
+                                    <input type="hidden" id="editCompCategory" required>
+                                    <div id="editCompCategoryMenu" class="trainer-flag-reason-menu" style="width:100%;">
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompCategory','editCompCategoryLabel','editCompCategoryMenu','editCompCategoryBtn','Performance Quality')">Performance Quality</button>
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompCategory','editCompCategoryLabel','editCompCategoryMenu','editCompCategoryBtn','Safety &amp; Compliance')">Safety &amp; Compliance</button>
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompCategory','editCompCategoryLabel','editCompCategoryMenu','editCompCategoryBtn','Fraud &amp; Misconduct')">Fraud &amp; Misconduct</button>
+                                    </div>
+                                </div>
                             </div>
                             <div style="grid-column: span 2;">
                                 <label class="stm-label">Complaint Summary *</label>
@@ -789,19 +822,31 @@ if (isset($content_file) && is_file($content_file)) {
                             <!-- Update Status Specific Fields -->
                             <div>
                                 <label class="stm-label">Status *</label>
-                                <select id="editCompStatus" class="si" style="width:100%;margin-top:0.25rem" required>
-                                    <option value="Open">Open</option>
-                                    <option value="Under Review">Under Review</option>
-                                    <option value="Closed">Closed</option>
-                                </select>
+                                <div class="csel-wrap" style="position:relative;margin-top:0.25rem;">
+                                    <button type="button" id="editCompStatusBtn" class="si dept-select-btn" style="width:100%" onclick="toggleCsel('editCompStatusMenu','editCompStatusBtn')">
+                                        <span id="editCompStatusLabel" class="dept-select-placeholder">Select Status</span>
+                                    </button>
+                                    <input type="hidden" id="editCompStatus" required>
+                                    <div id="editCompStatusMenu" class="trainer-flag-reason-menu" style="width:100%;">
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompStatus','editCompStatusLabel','editCompStatusMenu','editCompStatusBtn','Open')">Open</button>
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompStatus','editCompStatusLabel','editCompStatusMenu','editCompStatusBtn','Under Review')">Under Review</button>
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompStatus','editCompStatusLabel','editCompStatusMenu','editCompStatusBtn','Closed')">Closed</button>
+                                    </div>
+                                </div>
                             </div>
                             <div>
                                 <label class="stm-label">LDCM Decision *</label>
-                                <select id="editCompDecision" class="si" style="width:100%;margin-top:0.25rem" required>
-                                    <option value="No Action">No Action</option>
-                                    <option value="LDCM Decision">LDCM Decision</option>
-                                    <option value="Blacklist">Blacklist</option>
-                                </select>
+                                <div class="csel-wrap" style="position:relative;margin-top:0.25rem;">
+                                    <button type="button" id="editCompDecisionBtn" class="si dept-select-btn" style="width:100%" onclick="toggleCsel('editCompDecisionMenu','editCompDecisionBtn')">
+                                        <span id="editCompDecisionLabel" class="dept-select-placeholder">Select Decision</span>
+                                    </button>
+                                    <input type="hidden" id="editCompDecision" required>
+                                    <div id="editCompDecisionMenu" class="trainer-flag-reason-menu" style="width:100%;">
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompDecision','editCompDecisionLabel','editCompDecisionMenu','editCompDecisionBtn','No Action')">No Action</button>
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompDecision','editCompDecisionLabel','editCompDecisionMenu','editCompDecisionBtn','LDCM Decision')">LDCM Decision</button>
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompDecision','editCompDecisionLabel','editCompDecisionMenu','editCompDecisionBtn','Blacklist')">Blacklist</button>
+                                    </div>
+                                </div>
                             </div>
                             <div>
                                 <label class="stm-label">Decision Date *</label>
@@ -3496,7 +3541,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 </div>
                 
                 <div style="display:flex;justify-content:flex-end;gap:0.5rem;">
-                    <button type="button" class="stm-cancel" onclick="document.getElementById('newComplaintForm').reset();document.getElementById('compTpId').value=''">Clear</button>
+                    <button type="button" class="stm-cancel" onclick="document.getElementById('newComplaintForm').reset();document.getElementById('compTpId').value='';setCselValue('compPriority','compPriorityLabel','','Select Priority');setCselValue('compLearnOps','compLearnOpsLabel','','Select LearnOps');setCselValue('compCategory','compCategoryLabel','','Select Category')">Clear</button>
                     <button type="submit" class="stm-confirm">Submit Complaint</button>
                 </div>
             </form>
@@ -3657,6 +3702,9 @@ function switchComplaintTab(tab) {
         document.getElementById('newComplaintForm').reset();
         document.getElementById('compTpId').value = '';
         setDeptValue('compDept', 'compDeptLabel', '');
+        setCselValue('compPriority', 'compPriorityLabel', '', 'Select Priority');
+        setCselValue('compLearnOps', 'compLearnOpsLabel', '', 'Select LearnOps');
+        setCselValue('compCategory', 'compCategoryLabel', '', 'Select Category');
     }
 }
 function fetchDepartments() {
@@ -3713,9 +3761,58 @@ function selectDept(hiddenId, labelId, menuId, btnId, value) {
     document.getElementById(menuId).classList.remove('open');
     document.getElementById(btnId).classList.remove('open');
 }
+
+/* ── Generic custom-select helpers (used for Priority, LearnOps, Category, Status, LDCM Decision) ── */
+function toggleCsel(menuId, btnId) {
+    const menu = document.getElementById(menuId);
+    const wasOpen = menu.classList.contains('open');
+    closeAllCselMenus();
+    if (!wasOpen) {
+        menu.classList.add('open');
+        document.getElementById(btnId).classList.add('open');
+    }
+}
+function setCsel(hiddenId, labelId, menuId, btnId, value) {
+    const hidden = document.getElementById(hiddenId);
+    const label  = document.getElementById(labelId);
+    const menu   = document.getElementById(menuId);
+    const btn    = document.getElementById(btnId);
+    if (hidden) hidden.value = value;
+    if (label) {
+        label.textContent = value;
+        label.classList.remove('dept-select-placeholder');
+    }
+    if (menu) menu.classList.remove('open');
+    if (btn)  btn.classList.remove('open');
+}
+function setCselValue(hiddenId, labelId, value, placeholder) {
+    const hidden = document.getElementById(hiddenId);
+    const label  = document.getElementById(labelId);
+    if (hidden) hidden.value = value || '';
+    if (label) {
+        if (value) {
+            label.textContent = value;
+            label.classList.remove('dept-select-placeholder');
+        } else {
+            label.textContent = placeholder || 'Select';
+            label.classList.add('dept-select-placeholder');
+        }
+    }
+}
+function closeAllCselMenus() {
+    document.querySelectorAll('.csel-wrap .trainer-flag-reason-menu.open').forEach(menu => {
+        menu.classList.remove('open');
+        const btnId = menu.id.replace('Menu', 'Btn');
+        const btn = document.getElementById(btnId);
+        if (btn) btn.classList.remove('open');
+    });
+}
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.dept-select-wrap')) {
         closeAllDeptMenus();
+    }
+    if (!e.target.closest('.csel-wrap')) {
+        closeAllCselMenus();
     }
 });
 function filterCompTp(inputId, dropdownId, hiddenId) {
@@ -4065,7 +4162,7 @@ function loadEditComplaint(caseId) {
     document.getElementById('editCompCaseId').textContent = comp.case_id;
     document.getElementById('editCompCaseIdHidden').value = comp.case_id;
     document.getElementById('editCompDate').value = comp.date_of_complaint || '';
-    document.getElementById('editCompPriority').value = comp.priority || '';
+    setCselValue('editCompPriority', 'editCompPriorityLabel', comp.priority || '', 'Select Priority');
     document.getElementById('editCompEmpName').value = comp.employee_name || '';
     document.getElementById('editCompEmpId').value = comp.employee_id || '';
     
@@ -4077,14 +4174,14 @@ function loadEditComplaint(caseId) {
         document.getElementById('editCompDept').dataset.pendingValue = comp.department || '';
     }
     
-    document.getElementById('editCompLearnOps').value = comp.learnops || '';
+    setCselValue('editCompLearnOps', 'editCompLearnOpsLabel', comp.learnops || '', 'Select LearnOps');
     document.getElementById('editCompTpSearch').value = comp.tp_name || '';
     document.getElementById('editCompTpId').value = comp.training_provider_id || '';
-    document.getElementById('editCompCategory').value = comp.complaint_category || '';
+    setCselValue('editCompCategory', 'editCompCategoryLabel', comp.complaint_category || '', 'Select Category');
     document.getElementById('editCompSummary').value = comp.complaint_summary || '';
     
-    document.getElementById('editCompStatus').value = comp.status || 'Open';
-    document.getElementById('editCompDecision').value = comp.ldcm_decision || 'No Action';
+    setCselValue('editCompStatus', 'editCompStatusLabel', comp.status || 'Open', 'Select Status');
+    setCselValue('editCompDecision', 'editCompDecisionLabel', comp.ldcm_decision || 'No Action', 'Select Decision');
     document.getElementById('editCompDecisionDate').value = comp.decision_date || '';
     document.getElementById('editCompRemarks').value = comp.remarks || '';
 
