@@ -680,3 +680,29 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
 #complaintOv .si {
     padding-left: 0.7rem;
 }
+
+/* ── COMPLAINT FILTER CHIPS ── */
+.comp-filter-chip {
+    display: inline-flex;
+    align-items: center;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    padding: 3px 10px;
+    font-family: 'Calibri', sans-serif;
+    font-size: 0.74rem;
+    font-weight: 700;
+    background: var(--card);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all .18s;
+    white-space: nowrap;
+}
+.comp-filter-chip:hover {
+    border-color: var(--blue);
+    color: var(--blue);
+}
+.comp-filter-chip.active {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
+}

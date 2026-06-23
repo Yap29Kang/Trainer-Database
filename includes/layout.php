@@ -672,14 +672,48 @@ if (isset($content_file) && is_file($content_file)) {
         <!-- Tab Content: Update status -->
         <div class="uob" id="compContent-update" style="display: none;">
             <div id="compListSection">
-                <div style="display:flex;gap:0.5rem;margin-bottom:1rem;align-items:center;">
-                    <input type="text" id="compSearchInput" class="si" placeholder="Search complaints..." style="flex:0 1 240px" oninput="fetchComplaints()">
+                <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;align-items:center;">
+                    <input type="text" id="compSearchInput" class="si" placeholder="Search complaints..." style="flex:0 1 240px" oninput="renderComplaintList()">
+                    <!-- Filter button -->
+                    <div style="position:relative;">
+                        <button type="button" id="compFilterBtn" onclick="toggleCompFilter()" style="display:inline-flex;align-items:center;gap:0.35rem;border:1.5px solid var(--border);border-radius:8px;padding:.4rem .8rem;font-family:'Calibri',sans-serif;font-size:.82rem;font-weight:700;background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;transition:all .2s;">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+                            Filter
+                            <span id="compFilterDot" style="display:none;width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0;"></span>
+                        </button>
+                        <!-- Filter panel -->
+                        <div id="compFilterPanel" style="display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:300;background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:1rem;width:240px;box-shadow:0 4px 16px rgba(0,0,0,.12);">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
+                                <span style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Filter Complaints</span>
+                                <button type="button" onclick="clearCompFilters()" style="font-size:.72rem;color:var(--blue);background:none;border:none;cursor:pointer;font-weight:700;padding:0;">Clear all</button>
+                            </div>
+                            <!-- Status -->
+                            <div style="margin-bottom:0.75rem;">
+                                <div style="font-size:.72rem;font-weight:700;color:var(--ink);margin-bottom:0.35rem;">Status</div>
+                                <div style="display:flex;flex-wrap:wrap;gap:0.3rem;" id="compStatusFilters">
+                                    <button type="button" class="comp-filter-chip active" data-group="status" data-val="all" onclick="toggleCompChip(this)">All</button>
+                                    <button type="button" class="comp-filter-chip" data-group="status" data-val="Open" onclick="toggleCompChip(this)">Open</button>
+                                    <button type="button" class="comp-filter-chip" data-group="status" data-val="Under Review" onclick="toggleCompChip(this)">Under Review</button>
+                                    <button type="button" class="comp-filter-chip" data-group="status" data-val="Closed" onclick="toggleCompChip(this)">Closed</button>
+                                </div>
+                            </div>
+                            <!-- Year -->
+                            <div>
+                                <div style="font-size:.72rem;font-weight:700;color:var(--ink);margin-bottom:0.35rem;">Year</div>
+                                <div style="display:flex;flex-wrap:wrap;gap:0.3rem;" id="compYearFilters">
+                                    <button type="button" class="comp-filter-chip active" data-group="year" data-val="all" onclick="toggleCompChip(this)">All</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <button type="button" class="dl-btn" style="display:inline-flex;margin-left:auto;" onclick="downloadComplaints()">
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                         Download
                     </button>
                 </div>
-                <div id="compListContainer" style="max-height: 440px; overflow-y: auto;">
+                <!-- Active filter tags row -->
+                <div id="compActiveFilters" style="display:none;flex-wrap:wrap;gap:0.3rem;margin-bottom:0.6rem;"></div>
+                <div id="compListContainer" style="max-height: 420px; overflow-y: auto;">
                     <!-- Complaints list inserted here -->
                 </div>
             </div>
@@ -3741,18 +3775,136 @@ function submitNewComplaint(e) {
     }).catch(console.error);
 }
 function fetchComplaints() {
-    const term = document.getElementById('compSearchInput').value;
-    fetch('api/get-complaints.php?search=' + encodeURIComponent(term))
+    fetch('api/get-complaints.php')
     .then(r => r.json()).then(res => {
         if(res.success) {
             complaintsCache = res.data;
+            buildCompYearChips();
             renderComplaintList();
         }
     }).catch(console.error);
 }
+
+function buildCompYearChips() {
+    const years = [...new Set(complaintsCache.map(c => {
+        const d = c.date_of_complaint;
+        return d ? new Date(d).getFullYear() : null;
+    }).filter(Boolean))].sort((a,b) => b - a);
+
+    const container = document.getElementById('compYearFilters');
+    if (!container) return;
+    container.innerHTML = `<button type="button" class="comp-filter-chip active" data-group="year" data-val="all" onclick="toggleCompChip(this)">All</button>`;
+    years.forEach(y => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'comp-filter-chip';
+        btn.dataset.group = 'year';
+        btn.dataset.val = String(y);
+        btn.onclick = function(){ toggleCompChip(this); };
+        btn.textContent = String(y);
+        container.appendChild(btn);
+    });
+}
+
+function getCompFilterValues() {
+    const statusEl = document.querySelector('#compStatusFilters .comp-filter-chip.active');
+    const yearEl   = document.querySelector('#compYearFilters .comp-filter-chip.active');
+    return {
+        status: statusEl ? statusEl.dataset.val : 'all',
+        year:   yearEl   ? yearEl.dataset.val   : 'all'
+    };
+}
+
+function toggleCompFilter() {
+    const panel = document.getElementById('compFilterPanel');
+    const btn   = document.getElementById('compFilterBtn');
+    const open  = panel.style.display !== 'none';
+    panel.style.display = open ? 'none' : 'block';
+    btn.style.borderColor = open ? 'var(--border)' : 'var(--blue)';
+    btn.style.color = open ? 'var(--ink)' : 'var(--blue)';
+}
+
+function toggleCompChip(el) {
+    const group = el.dataset.group;
+    document.querySelectorAll(`.comp-filter-chip[data-group="${group}"]`).forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    updateCompFilterDot();
+    renderComplaintList();
+}
+
+function clearCompFilters() {
+    ['status','year'].forEach(g => {
+        const chips = document.querySelectorAll(`.comp-filter-chip[data-group="${g}"]`);
+        chips.forEach(c => c.classList.remove('active'));
+        const allChip = document.querySelector(`.comp-filter-chip[data-group="${g}"][data-val="all"]`);
+        if (allChip) allChip.classList.add('active');
+    });
+    updateCompFilterDot();
+    renderComplaintList();
+}
+
+function updateCompFilterDot() {
+    const f = getCompFilterValues();
+    const active = f.status !== 'all' || f.year !== 'all';
+    const dot = document.getElementById('compFilterDot');
+    const btn = document.getElementById('compFilterBtn');
+    if (dot) dot.style.display = active ? 'inline-block' : 'none';
+    if (btn) {
+        btn.style.borderColor = active ? 'var(--blue)' : 'var(--border)';
+        btn.style.color = active ? 'var(--blue)' : 'var(--ink)';
+    }
+    // Active tags row
+    const row = document.getElementById('compActiveFilters');
+    if (row) {
+        row.style.display = active ? 'flex' : 'none';
+        row.innerHTML = '';
+        if (f.status !== 'all') row.innerHTML += `<span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;background:var(--blue-lt);color:var(--blue-dk);border:1px solid var(--blue-bd);border-radius:20px;padding:2px 9px;">Status: ${f.status} <button type="button" onclick="resetCompChip('status')" style="background:none;border:none;cursor:pointer;color:var(--blue-dk);font-size:.8rem;line-height:1;padding:0;">×</button></span>`;
+        if (f.year !== 'all')   row.innerHTML += `<span style="display:inline-flex;align-items:center;gap:4px;font-size:.72rem;font-weight:700;background:var(--blue-lt);color:var(--blue-dk);border:1px solid var(--blue-bd);border-radius:20px;padding:2px 9px;">Year: ${f.year} <button type="button" onclick="resetCompChip('year')" style="background:none;border:none;cursor:pointer;color:var(--blue-dk);font-size:.8rem;line-height:1;padding:0;">×</button></span>`;
+    }
+}
+
+function resetCompChip(group) {
+    document.querySelectorAll(`.comp-filter-chip[data-group="${group}"]`).forEach(c => c.classList.remove('active'));
+    const allChip = document.querySelector(`.comp-filter-chip[data-group="${group}"][data-val="all"]`);
+    if (allChip) allChip.classList.add('active');
+    updateCompFilterDot();
+    renderComplaintList();
+}
+
+// Close filter panel when clicking outside
+document.addEventListener('click', function(e) {
+    const panel = document.getElementById('compFilterPanel');
+    const btn   = document.getElementById('compFilterBtn');
+    if (panel && !panel.contains(e.target) && btn && !btn.contains(e.target)) {
+        panel.style.display = 'none';
+        const f = getCompFilterValues();
+        const active = f.status !== 'all' || f.year !== 'all';
+        if (btn) { btn.style.borderColor = active ? 'var(--blue)' : 'var(--border)'; btn.style.color = active ? 'var(--blue)' : 'var(--ink)'; }
+    }
+});
 function renderComplaintList() {
     const c = document.getElementById('compListContainer');
-    if (!complaintsCache.length) {
+
+    const term = (document.getElementById('compSearchInput')?.value || '').toLowerCase().trim();
+    const filters = getCompFilterValues ? getCompFilterValues() : { status:'all', year:'all' };
+
+    let data = complaintsCache.filter(comp => {
+        // text search
+        if (term) {
+            const hay = [comp.case_id, comp.tp_name, comp.employee_name, comp.complaint_category].join(' ').toLowerCase();
+            if (!hay.includes(term)) return false;
+        }
+        // status filter
+        if (filters.status !== 'all' && comp.status !== filters.status) return false;
+        // year filter
+        if (filters.year !== 'all') {
+            const y = comp.date_of_complaint ? String(new Date(comp.date_of_complaint).getFullYear()) : '';
+            if (y !== filters.year) return false;
+        }
+        return true;
+    });
+
+    if (!data.length) {
         c.innerHTML = '<div style="padding:1rem;color:var(--muted);text-align:center;">No complaints found</div>';
         return;
     }
@@ -3775,7 +3927,7 @@ function renderComplaintList() {
         return { bg:'#fafaf0', color:'#854d0e', border:'#fde68a' };
     }
 
-    c.innerHTML = complaintsCache.map(comp => {
+    c.innerHTML = data.map(comp => {
         const sc = statusColor(comp.status);
         const dc = decisionColor(comp.ldcm_decision);
         const cid = comp.case_id.replace(/'/g, "\\'");
