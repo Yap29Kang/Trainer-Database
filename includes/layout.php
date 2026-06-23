@@ -2,12 +2,6 @@
 /**
  * Common layout template
  */
-
-$currentYear = date('Y');
-$yearOptions = '';
-for ($y = $currentYear; $y >= 2020; $y--) {
-    $yearOptions .= "<option value='$y'>$y</option>";
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -678,24 +672,14 @@ if (isset($content_file) && is_file($content_file)) {
         <!-- Tab Content: Update status -->
         <div class="uob" id="compContent-update" style="display: none;">
             <div id="compListSection">
-                <div style="display:flex; gap:0.5rem; margin-bottom:1rem; align-items:center; flex-wrap:wrap;">
-                    <input type="text" id="compSearchInput" class="si" placeholder="Search complaints..." style="flex:0 1 200px" oninput="fetchComplaints()">
-                    <select id="compFilterYear" class="si" style="flex:0 1 100px" onchange="fetchComplaints()">
-                        <option value="">All Years</option>
-                        <?php echo $yearOptions; ?>
-                    </select>
-                    <select id="compFilterStatus" class="si" style="flex:0 1 120px" onchange="fetchComplaints()">
-                        <option value="">All Status</option>
-                        <option value="Open">Open</option>
-                        <option value="Under Review">Under Review</option>
-                        <option value="Closed">Closed</option>
-                    </select>
+                <div style="display:flex;gap:0.5rem;margin-bottom:1rem;align-items:center;">
+                    <input type="text" id="compSearchInput" class="si" placeholder="Search complaints..." style="flex:0 1 240px" oninput="fetchComplaints()">
                     <button type="button" class="dl-btn" style="display:inline-flex;margin-left:auto;" onclick="downloadComplaints()">
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
                         Download
                     </button>
                 </div>
-                <div id="compListContainer" style="max-height: 400px; overflow-y: auto;">
+                <div id="compListContainer" style="max-height: 440px; overflow-y: auto;">
                     <!-- Complaints list inserted here -->
                 </div>
             </div>
@@ -3163,19 +3147,6 @@ function downloadTrainerCourses() {
     link.remove();
 }
 
-function downloadComplaints() {
-    const term = document.getElementById('compSearchInput').value;
-    const url = new URL('api/download-complaints.php', window.location.href);
-    if (term) url.searchParams.set('search', term);
-
-    const link = document.createElement('a');
-    link.href = url.toString();
-    link.rel = 'noopener';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-}
-
 // Toast notifications
 function showToast(msg) {
     const t = document.getElementById('toast');
@@ -3501,18 +3472,8 @@ window.addEventListener('DOMContentLoaded', () => {
         <div class="mb2" id="compContent-update" style="display:none;">
             <!-- List Section -->
             <div id="compListSection">
-                <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;">
-                    <input type="text" id="compSearchInput" class="si" placeholder="Search Case ID, Provider, Employee..." style="flex:0 1 200px">
-                    <select id="compFilterYear" class="si" style="flex:0 1 100px" onchange="fetchComplaints()">
-                        <option value="">All Years</option>
-                        <?php echo $yearOptions; ?>
-                    </select>
-                    <select id="compFilterStatus" class="si" style="flex:0 1 120px" onchange="fetchComplaints()">
-                        <option value="">All Status</option>
-                        <option value="Open">Open</option>
-                        <option value="Under Review">Under Review</option>
-                        <option value="Closed">Closed</option>
-                    </select>
+                <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+                    <input type="text" id="compSearchInput" class="si" placeholder="Search Case ID, Provider, Employee..." style="width:100%">
                     <button type="button" class="vb" onclick="fetchComplaints()">Search</button>
                 </div>
                 <div id="compListContainer" style="max-height:400px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:0.5rem;background:var(--cream);">
@@ -3595,7 +3556,8 @@ window.addEventListener('DOMContentLoaded', () => {
                             <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Status</label>
                             <select id="editCompStatus" class="si" style="width:100%">
                                 <option value="Open">Open</option>
-                                <option value="Under Review">Under Review</option>
+                                <option value="Investigating">Investigating</option>
+                                <option value="Resolved">Resolved</option>
                                 <option value="Closed">Closed</option>
                             </select>
                         </div>
@@ -3780,14 +3742,7 @@ function submitNewComplaint(e) {
 }
 function fetchComplaints() {
     const term = document.getElementById('compSearchInput').value;
-    const year = document.getElementById('compFilterYear').value;
-    const status = document.getElementById('compFilterStatus').value;
-    
-    let params = 'search=' + encodeURIComponent(term);
-    if (year) params += '&year=' + encodeURIComponent(year);
-    if (status) params += '&status=' + encodeURIComponent(status);
-    
-    fetch('api/get-complaints.php?' + params)
+    fetch('api/get-complaints.php?search=' + encodeURIComponent(term))
     .then(r => r.json()).then(res => {
         if(res.success) {
             complaintsCache = res.data;
@@ -3801,17 +3756,151 @@ function renderComplaintList() {
         c.innerHTML = '<div style="padding:1rem;color:var(--muted);text-align:center;">No complaints found</div>';
         return;
     }
-    c.innerHTML = complaintsCache.map(comp => `
-        <div style="border:1px solid var(--border);border-radius:6px;padding:0.75rem;margin-bottom:0.5rem;background:var(--paper);cursor:pointer;" onclick="loadEditComplaint('${comp.case_id}')">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.25rem;">
-                <strong>${escapeHtml(comp.case_id)}</strong>
-                <span style="font-size:0.8rem;background:var(--blue-lt);color:var(--blue-dk);padding:2px 6px;border-radius:4px;">${escapeHtml(comp.status)}</span>
+
+    function fmtDate(d) {
+        if (!d) return '—';
+        const dt = new Date(d);
+        if (isNaN(dt)) return d;
+        return dt.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+    }
+    function statusColor(s) {
+        if (!s || s === 'Open') return { bg:'#fff7ed', color:'#b45309', border:'#fcd34d' };
+        if (s === 'Under Review') return { bg:'#eff6ff', color:'#1d4ed8', border:'#93c5fd' };
+        if (s === 'Closed') return { bg:'#f0fdf4', color:'#166534', border:'#86efac' };
+        return { bg:'var(--blue-lt)', color:'var(--blue-dk)', border:'var(--blue-bd)' };
+    }
+    function decisionColor(d) {
+        if (!d || d === 'No Action') return { bg:'#f8fafc', color:'#64748b', border:'#cbd5e1' };
+        if (d === 'Blacklist') return { bg:'#fff1f2', color:'#be123c', border:'#fca5a5' };
+        return { bg:'#fafaf0', color:'#854d0e', border:'#fde68a' };
+    }
+
+    c.innerHTML = complaintsCache.map(comp => {
+        const sc = statusColor(comp.status);
+        const dc = decisionColor(comp.ldcm_decision);
+        const cid = comp.case_id.replace(/'/g, "\\'");
+
+        // Build audit trail nodes
+        // Node 1: always "Opened" at complaint date
+        // Node 2: Status (current)
+        // Node 3: LDCM Decision (if not No Action, or always show)
+        // Node 4: Decision Date + Remarks
+        const hasDecision = comp.ldcm_decision && comp.ldcm_decision !== 'No Action';
+        const hasDate = !!comp.decision_date;
+        const hasRemarks = comp.remarks && comp.remarks.trim() !== '';
+
+        const nodes = [
+            {
+                icon: '📋',
+                label: 'Opened',
+                value: fmtDate(comp.date_of_complaint),
+                active: true,
+                color: '#0080c6'
+            },
+            {
+                icon: '🔄',
+                label: 'Status',
+                value: escapeHtml(comp.status || 'Open'),
+                active: true,
+                color: sc.color,
+                bg: sc.bg,
+                border: sc.border
+            },
+            {
+                icon: '⚖️',
+                label: 'LDCM Decision',
+                value: escapeHtml(comp.ldcm_decision || 'Pending'),
+                active: hasDecision,
+                color: hasDecision ? dc.color : '#94a3b8',
+                bg: hasDecision ? dc.bg : '#f8fafc',
+                border: hasDecision ? dc.border : '#e2e8f0'
+            },
+            {
+                icon: '📅',
+                label: 'Decision Date',
+                value: hasDate ? fmtDate(comp.decision_date) : '—',
+                active: hasDate,
+                color: hasDate ? '#166534' : '#94a3b8',
+                bg: hasDate ? '#f0fdf4' : '#f8fafc',
+                border: hasDate ? '#86efac' : '#e2e8f0'
+            }
+        ];
+
+        const nodesHtml = nodes.map((n, i) => `
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:0;position:relative;">
+                ${i < nodes.length - 1 ? `<div style="position:absolute;top:14px;left:calc(50% + 14px);right:calc(-50% + 14px);height:2px;background:${n.active && nodes[i+1].active ? 'linear-gradient(to right,'+n.color+','+nodes[i+1].color+')' : '#e2e8f0'};z-index:0;"></div>` : ''}
+                <div style="width:28px;height:28px;border-radius:50%;background:${n.active ? n.color : '#e2e8f0'};display:flex;align-items:center;justify-content:center;font-size:0.7rem;z-index:1;flex-shrink:0;box-shadow:${n.active ? '0 1px 6px rgba(0,0,0,.15)' : 'none'};">
+                    <span style="font-size:0.65rem;">${n.icon}</span>
+                </div>
+                <div style="margin-top:0.35rem;text-align:center;min-width:0;width:100%;padding:0 2px;">
+                    <div style="font-size:0.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n.label}</div>
+                    <div style="font-size:0.72rem;font-weight:700;color:${n.active ? n.color : '#94a3b8'};background:${n.bg || 'transparent'};border:1px solid ${n.border || 'transparent'};border-radius:5px;padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n.value}</div>
+                </div>
             </div>
-            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.15rem;">📅 ${escapeHtml(comp.date_of_complaint || 'N/A')}</div>
-            <div style="font-size:0.85rem;color:var(--muted);margin-bottom:0.25rem;">${escapeHtml(comp.tp_name || 'Unknown TP')}</div>
-            <div style="font-size:0.85rem;color:var(--ink);">${escapeHtml(comp.complaint_category)} - ${escapeHtml(comp.priority)} Priority</div>
-        </div>
-    `).join('');
+        `).join('');
+
+        const remarksHtml = hasRemarks ? `
+            <div style="margin-top:0.6rem;padding:0.4rem 0.6rem;background:#f8fafc;border-left:3px solid var(--blue);border-radius:0 5px 5px 0;font-size:0.75rem;color:var(--ink);font-style:italic;line-height:1.4;">
+                <span style="font-size:0.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:2px;">Remarks</span>
+                ${escapeHtml(comp.remarks)}
+            </div>
+        ` : '';
+
+        return `
+        <div style="border:1px solid var(--border);border-radius:8px;margin-bottom:0.5rem;background:var(--card);overflow:hidden;transition:box-shadow .2s;" class="comp-card">
+            <!-- Main clickable row -->
+            <div style="padding:0.65rem 0.75rem;cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;" onclick="loadEditComplaint('${cid}')">
+                <div style="min-width:0;flex:1;">
+                    <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.18rem;">
+                        <strong style="font-size:0.88rem;color:var(--ink);font-family:'Calibri',sans-serif;">${escapeHtml(comp.case_id)}</strong>
+                        <span style="font-size:0.7rem;font-weight:700;background:${sc.bg};color:${sc.color};border:1px solid ${sc.border};padding:1px 7px;border-radius:20px;">${escapeHtml(comp.status || 'Open')}</span>
+                    </div>
+                    <div style="font-size:0.74rem;color:var(--muted);margin-bottom:0.12rem;">${fmtDate(comp.date_of_complaint)}</div>
+                    <div style="font-size:0.78rem;color:var(--ink);font-weight:600;margin-bottom:0.1rem;">${escapeHtml(comp.tp_name || '—')}</div>
+                    <div style="font-size:0.75rem;color:var(--muted);">${escapeHtml(comp.complaint_category || '—')} · ${escapeHtml(comp.priority || '—')} Priority</div>
+                </div>
+                <!-- Expand toggle -->
+                <button type="button"
+                    onclick="event.stopPropagation();toggleAuditTrail('${cid}')"
+                    title="View audit trail"
+                    style="background:var(--paper);border:1px solid var(--border);border-radius:6px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .2s;"
+                    id="auditBtn-${cid}">
+                    <svg id="auditChevron-${cid}" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="transition:transform .25s;"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+            </div>
+            <!-- Audit trail (collapsed by default) -->
+            <div id="auditTrail-${cid}" style="display:none;border-top:1px solid var(--border);padding:0.75rem 0.75rem 0.65rem;background:var(--paper);">
+                <div style="font-size:0.62rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:0.55rem;">Audit Trail</div>
+                <div style="display:flex;align-items:flex-start;gap:0;position:relative;">
+                    ${nodesHtml}
+                </div>
+                ${remarksHtml}
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function toggleAuditTrail(caseId) {
+    const trail = document.getElementById('auditTrail-' + caseId);
+    const chevron = document.getElementById('auditChevron-' + caseId);
+    const btn = document.getElementById('auditBtn-' + caseId);
+    if (!trail) return;
+    const open = trail.style.display !== 'none';
+    trail.style.display = open ? 'none' : 'block';
+    if (chevron) chevron.style.transform = open ? '' : 'rotate(180deg)';
+    if (btn) btn.style.background = open ? 'var(--paper)' : 'var(--blue-lt)';
+}
+
+function downloadComplaints() {
+    const term = document.getElementById('compSearchInput').value;
+    const url = new URL('api/download-complaints.php', window.location.href);
+    if (term) url.searchParams.set('search', term);
+    const link = document.createElement('a');
+    link.href = url.toString();
+    link.rel = 'noopener';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
 }
 function showComplaintList() {
     document.getElementById('compListSection').style.display = 'block';
