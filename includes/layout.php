@@ -3104,7 +3104,7 @@ function performUpload() {
 
 function confirmImport() {
     // perform final upload (no preview flag)
-    if (!selectedFile) return closeUploadPreview();
+    if (!selectedFile) return closeUpload();
     const formData = new FormData();
     formData.append('file', selectedFile);
 
@@ -3132,15 +3132,12 @@ function confirmImport() {
         if (result.success) {
             const timeTaken = ((performance.now() - uploadStartTime) / 1000).toFixed(1);
             fill.style.width = '100%';
-            lbl.textContent = 'Upload complete ✓';
+            lbl.textContent = 'Processing complete ✓';
             setTimeout(() => {
-                // close preview without reopening upload
-                closeUploadPreview(false);
-                showToast('✅ Database updated successfully!');
+                closeUpload();
                 showSuccess(result.stats || {}, timeTaken, selectedFile);
-                loadData();
-                updateStats();
-            }, 700);
+                resetUpload();
+            }, 600);
         } else {
             showToast('❌ ' + (result && result.message ? result.message : 'Upload failed'));
             prog.style.display = 'none';
@@ -3175,6 +3172,7 @@ function showSuccess(stats, timeTaken, file) {
 }
 
 function closeSuccess() {
+    document.getElementById('successOv').classList.remove('open');
     window.location.reload();
 }
 
