@@ -687,6 +687,27 @@ if (isset($content_file) && is_file($content_file)) {
         <!-- Tab Content: Update status -->
         <div class="uob" id="compContent-update" style="display: none;">
             <div id="compListSection">
+                <!-- Stats bar -->
+                <div id="compStatsBar" style="display:flex;align-items:center;background:var(--blue);border-radius:10px;padding:0.7rem 1.1rem;margin-bottom:0.85rem;gap:0;">
+                    <div class="sum-main" style="border-right:1px solid rgba(255,255,255,.25);padding-right:1.1rem;min-width:0;">
+                        <div class="sum-main-num" id="compStatTotal">—</div>
+                        <div class="sum-main-lbl">Complaints</div>
+                    </div>
+                    <div class="sum-stats" style="padding-left:1.1rem;gap:1.2rem;">
+                        <div class="ss">
+                            <div class="ss-num g" id="compStatOpen">—</div>
+                            <div class="ss-lbl">Open</div>
+                        </div>
+                        <div class="ss">
+                            <div class="ss-num y" id="compStatReview">—</div>
+                            <div class="ss-lbl">Under Review</div>
+                        </div>
+                        <div class="ss">
+                            <div class="ss-num" id="compStatClosed" style="color:rgba(255,255,255,0.9);">—</div>
+                            <div class="ss-lbl">Closed</div>
+                        </div>
+                    </div>
+                </div>
                 <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;align-items:center;">
                     <input type="text" id="compSearchInput" class="si" placeholder="Search complaints..." style="flex:0 1 240px" oninput="renderComplaintList()">
                     <!-- Filter button -->
@@ -3982,6 +4003,17 @@ function renderComplaintList() {
         }
         return true;
     });
+
+    // Update stats bar from full cache (not filtered data)
+    const total  = complaintsCache.length;
+    const nOpen  = complaintsCache.filter(c => !c.status || c.status === 'Open').length;
+    const nRev   = complaintsCache.filter(c => c.status === 'Under Review').length;
+    const nClosed= complaintsCache.filter(c => c.status === 'Closed').length;
+    const setEl  = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    setEl('compStatTotal',  total);
+    setEl('compStatOpen',   nOpen);
+    setEl('compStatReview', nRev);
+    setEl('compStatClosed', nClosed);
 
     if (!data.length) {
         c.innerHTML = '<div style="padding:1rem;color:var(--muted);text-align:center;">No complaints found</div>';
