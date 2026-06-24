@@ -856,6 +856,17 @@ if (isset($content_file) && is_file($content_file)) {
                                 <label class="stm-label">Description (Remarks)</label>
                                 <textarea id="editCompRemarks" class="remark-input" rows="2" style="width:100%;margin-top:0.25rem"></textarea>
                             </div>
+
+                            <!-- Audit Trail -->
+                            <div style="grid-column: span 2; margin-top:0.25rem;">
+                                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+                                    <span class="stm-label">Change History</span>
+                                    <span id="auditLogCount" style="font-size:0.72rem;color:var(--muted);"></span>
+                                </div>
+                                <div id="auditLogContainer" style="max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:var(--paper);padding:0.1rem 0;">
+                                    <div style="padding:1rem;text-align:center;color:var(--muted);font-size:0.8rem;">Loading history…</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="ua" style="display: flex; gap: 0.5rem; justify-content:flex-end; padding-top: 1rem; border-top: 1px solid var(--border); margin-top: 0.5rem; flex-shrink: 0;">
@@ -4140,6 +4151,96 @@ function toggleAuditTrail(caseId) {
     if (btn) btn.style.background = open ? 'var(--paper)' : 'var(--blue-lt)';
 }
 
+function loadAuditLog(caseId) {
+    const container = document.getElementById('auditLogContainer');
+    const countEl   = document.getElementById('auditLogCount');
+    if (!container) return;
+    container.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted);font-size:0.8rem;">Loading history…</div>';
+    if (countEl) countEl.textContent = '';
+
+    fetch('api/get-complaint-audit.php?case_id=' + encodeURIComponent(caseId))
+        .then(r => r.json())
+        .then(res => {
+            if (!res.success) throw new Error(res.error || 'Failed');
+            renderAuditLog(res.data);
+        })
+        .catch(err => {
+            container.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted);font-size:0.8rem;">Could not load history.</div>';
+        });
+}
+
+function renderAuditLog(entries) {
+    const container = document.getElementById('auditLogContainer');
+    const countEl   = document.getElementById('auditLogCount');
+    if (!container) return;
+
+    if (countEl) countEl.textContent = entries.length ? entries.length + ' entr' + (entries.length === 1 ? 'y' : 'ies') : '';
+
+    if (!entries.length) {
+        container.innerHTML = '<div style="padding:1rem;text-align:center;color:var(--muted);font-size:0.8rem;">No changes recorded yet. History is saved each time you click Save Changes.</div>';
+        return;
+    }
+
+    function fmtTs(ts) {
+        if (!ts) return '—';
+        const d = new Date(ts);
+        return isNaN(d) ? ts : d.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' })
+            + ' ' + d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+    }
+    function fmtDate(d) {
+        if (!d) return null;
+        const dt = new Date(d);
+        return isNaN(dt) ? d : dt.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+    }
+
+    const statusColors = {
+        'Open':         { bg:'#fff7ed', color:'#b45309', border:'#fcd34d' },
+        'Under Review': { bg:'#eff6ff', color:'#1d4ed8', border:'#93c5fd' },
+        'Closed':       { bg:'#f0fdf4', color:'#166534', border:'#86efac' }
+    };
+    const decisionColors = {
+        'No Action':    { bg:'#f8fafc', color:'#64748b', border:'#cbd5e1' },
+        'LDCM Decision':{ bg:'#fafaf0', color:'#854d0e', border:'#fde68a' },
+        'Blacklist':    { bg:'#fff1f2', color:'#be123c', border:'#fca5a5' }
+    };
+
+    function chip(label, val, colorMap) {
+        if (!val) return '<span style="color:var(--muted);font-style:italic;font-size:0.75rem;">—</span>';
+        const c = colorMap[val] || { bg:'var(--paper)', color:'var(--ink)', border:'var(--border)' };
+        return `<span style="display:inline-block;font-size:0.72rem;font-weight:700;background:${c.bg};color:${c.color};border:1px solid ${c.border};border-radius:20px;padding:1px 8px;">${escapeHtml(val)}</span>`;
+    }
+
+    container.innerHTML = entries.map((e, i) => {
+        const isLatest = i === 0;
+        const dateVal  = fmtDate(e.decision_date);
+
+        return `
+        <div style="display:flex;gap:0;padding:0.65rem 0.85rem;${i < entries.length - 1 ? 'border-bottom:1px solid var(--border);' : ''}${isLatest ? 'background:var(--cream);' : ''}">
+            <!-- Timeline spine -->
+            <div style="display:flex;flex-direction:column;align-items:center;margin-right:0.75rem;flex-shrink:0;">
+                <div style="width:10px;height:10px;border-radius:50%;background:${isLatest ? 'var(--blue)' : 'var(--border)'};border:2px solid ${isLatest ? 'var(--blue)' : '#c0cdd6'};flex-shrink:0;margin-top:3px;"></div>
+                ${i < entries.length - 1 ? `<div style="width:2px;flex:1;background:var(--border);margin-top:4px;min-height:20px;"></div>` : ''}
+            </div>
+            <!-- Content -->
+            <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.35rem;flex-wrap:wrap;gap:0.25rem;">
+                    <span style="font-size:0.72rem;font-weight:700;color:${isLatest ? 'var(--blue)' : 'var(--muted)'};">
+                        ${escapeHtml(fmtTs(e.changed_at))}
+                        ${isLatest ? '<span style="font-size:0.65rem;background:var(--blue);color:#fff;border-radius:20px;padding:1px 6px;margin-left:4px;">Latest</span>' : ''}
+                    </span>
+                    ${e.changed_by ? `<span style="font-size:0.7rem;color:var(--muted);">by ${escapeHtml(e.changed_by)}</span>` : ''}
+                </div>
+                <div style="display:flex;flex-wrap:wrap;gap:0.4rem;align-items:center;margin-bottom:${e.remarks ? '0.35rem' : '0'};">
+                    <span style="font-size:0.7rem;color:var(--muted);">Status</span>${chip('Status', e.status, statusColors)}
+                    <span style="font-size:0.7rem;color:var(--muted);margin-left:0.25rem;">Decision</span>${chip('Decision', e.ldcm_decision, decisionColors)}
+                    ${dateVal ? `<span style="font-size:0.7rem;color:var(--muted);margin-left:0.25rem;">Date</span><span style="font-size:0.72rem;color:var(--ink);">${escapeHtml(dateVal)}</span>` : ''}
+                </div>
+                ${e.remarks ? `<div style="font-size:0.74rem;color:var(--ink);background:var(--paper);border-left:3px solid var(--blue);border-radius:0 4px 4px 0;padding:0.25rem 0.5rem;line-height:1.4;">${escapeHtml(e.remarks)}</div>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+}
+
 function downloadComplaints() {
     const term = document.getElementById('compSearchInput').value;
     const url = new URL('api/download-complaints.php', window.location.href);
@@ -4187,6 +4288,7 @@ function loadEditComplaint(caseId) {
 
     document.getElementById('compListSection').style.display = 'none';
     document.getElementById('compEditSection').style.display = 'block';
+    loadAuditLog(caseId);
 }
 function submitEditComplaint(e) {
     e.preventDefault();
@@ -4217,6 +4319,7 @@ function submitEditComplaint(e) {
         if(res.success) {
             showToast('✓ Complaint updated successfully');
             fetchComplaints();
+            loadAuditLog(data.case_id);
             showComplaintList();
             if (data.ldcm_decision === 'Blacklist') loadData();
         } else {

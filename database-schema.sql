@@ -233,4 +233,18 @@ CREATE TRIGGER trigger_set_complaint_case_id
 BEFORE INSERT ON Complaint
 FOR EACH ROW
 WHEN (NEW.case_id IS NULL)
-EXECUTE FUNCTION set_complaint_case_id();
+EXECUTE FUNCTION set_complaint_case_id();
+
+CREATE TABLE IF NOT EXISTS complaint_audit_log (
+    audit_id        SERIAL PRIMARY KEY,
+    case_id         VARCHAR(50)  NOT NULL REFERENCES Complaint(case_id) ON DELETE CASCADE,
+    changed_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    changed_by      VARCHAR(150),          -- session username / name of the admin who saved
+    status          VARCHAR(50),
+    ldcm_decision   VARCHAR(100),
+    decision_date   DATE,
+    remarks         TEXT
+);
+ 
+CREATE INDEX IF NOT EXISTS idx_complaint_audit_case_id
+    ON complaint_audit_log (case_id, changed_at DESC);

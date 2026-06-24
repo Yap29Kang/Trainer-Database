@@ -73,6 +73,27 @@ try {
     }
 
     $pdo->commit();
+
+    // Insert audit log entry (outside the main transaction to avoid rollback losing the audit)
+    try {
+        $changedBy = $_SESSION['user_name'] ?? $_SESSION['username'] ?? $_SESSION['name'] ?? 'Admin';
+        $auditSql = "INSERT INTO complaint_audit_log
+            (case_id, changed_by, status, ldcm_decision, decision_date, remarks)
+            VALUES (?, ?, ?, ?, ?, ?)";
+        $auditStmt = $pdo->prepare($auditSql);
+        $auditStmt->execute([
+            $data['case_id'],
+            $changedBy,
+            $data['status'],
+            $data['ldcm_decision'] === '' ? null : $data['ldcm_decision'],
+            $decisionDate,
+            $data['remarks'] === '' ? null : $data['remarks']
+        ]);
+    } catch (Exception $auditEx) {
+        // Audit failure should not block the main save response
+        error_log('Audit log insert failed: ' . $auditEx->getMessage());
+    }
+
     echo json_encode(['success' => true]);
 } catch (Exception $e) {
     if ($pdo->inTransaction()) {
