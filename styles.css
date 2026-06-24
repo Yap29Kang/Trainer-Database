@@ -681,7 +681,19 @@ header{background:var(--blue);padding:1rem 2rem .95rem;position:sticky;top:0;z-i
     padding-left: 0.7rem;
 }
 
-/* ── COMPLAINT FILTER CHIPS ── */
+/* ── COMPLAINT READONLY FIELDS ── */
+.comp-readonly-field {
+    background: #f3f6f8 !important;
+    color: #6b8396 !important;
+    cursor: default !important;
+    user-select: none;
+    pointer-events: none;
+    border-color: #dce4ea !important;
+    display: flex;
+    align-items: center;
+    min-height: 2.35rem;
+    box-sizing: border-box;
+}
 .comp-filter-chip {
     display: inline-flex;
     align-items: center;

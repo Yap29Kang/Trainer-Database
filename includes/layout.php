@@ -744,79 +744,50 @@ if (isset($content_file) && is_file($content_file)) {
                         <input type="hidden" id="editCompCaseIdHidden">
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
                             <div>
-                                <label class="stm-label">Date of Complaint *</label>
-                                <input type="date" id="editCompDate" class="si" style="width:100%;margin-top:0.25rem" max="<?php echo date('Y-m-d'); ?>" required>
+                                <label class="stm-label">Date of Complaint</label>
+                                <div id="editCompDateDisplay" class="si comp-readonly-field" style="width:100%;margin-top:0.25rem;"></div>
+                                <input type="hidden" id="editCompDate">
                             </div>
                             <div>
-                                <label class="stm-label">Priority *</label>
-                                <div class="csel-wrap" style="position:relative;margin-top:0.25rem;">
-                                    <button type="button" id="editCompPriorityBtn" class="si dept-select-btn" style="width:100%" onclick="toggleCsel('editCompPriorityMenu','editCompPriorityBtn')">
-                                        <span id="editCompPriorityLabel" class="dept-select-placeholder">Select Priority</span>
-                                    </button>
-                                    <input type="hidden" id="editCompPriority" required>
-                                    <div id="editCompPriorityMenu" class="trainer-flag-reason-menu" style="width:100%;">
-                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompPriority','editCompPriorityLabel','editCompPriorityMenu','editCompPriorityBtn','Low')">Low</button>
-                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompPriority','editCompPriorityLabel','editCompPriorityMenu','editCompPriorityBtn','Medium')">Medium</button>
-                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompPriority','editCompPriorityLabel','editCompPriorityMenu','editCompPriorityBtn','High')">High</button>
-                                    </div>
-                                </div>
+                                <label class="stm-label">Priority</label>
+                                <div id="editCompPriorityDisplay" class="si comp-readonly-field" style="width:100%;margin-top:0.25rem;"></div>
+                                <input type="hidden" id="editCompPriority">
                             </div>
                             <div>
-                                <label class="stm-label">Employee Name *</label>
-                                <input type="text" id="editCompEmpName" class="si" style="width:100%;margin-top:0.25rem" required>
+                                <label class="stm-label">Employee Name</label>
+                                <div id="editCompEmpNameDisplay" class="si comp-readonly-field" style="width:100%;margin-top:0.25rem;"></div>
+                                <input type="hidden" id="editCompEmpName">
                             </div>
                             <div>
-                                <label class="stm-label">Employee ID *</label>
-                                <input type="text" id="editCompEmpId" class="si" style="width:100%;margin-top:0.25rem" required>
+                                <label class="stm-label">Employee ID</label>
+                                <div id="editCompEmpIdDisplay" class="si comp-readonly-field" style="width:100%;margin-top:0.25rem;"></div>
+                                <input type="hidden" id="editCompEmpId">
                             </div>
                             <div>
-                                <label class="stm-label">Department *</label>
-                                <div class="dept-select-wrap" style="position:relative;margin-top:0.25rem;">
-                                    <button type="button" id="editCompDeptBtn" class="si dept-select-btn" style="width:100%" onclick="toggleDeptMenu('editCompDeptMenu','editCompDeptBtn')">
-                                        <span id="editCompDeptLabel" class="dept-select-placeholder">Select Department</span>
-                                    </button>
-                                    <input type="hidden" id="editCompDept">
-                                    <div id="editCompDeptMenu" class="trainer-flag-reason-menu" style="width:100%;"></div>
-                                </div>
+                                <label class="stm-label">Department</label>
+                                <div id="editCompDeptDisplay" class="si comp-readonly-field" style="width:100%;margin-top:0.25rem;"></div>
+                                <input type="hidden" id="editCompDept">
                             </div>
                             <div>
-                                <label class="stm-label">LearnOps *</label>
-                                <div class="csel-wrap" style="position:relative;margin-top:0.25rem;">
-                                    <button type="button" id="editCompLearnOpsBtn" class="si dept-select-btn" style="width:100%" onclick="toggleCsel('editCompLearnOpsMenu','editCompLearnOpsBtn')">
-                                        <span id="editCompLearnOpsLabel" class="dept-select-placeholder">Select LearnOps</span>
-                                    </button>
-                                    <input type="hidden" id="editCompLearnOps" required>
-                                    <div id="editCompLearnOpsMenu" class="trainer-flag-reason-menu" style="width:100%;">
-                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompLearnOps','editCompLearnOpsLabel','editCompLearnOpsMenu','editCompLearnOpsBtn','Nur Suzyla')">Nur Suzyla</button>
-                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompLearnOps','editCompLearnOpsLabel','editCompLearnOpsMenu','editCompLearnOpsBtn','Felicia')">Felicia</button>
-                                    </div>
-                                </div>
+                                <label class="stm-label">LearnOps</label>
+                                <div id="editCompLearnOpsDisplay" class="si comp-readonly-field" style="width:100%;margin-top:0.25rem;"></div>
+                                <input type="hidden" id="editCompLearnOps">
                             </div>
                             <div>
-                                <label class="stm-label">Training Provider *</label>
-                                <div style="position:relative;">
-                                    <input type="text" id="editCompTpSearch" class="si" style="width:100%;margin-top:0.25rem" autocomplete="off" required oninput="filterCompTp('editCompTpSearch', 'editCompTpDropdown', 'editCompTpId')">
-                                    <input type="hidden" id="editCompTpId" required>
-                                    <div id="editCompTpDropdown" class="trainer-flag-reason-menu" style="width:100%;margin-top:2px;"></div>
-                                </div>
+                                <label class="stm-label">Training Provider</label>
+                                <div id="editCompTpDisplay" class="si comp-readonly-field" style="width:100%;margin-top:0.25rem;"></div>
+                                <input type="hidden" id="editCompTpSearch">
+                                <input type="hidden" id="editCompTpId">
                             </div>
                             <div>
-                                <label class="stm-label">Complaint Category *</label>
-                                <div class="csel-wrap" style="position:relative;margin-top:0.25rem;">
-                                    <button type="button" id="editCompCategoryBtn" class="si dept-select-btn" style="width:100%" onclick="toggleCsel('editCompCategoryMenu','editCompCategoryBtn')">
-                                        <span id="editCompCategoryLabel" class="dept-select-placeholder">Select Category</span>
-                                    </button>
-                                    <input type="hidden" id="editCompCategory" required>
-                                    <div id="editCompCategoryMenu" class="trainer-flag-reason-menu" style="width:100%;">
-                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompCategory','editCompCategoryLabel','editCompCategoryMenu','editCompCategoryBtn','Performance Quality')">Performance Quality</button>
-                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompCategory','editCompCategoryLabel','editCompCategoryMenu','editCompCategoryBtn','Safety &amp; Compliance')">Safety &amp; Compliance</button>
-                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompCategory','editCompCategoryLabel','editCompCategoryMenu','editCompCategoryBtn','Fraud &amp; Misconduct')">Fraud &amp; Misconduct</button>
-                                    </div>
-                                </div>
+                                <label class="stm-label">Complaint Category</label>
+                                <div id="editCompCategoryDisplay" class="si comp-readonly-field" style="width:100%;margin-top:0.25rem;"></div>
+                                <input type="hidden" id="editCompCategory">
                             </div>
                             <div style="grid-column: span 2;">
-                                <label class="stm-label">Complaint Summary *</label>
-                                <textarea id="editCompSummary" class="remark-input" rows="2" style="width:100%;margin-top:0.25rem" required></textarea>
+                                <label class="stm-label">Complaint Summary</label>
+                                <div id="editCompSummaryDisplay" class="remark-input comp-readonly-field" style="width:100%;margin-top:0.25rem;min-height:4rem;white-space:pre-wrap;"></div>
+                                <input type="hidden" id="editCompSummary">
                             </div>
 
                             <!-- Update Status Specific Fields -->
@@ -4263,23 +4234,34 @@ function loadEditComplaint(caseId) {
     document.getElementById('editCompCaseId').textContent = comp.case_id;
     document.getElementById('editCompCaseIdHidden').value = comp.case_id;
     document.getElementById('editCompDate').value = comp.date_of_complaint || '';
-    setCselValue('editCompPriority', 'editCompPriorityLabel', comp.priority || '', 'Select Priority');
+    document.getElementById('editCompDateDisplay').textContent = comp.date_of_complaint
+        ? new Date(comp.date_of_complaint).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'})
+        : '—';
+
+    document.getElementById('editCompPriority').value = comp.priority || '';
+    document.getElementById('editCompPriorityDisplay').textContent = comp.priority || '—';
+
     document.getElementById('editCompEmpName').value = comp.employee_name || '';
+    document.getElementById('editCompEmpNameDisplay').textContent = comp.employee_name || '—';
+
     document.getElementById('editCompEmpId').value = comp.employee_id || '';
-    
-    // Attempt to set department immediately if loaded, otherwise wait for fetchDepartments
-    if (departmentsCache.length > 0) {
-        setDeptValue('editCompDept', 'editCompDeptLabel', comp.department || '');
-    } else {
-        // Just store it, fetchDepartments will set it
-        document.getElementById('editCompDept').dataset.pendingValue = comp.department || '';
-    }
-    
-    setCselValue('editCompLearnOps', 'editCompLearnOpsLabel', comp.learnops || '', 'Select LearnOps');
+    document.getElementById('editCompEmpIdDisplay').textContent = comp.employee_id || '—';
+
+    document.getElementById('editCompDept').value = comp.department || '';
+    document.getElementById('editCompDeptDisplay').textContent = comp.department || '—';
+
+    document.getElementById('editCompLearnOps').value = comp.learnops || '';
+    document.getElementById('editCompLearnOpsDisplay').textContent = comp.learnops || '—';
+
     document.getElementById('editCompTpSearch').value = comp.tp_name || '';
     document.getElementById('editCompTpId').value = comp.training_provider_id || '';
-    setCselValue('editCompCategory', 'editCompCategoryLabel', comp.complaint_category || '', 'Select Category');
+    document.getElementById('editCompTpDisplay').textContent = comp.tp_name || '—';
+
+    document.getElementById('editCompCategory').value = comp.complaint_category || '';
+    document.getElementById('editCompCategoryDisplay').textContent = comp.complaint_category || '—';
+
     document.getElementById('editCompSummary').value = comp.complaint_summary || '';
+    document.getElementById('editCompSummaryDisplay').textContent = comp.complaint_summary || '—';
     
     setCselValue('editCompStatus', 'editCompStatusLabel', comp.status || 'Open', 'Select Status');
     setCselValue('editCompDecision', 'editCompDecisionLabel', comp.ldcm_decision || 'No Action', 'Select Decision');
