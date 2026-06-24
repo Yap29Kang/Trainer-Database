@@ -247,10 +247,19 @@ if (isset($content_file) && is_file($content_file)) {
         <div class="stm-body">
             <div class="stm-pname" id="expProvName">—</div>
             <div class="stm-label">Select area of expertise</div>
-            <div style="margin-bottom: 1.5rem;">
-                <select class="bl-reason-ta" id="expCategorySel" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; font-size: 0.875rem;">
-                    <option value="">-- Select a category --</option>
-                </select>
+            <div style="position:relative;margin-bottom:1.5rem;">
+                <button type="button" id="expCategoryBtn" class="si dept-select-btn" style="width:100%;margin-top:0.25rem;" onclick="toggleExpDropdown()">
+                    <span id="expCategoryLabel" class="dept-select-placeholder">-- Select a category --</span>
+                </button>
+                <input type="hidden" id="expCategorySel">
+                <div id="expCategoryMenu" class="trainer-flag-reason-menu" style="width:100%;max-height:220px;overflow-y:auto;display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:400;">
+                    <div style="padding:0.35rem 0.4rem 0.25rem;position:sticky;top:0;background:var(--card);z-index:1;">
+                        <input type="text" id="expCategorySearch" placeholder="Search categories…" oninput="filterExpCategories()"
+                            style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:0.3rem 0.6rem;font-family:'Calibri',sans-serif;font-size:0.82rem;background:var(--paper);outline:none;box-sizing:border-box;"
+                            onclick="event.stopPropagation()">
+                    </div>
+                    <div id="expCategoryItems"></div>
+                </div>
             </div>
             <div class="stm-actions">
                 <button class="stm-cancel" onclick="closeExpertiseModal()">Cancel</button>
@@ -2432,29 +2441,93 @@ function openExpertiseModal(which) {
 }
 
 function populateExpertiseSelect() {
-    const sel = document.getElementById('expCategorySel');
     const displayField = pendingExpertiseWhich === 2 ? 'TP_SecondAoEDisplay' : 'TP_FirstAoEDisplay';
     const fallbackField = pendingExpertiseWhich === 2 ? 'TP_SecondAoE' : 'TP_FirstAoE';
-    const otherField = pendingExpertiseWhich === 2 ? 'TP_FirstAoE' : 'TP_SecondAoE';
-    const currentVal = currentProviderDetail[displayField] || currentProviderDetail[fallbackField] || '';
-    const otherVal = (currentProviderDetail[otherField] || '').trim();
-    
-    sel.innerHTML = '<option value="">-- Select a category --</option>';
-    
-    allCategories.forEach(cat => {
-        // Prevent selecting the same category in both AoE slots.
-        if (otherVal && cat === otherVal && cat !== currentVal) {
-            return;
-        }
-        const opt = document.createElement('option');
-        opt.value = cat;
-        opt.textContent = cat;
-        if (cat === currentVal) opt.selected = true;
-        sel.appendChild(opt);
+    const otherField    = pendingExpertiseWhich === 2 ? 'TP_FirstAoE' : 'TP_SecondAoE';
+    const currentVal    = currentProviderDetail[displayField] || currentProviderDetail[fallbackField] || '';
+    const otherVal      = (currentProviderDetail[otherField] || '').trim();
+
+    // Store filtered list for the search box
+    window._expCategories = allCategories.filter(cat => {
+        if (otherVal && cat === otherVal && cat !== currentVal) return false;
+        return true;
     });
+
+    // Set the button label to the current value
+    const label = document.getElementById('expCategoryLabel');
+    const hidden = document.getElementById('expCategorySel');
+    if (currentVal) {
+        label.textContent = currentVal;
+        label.classList.remove('dept-select-placeholder');
+        hidden.value = currentVal;
+    } else {
+        label.textContent = '-- Select a category --';
+        label.classList.add('dept-select-placeholder');
+        hidden.value = '';
+    }
+
+    // Clear search and render all items
+    const searchEl = document.getElementById('expCategorySearch');
+    if (searchEl) searchEl.value = '';
+    renderExpItems(window._expCategories, currentVal);
+}
+
+function renderExpItems(cats, selected) {
+    const container = document.getElementById('expCategoryItems');
+    if (!container) return;
+    if (!cats.length) {
+        container.innerHTML = '<div style="padding:0.5rem 0.8rem;font-size:0.8rem;color:var(--muted);">No categories found</div>';
+        return;
+    }
+    container.innerHTML = cats.map(cat => `
+        <button type="button" class="trainer-flag-reason-item${cat === selected ? ' selected' : ''}"
+            onclick="selectExpCategory(${JSON.stringify(cat)})"
+            style="${cat === selected ? 'font-weight:700;color:var(--blue);' : ''}">
+            ${escapeHtml(cat)}
+        </button>`).join('');
+}
+
+function filterExpCategories() {
+    const q = (document.getElementById('expCategorySearch')?.value || '').toLowerCase();
+    const hidden = document.getElementById('expCategorySel');
+    const filtered = (window._expCategories || []).filter(c => c.toLowerCase().includes(q));
+    renderExpItems(filtered, hidden?.value || '');
+}
+
+function selectExpCategory(value) {
+    const hidden = document.getElementById('expCategorySel');
+    const label  = document.getElementById('expCategoryLabel');
+    if (hidden) hidden.value = value;
+    if (label) {
+        label.textContent = value || '-- Select a category --';
+        label.classList.toggle('dept-select-placeholder', !value);
+    }
+    closeExpDropdown();
+}
+
+function toggleExpDropdown() {
+    const menu = document.getElementById('expCategoryMenu');
+    const btn  = document.getElementById('expCategoryBtn');
+    if (!menu) return;
+    const isOpen = menu.style.display !== 'none';
+    if (isOpen) {
+        closeExpDropdown();
+    } else {
+        menu.style.display = 'block';
+        btn.classList.add('open');
+        setTimeout(() => document.getElementById('expCategorySearch')?.focus(), 50);
+    }
+}
+
+function closeExpDropdown() {
+    const menu = document.getElementById('expCategoryMenu');
+    const btn  = document.getElementById('expCategoryBtn');
+    if (menu) menu.style.display = 'none';
+    if (btn)  btn.classList.remove('open');
 }
 
 function closeExpertiseModal() {
+    closeExpDropdown();
     document.getElementById('expOv').classList.remove('open');
     syncBodyLock();
 }
@@ -3814,6 +3887,9 @@ document.addEventListener('click', function(e) {
     }
     if (!e.target.closest('.csel-wrap')) {
         closeAllCselMenus();
+    }
+    if (!e.target.closest('#expCategoryMenu') && !e.target.closest('#expCategoryBtn')) {
+        closeExpDropdown();
     }
 });
 function filterCompTp(inputId, dropdownId, hiddenId) {
