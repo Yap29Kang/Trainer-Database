@@ -499,47 +499,106 @@ function fetchInsertedItemMap(PDO $pdo, array $itemRows) {
     $map = [];
 
     foreach (chunkRows($itemRows, 1000) as $chunk) {
-        $placeholders = '(' . implode(', ', array_fill(0, 5, '?')) . ')';
-        $valuesSql = implode(', ', array_fill(0, count($chunk), $placeholders));
-        $chunkKeys = [];
+        // Build params for columns: TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue
+        $params = [];
         foreach ($chunk as $row) {
-            $chunkKeys[] = $row[0];
+            foreach (array_slice($row, 1) as $value) {
+                $params[] = $value;
+            }
         }
+        $chunkKeys = array_column($chunk, 0); // original item key strings
 
         if ($driver === 'pgsql') {
-            $sql = 'INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES ' . $valuesSql . ' RETURNING Item_ID, TP_ID, Trainer_ID, Item_Name';
+            // INSERT ON CONFLICT DO NOTHING RETURNING gives us the newly inserted rows.
+            // Rows that conflicted are NOT returned — we fetch those separately below.
+            $placeholders = implode(', ', array_fill(0, count($chunk),
+                '(' . implode(', ', array_fill(0, 5, '?')) . ')'));
+            $sql = "INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue)
+                    VALUES $placeholders
+                    ON CONFLICT (TP_ID, Trainer_ID, Item_Name) DO NOTHING
+                    RETURNING Item_ID, TP_ID, Trainer_ID, Item_Name";
             $stmt = $pdo->prepare($sql);
-            $params = [];
-            foreach ($chunk as $row) {
-                foreach (array_slice($row, 1) as $value) {
-                    $params[] = $value;
-                }
-            }
             $stmt->execute($params);
 
-            $index = 0;
+            // Map newly inserted rows by (TP_ID|Trainer_ID|Item_Name)
+            $insertedByNaturalKey = [];
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $normalized = normalizeAssocRow($row);
-                $originalKey = $chunkKeys[$index] ?? null;
-                if ($originalKey !== null) {
-                    $map[$originalKey] = (int)$normalized['ITEM_ID'];
-                }
-                $index++;
+                $n = normalizeAssocRow($row);
+                $k = $n['TP_ID'] . '|' . $n['TRAINER_ID'] . '|' . $n['ITEM_NAME'];
+                $insertedByNaturalKey[$k] = (int)$n['ITEM_ID'];
             }
-        } else {
-            $sql = 'INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES ' . $valuesSql;
-            $stmt = $pdo->prepare($sql);
-            $params = [];
-            foreach ($chunk as $row) {
-                foreach (array_slice($row, 1) as $value) {
-                    $params[] = $value;
-                }
-            }
-            $stmt->execute($params);
 
+            // For any chunk items NOT in the returned set, fetch their existing IDs
+            $missing = [];
+            foreach ($chunk as $i => $row) {
+                $nk = $row[1] . '|' . $row[2] . '|' . $row[3]; // TP_ID|Trainer_ID|Item_Name
+                if (!isset($insertedByNaturalKey[$nk])) {
+                    $missing[] = ['key' => $chunkKeys[$i], 'tp' => $row[1], 'trainer' => $row[2], 'name' => $row[3]];
+                } else {
+                    $map[$chunkKeys[$i]] = $insertedByNaturalKey[$nk];
+                }
+            }
+
+            if (!empty($missing)) {
+                // Fetch existing Item IDs for the conflicts using OR conditions
+                $whereParts = [];
+                $whereParams = [];
+                foreach ($missing as $m) {
+                    $whereParts[] = '(TP_ID = ? AND Trainer_ID = ? AND Item_Name = ?)';
+                    $whereParams[] = $m['tp'];
+                    $whereParams[] = $m['trainer'];
+                    $whereParams[] = $m['name'];
+                }
+                $fetchSql = 'SELECT Item_ID, TP_ID, Trainer_ID, Item_Name FROM Item WHERE ' . implode(' OR ', $whereParts);
+                $fetchStmt = $pdo->prepare($fetchSql);
+                $fetchStmt->execute($whereParams);
+                $existingByNK = [];
+                while ($r = $fetchStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $n = normalizeAssocRow($r);
+                    $k = $n['TP_ID'] . '|' . $n['TRAINER_ID'] . '|' . $n['ITEM_NAME'];
+                    $existingByNK[$k] = (int)$n['ITEM_ID'];
+                }
+                foreach ($missing as $m) {
+                    $nk = $m['tp'] . '|' . $m['trainer'] . '|' . $m['name'];
+                    if (isset($existingByNK[$nk])) {
+                        $map[$m['key']] = $existingByNK[$nk];
+                    }
+                }
+            }
+
+        } else {
+            // MySQL: INSERT IGNORE + lastInsertId approach
+            $placeholders = implode(', ', array_fill(0, count($chunk),
+                '(' . implode(', ', array_fill(0, 5, '?')) . ')'));
+            $sql = "INSERT IGNORE INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES $placeholders";
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
             $firstId = (int)$pdo->lastInsertId();
-            foreach ($chunk as $index => $row) {
-                $map[$row[0]] = $firstId + $index;
+            $rowsInserted = (int)$stmt->rowCount();
+
+            // For rows where INSERT IGNORE silently skipped, fetch existing IDs
+            $whereParts = [];
+            $whereParams = [];
+            foreach ($chunk as $row) {
+                $whereParts[] = '(TP_ID = ? AND Trainer_ID = ? AND Item_Name = ?)';
+                $whereParams[] = $row[1];
+                $whereParams[] = $row[2];
+                $whereParams[] = $row[3];
+            }
+            $fetchSql = 'SELECT Item_ID, TP_ID, Trainer_ID, Item_Name FROM Item WHERE ' . implode(' OR ', $whereParts);
+            $fetchStmt = $pdo->prepare($fetchSql);
+            $fetchStmt->execute($whereParams);
+            $existingByNK = [];
+            while ($r = $fetchStmt->fetch(PDO::FETCH_ASSOC)) {
+                $n = normalizeAssocRow($r);
+                $k = $n['TP_ID'] . '|' . $n['TRAINER_ID'] . '|' . $n['ITEM_NAME'];
+                $existingByNK[$k] = (int)$n['ITEM_ID'];
+            }
+            foreach ($chunk as $i => $row) {
+                $nk = $row[1] . '|' . $row[2] . '|' . $row[3];
+                if (isset($existingByNK[$nk])) {
+                    $map[$chunkKeys[$i]] = $existingByNK[$nk];
+                }
             }
         }
     }
@@ -771,7 +830,24 @@ function processUploadData($data) {
     }
 
     $itemMap = fetchInsertedItemMap($pdo, array_values($itemInsertRows));
-    $courses_added = count($itemInsertRows);
+    // Count only items that were actually newly inserted (didn't exist before).
+    // fetchInsertedItemMap returns IDs for both new and existing items;
+    // we detect new ones by comparing against pre-existing IDs.
+    $preExistingItemIds = [];
+    if (!empty($itemMap)) {
+        $allReturnedIds = array_values($itemMap);
+        foreach (array_chunk($allReturnedIds, 1000) as $idChunk) {
+            $ph = implode(',', array_fill(0, count($idChunk), '?'));
+            $chkStmt = $pdo->prepare("SELECT Item_ID FROM Item WHERE Item_ID IN ($ph) AND Upload_ID IS NOT NULL AND Upload_ID != 0");
+            $chkStmt->execute($idChunk);
+            while ($r = $chkStmt->fetch(PDO::FETCH_NUM)) {
+                $preExistingItemIds[(int)$r[0]] = true;
+            }
+        }
+    }
+    $courses_added = count(array_filter($itemMap, function($id) use ($preExistingItemIds) {
+        return !isset($preExistingItemIds[$id]);
+    }));
 
     // Tag every Item created by this upload so it can be deleted when the upload is removed
     if (!empty($itemMap) && $upload_id > 0) {
@@ -891,7 +967,7 @@ function processUploadData($data) {
             'success' => false,
             'message' => !empty($errors)
                 ? ('No records were imported. First error: ' . $errors[0])
-                : 'No records were imported. Please verify your file columns and values.'
+                : 'No new records were imported — all data in this file already exists in the database. If this is unexpected, verify your file columns and values.'
         ];
     }
     

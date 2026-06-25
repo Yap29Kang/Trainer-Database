@@ -163,6 +163,13 @@ CREATE INDEX IF NOT EXISTS idx_item_trainer_id ON Item (Trainer_ID);
 CREATE INDEX IF NOT EXISTS idx_item_tp_trainer ON Item (TP_ID, Trainer_ID);
 CREATE INDEX IF NOT EXISTS idx_item_category ON Item (Item_Category);
 
+-- Prevent duplicate course rows for the same provider + trainer + course name.
+-- Required by upload.php's ON CONFLICT (TP_ID, Trainer_ID, Item_Name) DO NOTHING upsert.
+-- Clean up any existing duplicates manually before running this on an existing database.
+ALTER TABLE Item
+    ADD CONSTRAINT uq_item_tp_trainer_name
+    UNIQUE (TP_ID, Trainer_ID, Item_Name);
+
 CREATE TABLE IF NOT EXISTS Enrollment (
     Enrollment_ID SERIAL PRIMARY KEY,
     Item_ID INT,
