@@ -488,16 +488,53 @@ if (isset($content_file) && is_file($content_file)) {
 
 
 
-            <div class="uprog" id="uprog" style="display: none; margin-bottom: 1rem;">
-                <div class="pw" style="height: 5px; background: var(--cream); border-radius: 4px; overflow: hidden; margin-bottom: 0.38rem;">
-                    <div class="pf" id="pf" style="height: 100%; background: var(--blue); border-radius: 4px; width: 0; transition: width 0.22s;"></div>
+            <!-- Preview / duplicate check panel (shown before confirming upload) -->
+            <div id="upPreviewPanel" style="display:none;margin-bottom:1rem;border:1.5px solid var(--border);border-radius:10px;overflow:hidden;">
+                <div style="background:var(--cream);padding:0.6rem 0.85rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.5rem;">
+                    <svg width="14" height="14" fill="none" stroke="var(--blue)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <span style="font-family:'Calibri',sans-serif;font-weight:700;font-size:0.82rem;color:var(--ink);">File Preview</span>
                 </div>
-                <div class="pl" id="plbl" style="font-size: 0.75rem; color: var(--muted); text-align: center; font-family: 'Calibri', sans-serif;">Uploading…</div>
+                <div style="padding:0.75rem 0.85rem;display:flex;flex-direction:column;gap:0.55rem;">
+                    <!-- Stats row -->
+                    <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                        <div style="text-align:center;min-width:55px;">
+                            <div id="upPrevProviders" style="font-size:1.15rem;font-weight:700;color:var(--blue);font-family:'Calibri',sans-serif;">—</div>
+                            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Providers</div>
+                        </div>
+                        <div style="text-align:center;min-width:55px;">
+                            <div id="upPrevTrainers" style="font-size:1.15rem;font-weight:700;color:var(--blue);font-family:'Calibri',sans-serif;">—</div>
+                            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Trainers</div>
+                        </div>
+                        <div style="text-align:center;min-width:55px;">
+                            <div id="upPrevTotal" style="font-size:1.15rem;font-weight:700;color:var(--blue);font-family:'Calibri',sans-serif;">—</div>
+                            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Rows</div>
+                        </div>
+                        <div style="text-align:center;min-width:55px;">
+                            <div id="upPrevNew" style="font-size:1.15rem;font-weight:700;color:#16a34a;font-family:'Calibri',sans-serif;">—</div>
+                            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">New courses</div>
+                        </div>
+                        <div style="text-align:center;min-width:55px;">
+                            <div id="upPrevExisting" style="font-size:1.15rem;font-weight:700;color:#b45309;font-family:'Calibri',sans-serif;">—</div>
+                            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;">Already exist</div>
+                        </div>
+                    </div>
+                    <!-- Duplicate warning -->
+                    <div id="upPrevDupWarn" style="display:none;background:#fff7ed;border:1px solid #fcd34d;border-radius:7px;padding:0.5rem 0.7rem;font-size:0.78rem;color:#92400e;font-family:'Calibri',sans-serif;line-height:1.45;"></div>
+                    <!-- Missing rows warning -->
+                    <div id="upPrevMissWarn" style="display:none;background:#fef2f2;border:1px solid #fca5a5;border-radius:7px;padding:0.5rem 0.7rem;font-size:0.78rem;color:#b91c1c;font-family:'Calibri',sans-serif;"></div>
+                </div>
             </div>
 
-            <div class="ua" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+            <div class="uprog" id="uprog" style="display:none;margin-bottom:1rem;">
+                <div class="pw" style="height:5px;background:var(--cream);border-radius:4px;overflow:hidden;margin-bottom:0.38rem;">
+                    <div class="pf" id="pf" style="height:100%;background:var(--blue);border-radius:4px;width:0;transition:width 0.22s;"></div>
+                </div>
+                <div class="pl" id="plbl" style="font-size:0.75rem;color:var(--muted);text-align:center;font-family:'Calibri',sans-serif;">Uploading…</div>
+            </div>
+
+            <div class="ua" style="display:flex;gap:0.5rem;margin-top:1rem;">
                 <button class="ux" onclick="closeUpload()">Cancel</button>
-                <button class="uc" onclick="performUpload()">📤 Upload file</button>
+                <button class="uc" id="upMainBtn" onclick="performUpload()">📤 Upload file</button>
             </div>
         </div>
 
@@ -2972,14 +3009,21 @@ function selectFile(name, file) {
     selectedFile = file;
     document.getElementById('finfo').style.display = 'flex';
     document.getElementById('fn').textContent = name;
+
+    // Reset preview panel whenever a new file is chosen
+    _previewChecked = false;
+    var panel = document.getElementById('upPreviewPanel');
+    if (panel) panel.style.display = 'none';
+    var btn = document.getElementById('upMainBtn');
+    if (btn) { btn.textContent = '📤 Upload file'; btn.onclick = performUpload; btn.disabled = false; }
 }
 
 function openUpload() {
     document.getElementById('upOv').classList.add('open');
     document.body.style.overflow = 'hidden';
     resetUpload();
-    switchUploadTab('upload');   // always open on Upload tab
-    loadUploadHistory();         // pre-load so the badge count is fresh
+    switchUploadTab('upload');
+    loadUploadHistory();
 }
 
 function closeUpload() {
@@ -2993,6 +3037,11 @@ function resetUpload() {
     document.getElementById('pf').style.width = '0';
     document.getElementById('fi2').value = '';
     selectedFile = null;
+    _previewChecked = false;
+    var panel = document.getElementById('upPreviewPanel');
+    if (panel) panel.style.display = 'none';
+    var btn = document.getElementById('upMainBtn');
+    if (btn) { btn.textContent = '📤 Upload file'; btn.onclick = performUpload; btn.disabled = false; }
 }
 
 // ── Upload modal tab switching ──
@@ -3200,13 +3249,83 @@ function uploadWithProgress(url, formData, onProgress) {
     });
 }
 
-function performUpload() {
-    if (!selectedFile) {
-        showToast('⚠️ Select a file first');
-        return;
-    }
+var _previewChecked = false; // true once preview has passed
 
-    confirmImport();
+function performUpload() {
+    if (!selectedFile) { showToast('⚠️ Select a file first'); return; }
+
+    // If preview already approved, go straight to import
+    if (_previewChecked) { confirmImport(); return; }
+
+    var btn = document.getElementById('upMainBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Checking file…'; }
+
+    var formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('preview', '1');
+
+    fetch('api/upload.php', { method: 'POST', body: formData, credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (!res.success) {
+                showToast('⚠️ ' + (res.message || 'Preview failed'));
+                if (btn) { btn.disabled = false; btn.textContent = '📤 Upload file'; }
+                return;
+            }
+            var c = res.counts || {};
+            var dups = res.duplicate_items || [];
+            var missing = res.rows_with_missing_required || [];
+            var allDup = c.new_courses === 0 && c.existing_courses > 0;
+
+            // Populate stats
+            document.getElementById('upPrevProviders').textContent = c.unique_providers || 0;
+            document.getElementById('upPrevTrainers').textContent  = c.unique_trainers  || 0;
+            document.getElementById('upPrevTotal').textContent     = c.total_rows       || 0;
+            document.getElementById('upPrevNew').textContent       = c.new_courses      != null ? c.new_courses : '—';
+            document.getElementById('upPrevExisting').textContent  = c.existing_courses || 0;
+
+            // Duplicate warning
+            var dupWarn = document.getElementById('upPrevDupWarn');
+            if (dups.length) {
+                var dupList = dups.slice(0, 5).map(function(n) { return '• ' + n; }).join('\n');
+                var more = dups.length > 5 ? '\n+ ' + (dups.length - 5) + ' more…' : '';
+                dupWarn.style.display = '';
+                dupWarn.innerHTML = '<strong>⚠️ ' + dups.length + ' course' + (dups.length > 1 ? 's' : '') + ' already exist in the database and will be skipped:</strong><br>'
+                    + dups.slice(0, 5).map(function(n) { return '· ' + escHtml(n); }).join('<br>')
+                    + (dups.length > 5 ? '<br><em>+ ' + (dups.length - 5) + ' more…</em>' : '');
+            } else {
+                dupWarn.style.display = 'none';
+            }
+
+            // Missing rows warning
+            var missWarn = document.getElementById('upPrevMissWarn');
+            if (missing.length) {
+                missWarn.style.display = '';
+                missWarn.textContent = '⚠️ ' + missing.length + ' row(s) missing required fields (rows: ' + missing.slice(0, 10).join(', ') + (missing.length > 10 ? '…' : '') + ')';
+            } else {
+                missWarn.style.display = 'none';
+            }
+
+            document.getElementById('upPreviewPanel').style.display = '';
+
+            // Update button
+            if (btn) {
+                btn.disabled = false;
+                if (allDup) {
+                    // All courses already exist — block import
+                    btn.textContent = '⛔ All courses already exist';
+                    btn.disabled = true;
+                } else {
+                    _previewChecked = true;
+                    btn.textContent = dups.length ? '⚠️ Proceed anyway →' : '✓ Confirm upload →';
+                    btn.onclick = confirmImport;
+                }
+            }
+        })
+        .catch(function(err) {
+            showToast('⚠️ Preview check failed');
+            if (btn) { btn.disabled = false; btn.textContent = '📤 Upload file'; }
+        });
 }
 
 

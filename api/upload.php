@@ -111,31 +111,82 @@ try {
     if ($isPreview) {
         $sample = array_slice($data, 0, 10);
 
-        // counts
+        // Build unique sets from file
         $uniqueProviders = [];
-        $uniqueTrainers = [];
-        $uniqueCourses = [];
+        $uniqueTrainers  = [];
+        $uniqueItemKeys  = []; // "TP_Name|Trainer_Name|Item_Name" → true
         $rowsWithMissing = [];
+
         foreach ($data as $i => $row) {
-            if (!empty($row['TP_Name'])) $uniqueProviders[$row['TP_Name']] = true;
+            if (!empty($row['TP_Name']))      $uniqueProviders[$row['TP_Name']] = true;
             if (!empty($row['Trainer_Name'])) $uniqueTrainers[$row['Trainer_Name']] = true;
-            if (!empty($row['Item_Name'])) $uniqueCourses[$row['Item_Name']] = true;
+            if (!empty($row['Item_Name']) && !empty($row['TP_Name']) && !empty($row['Trainer_Name'])) {
+                $uniqueItemKeys[$row['TP_Name'] . '|' . $row['Trainer_Name'] . '|' . $row['Item_Name']] = true;
+            }
             if (empty($row['TP_Name']) || empty($row['Trainer_Name'])) {
-                $rowsWithMissing[] = $i + 2; // +2 to account header and 1-based user view
+                $rowsWithMissing[] = $i + 2;
             }
         }
+
+        // Check how many of those (TP, Trainer, Item) triplets already exist in the DB
+        $existingCourseCount = 0;
+        $duplicateItems = [];
+        if (!empty($uniqueItemKeys) && isset($pdo) && $pdo !== null) {
+            // Fetch provider name → ID map
+            $tpNames = array_keys($uniqueProviders);
+            $tpPh    = implode(',', array_fill(0, count($tpNames), '?'));
+            $tpStmt  = $pdo->prepare("SELECT TP_ID, TP_Name FROM TrainingProvider WHERE TP_Name IN ($tpPh)");
+            $tpStmt->execute($tpNames);
+            $tpMap = [];
+            foreach ($tpStmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                $tpMap[trim($r['TP_Name'] ?? $r['tp_name'] ?? '')] = (int)($r['TP_ID'] ?? $r['tp_id'] ?? 0);
+            }
+
+            // Fetch trainer name → ID map
+            $trNames = array_keys($uniqueTrainers);
+            $trPh    = implode(',', array_fill(0, count($trNames), '?'));
+            $trStmt  = $pdo->prepare("SELECT Trainer_ID, Trainer_Name FROM Trainer WHERE Trainer_Name IN ($trPh)");
+            $trStmt->execute($trNames);
+            $trMap = [];
+            foreach ($trStmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                $trMap[trim($r['Trainer_Name'] ?? $r['trainer_name'] ?? '')] = (int)($r['Trainer_ID'] ?? $r['trainer_id'] ?? 0);
+            }
+
+            // For each unique item key, check if it exists
+            foreach (array_keys($uniqueItemKeys) as $key) {
+                [$tpName, $trName, $itemName] = explode('|', $key, 3);
+                $tpId = $tpMap[$tpName] ?? null;
+                $trId = $trMap[$trName] ?? null;
+                if ($tpId && $trId) {
+                    $chkStmt = $pdo->prepare(
+                        "SELECT Item_ID FROM Item WHERE TP_ID = ? AND Trainer_ID = ? AND Item_Name = ? LIMIT 1"
+                    );
+                    $chkStmt->execute([$tpId, $trId, $itemName]);
+                    if ($chkStmt->fetchColumn()) {
+                        $existingCourseCount++;
+                        $duplicateItems[] = $itemName;
+                    }
+                }
+            }
+        }
+
+        $totalCourses = count($uniqueItemKeys);
+        $newCourses   = $totalCourses - $existingCourseCount;
 
         echo json_encode([
             'success' => true,
             'preview' => true,
             'sample_rows' => $sample,
             'counts' => [
-                'unique_providers' => count($uniqueProviders),
-                'unique_trainers' => count($uniqueTrainers),
-                'unique_courses' => count($uniqueCourses),
-                'total_rows' => count($data)
+                'unique_providers'  => count($uniqueProviders),
+                'unique_trainers'   => count($uniqueTrainers),
+                'unique_courses'    => $totalCourses,
+                'new_courses'       => $newCourses,
+                'existing_courses'  => $existingCourseCount,
+                'total_rows'        => count($data),
             ],
-            'rows_with_missing_required' => $rowsWithMissing
+            'duplicate_items'              => array_values(array_unique($duplicateItems)),
+            'rows_with_missing_required'   => $rowsWithMissing,
         ]);
         exit;
     }
@@ -499,106 +550,47 @@ function fetchInsertedItemMap(PDO $pdo, array $itemRows) {
     $map = [];
 
     foreach (chunkRows($itemRows, 1000) as $chunk) {
-        // Build params for columns: TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue
-        $params = [];
+        $placeholders = '(' . implode(', ', array_fill(0, 5, '?')) . ')';
+        $valuesSql = implode(', ', array_fill(0, count($chunk), $placeholders));
+        $chunkKeys = [];
         foreach ($chunk as $row) {
-            foreach (array_slice($row, 1) as $value) {
-                $params[] = $value;
-            }
+            $chunkKeys[] = $row[0];
         }
-        $chunkKeys = array_column($chunk, 0); // original item key strings
 
         if ($driver === 'pgsql') {
-            // INSERT ON CONFLICT DO NOTHING RETURNING gives us the newly inserted rows.
-            // Rows that conflicted are NOT returned — we fetch those separately below.
-            $placeholders = implode(', ', array_fill(0, count($chunk),
-                '(' . implode(', ', array_fill(0, 5, '?')) . ')'));
-            $sql = "INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue)
-                    VALUES $placeholders
-                    ON CONFLICT (TP_ID, Trainer_ID, Item_Name) DO NOTHING
-                    RETURNING Item_ID, TP_ID, Trainer_ID, Item_Name";
+            $sql = 'INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES ' . $valuesSql . ' RETURNING Item_ID, TP_ID, Trainer_ID, Item_Name';
             $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
-
-            // Map newly inserted rows by (TP_ID|Trainer_ID|Item_Name)
-            $insertedByNaturalKey = [];
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $n = normalizeAssocRow($row);
-                $k = $n['TP_ID'] . '|' . $n['TRAINER_ID'] . '|' . $n['ITEM_NAME'];
-                $insertedByNaturalKey[$k] = (int)$n['ITEM_ID'];
-            }
-
-            // For any chunk items NOT in the returned set, fetch their existing IDs
-            $missing = [];
-            foreach ($chunk as $i => $row) {
-                $nk = $row[1] . '|' . $row[2] . '|' . $row[3]; // TP_ID|Trainer_ID|Item_Name
-                if (!isset($insertedByNaturalKey[$nk])) {
-                    $missing[] = ['key' => $chunkKeys[$i], 'tp' => $row[1], 'trainer' => $row[2], 'name' => $row[3]];
-                } else {
-                    $map[$chunkKeys[$i]] = $insertedByNaturalKey[$nk];
-                }
-            }
-
-            if (!empty($missing)) {
-                // Fetch existing Item IDs for the conflicts using OR conditions
-                $whereParts = [];
-                $whereParams = [];
-                foreach ($missing as $m) {
-                    $whereParts[] = '(TP_ID = ? AND Trainer_ID = ? AND Item_Name = ?)';
-                    $whereParams[] = $m['tp'];
-                    $whereParams[] = $m['trainer'];
-                    $whereParams[] = $m['name'];
-                }
-                $fetchSql = 'SELECT Item_ID, TP_ID, Trainer_ID, Item_Name FROM Item WHERE ' . implode(' OR ', $whereParts);
-                $fetchStmt = $pdo->prepare($fetchSql);
-                $fetchStmt->execute($whereParams);
-                $existingByNK = [];
-                while ($r = $fetchStmt->fetch(PDO::FETCH_ASSOC)) {
-                    $n = normalizeAssocRow($r);
-                    $k = $n['TP_ID'] . '|' . $n['TRAINER_ID'] . '|' . $n['ITEM_NAME'];
-                    $existingByNK[$k] = (int)$n['ITEM_ID'];
-                }
-                foreach ($missing as $m) {
-                    $nk = $m['tp'] . '|' . $m['trainer'] . '|' . $m['name'];
-                    if (isset($existingByNK[$nk])) {
-                        $map[$m['key']] = $existingByNK[$nk];
-                    }
-                }
-            }
-
-        } else {
-            // MySQL: INSERT IGNORE + lastInsertId approach
-            $placeholders = implode(', ', array_fill(0, count($chunk),
-                '(' . implode(', ', array_fill(0, 5, '?')) . ')'));
-            $sql = "INSERT IGNORE INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES $placeholders";
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
-            $firstId = (int)$pdo->lastInsertId();
-            $rowsInserted = (int)$stmt->rowCount();
-
-            // For rows where INSERT IGNORE silently skipped, fetch existing IDs
-            $whereParts = [];
-            $whereParams = [];
+            $params = [];
             foreach ($chunk as $row) {
-                $whereParts[] = '(TP_ID = ? AND Trainer_ID = ? AND Item_Name = ?)';
-                $whereParams[] = $row[1];
-                $whereParams[] = $row[2];
-                $whereParams[] = $row[3];
-            }
-            $fetchSql = 'SELECT Item_ID, TP_ID, Trainer_ID, Item_Name FROM Item WHERE ' . implode(' OR ', $whereParts);
-            $fetchStmt = $pdo->prepare($fetchSql);
-            $fetchStmt->execute($whereParams);
-            $existingByNK = [];
-            while ($r = $fetchStmt->fetch(PDO::FETCH_ASSOC)) {
-                $n = normalizeAssocRow($r);
-                $k = $n['TP_ID'] . '|' . $n['TRAINER_ID'] . '|' . $n['ITEM_NAME'];
-                $existingByNK[$k] = (int)$n['ITEM_ID'];
-            }
-            foreach ($chunk as $i => $row) {
-                $nk = $row[1] . '|' . $row[2] . '|' . $row[3];
-                if (isset($existingByNK[$nk])) {
-                    $map[$chunkKeys[$i]] = $existingByNK[$nk];
+                foreach (array_slice($row, 1) as $value) {
+                    $params[] = $value;
                 }
+            }
+            $stmt->execute($params);
+
+            $index = 0;
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $normalized = normalizeAssocRow($row);
+                $originalKey = $chunkKeys[$index] ?? null;
+                if ($originalKey !== null) {
+                    $map[$originalKey] = (int)$normalized['ITEM_ID'];
+                }
+                $index++;
+            }
+        } else {
+            $sql = 'INSERT INTO Item (TP_ID, Trainer_ID, Item_Name, Item_Category, Item_Venue) VALUES ' . $valuesSql;
+            $stmt = $pdo->prepare($sql);
+            $params = [];
+            foreach ($chunk as $row) {
+                foreach (array_slice($row, 1) as $value) {
+                    $params[] = $value;
+                }
+            }
+            $stmt->execute($params);
+
+            $firstId = (int)$pdo->lastInsertId();
+            foreach ($chunk as $index => $row) {
+                $map[$row[0]] = $firstId + $index;
             }
         }
     }
@@ -830,24 +822,7 @@ function processUploadData($data) {
     }
 
     $itemMap = fetchInsertedItemMap($pdo, array_values($itemInsertRows));
-    // Count only items that were actually newly inserted (didn't exist before).
-    // fetchInsertedItemMap returns IDs for both new and existing items;
-    // we detect new ones by comparing against pre-existing IDs.
-    $preExistingItemIds = [];
-    if (!empty($itemMap)) {
-        $allReturnedIds = array_values($itemMap);
-        foreach (array_chunk($allReturnedIds, 1000) as $idChunk) {
-            $ph = implode(',', array_fill(0, count($idChunk), '?'));
-            $chkStmt = $pdo->prepare("SELECT Item_ID FROM Item WHERE Item_ID IN ($ph) AND Upload_ID IS NOT NULL AND Upload_ID != 0");
-            $chkStmt->execute($idChunk);
-            while ($r = $chkStmt->fetch(PDO::FETCH_NUM)) {
-                $preExistingItemIds[(int)$r[0]] = true;
-            }
-        }
-    }
-    $courses_added = count(array_filter($itemMap, function($id) use ($preExistingItemIds) {
-        return !isset($preExistingItemIds[$id]);
-    }));
+    $courses_added = count($itemInsertRows);
 
     // Tag every Item created by this upload so it can be deleted when the upload is removed
     if (!empty($itemMap) && $upload_id > 0) {
@@ -967,7 +942,7 @@ function processUploadData($data) {
             'success' => false,
             'message' => !empty($errors)
                 ? ('No records were imported. First error: ' . $errors[0])
-                : 'No new records were imported — all data in this file already exists in the database. If this is unexpected, verify your file columns and values.'
+                : 'No records were imported. Please verify your file columns and values.'
         ];
     }
     
