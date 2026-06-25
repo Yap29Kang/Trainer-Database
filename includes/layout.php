@@ -252,14 +252,6 @@ if (isset($content_file) && is_file($content_file)) {
                     <span id="expCategoryLabel" class="dept-select-placeholder">-- Select a category --</span>
                 </button>
                 <input type="hidden" id="expCategorySel">
-                <div id="expCategoryMenu" class="trainer-flag-reason-menu" style="width:100%;max-height:220px;overflow-y:auto;display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:400;">
-                    <div style="padding:0.35rem 0.4rem 0.25rem;position:sticky;top:0;background:var(--card);z-index:1;">
-                        <input type="text" id="expCategorySearch" placeholder="Search categories…" oninput="filterExpCategories()"
-                            style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:0.3rem 0.6rem;font-family:'Calibri',sans-serif;font-size:0.82rem;background:var(--paper);outline:none;box-sizing:border-box;"
-                            onclick="event.stopPropagation()">
-                    </div>
-                    <div id="expCategoryItems"></div>
-                </div>
             </div>
             <div class="stm-actions">
                 <button class="stm-cancel" onclick="closeExpertiseModal()">Cancel</button>
@@ -2508,11 +2500,15 @@ function selectExpCategory(value) {
 function toggleExpDropdown() {
     const menu = document.getElementById('expCategoryMenu');
     const btn  = document.getElementById('expCategoryBtn');
-    if (!menu) return;
+    if (!menu || !btn) return;
     const isOpen = menu.style.display !== 'none';
     if (isOpen) {
         closeExpDropdown();
     } else {
+        const rect = btn.getBoundingClientRect();
+        menu.style.top   = (rect.bottom + 4) + 'px';
+        menu.style.left  = rect.left + 'px';
+        menu.style.width = rect.width + 'px';
         menu.style.display = 'block';
         btn.classList.add('open');
         setTimeout(() => document.getElementById('expCategorySearch')?.focus(), 50);
@@ -4417,5 +4413,14 @@ function submitEditComplaint(e) {
 }
 </script>
 
+<!-- AoE category dropdown — fixed position so it escapes modal overflow:hidden -->
+<div id="expCategoryMenu" class="trainer-flag-reason-menu" style="display:none;position:fixed;z-index:9999;max-height:220px;overflow-y:auto;min-width:200px;box-shadow:0 14px 30px rgba(7,31,51,.18);">
+    <div style="padding:0.35rem 0.4rem 0.25rem;position:sticky;top:0;background:var(--card);z-index:1;">
+        <input type="text" id="expCategorySearch" placeholder="Search categories…" oninput="filterExpCategories()"
+            style="width:100%;border:1.5px solid var(--border);border-radius:6px;padding:0.3rem 0.6rem;font-family:'Calibri',sans-serif;font-size:0.82rem;background:var(--paper);outline:none;box-sizing:border-box;"
+            onclick="event.stopPropagation()">
+    </div>
+    <div id="expCategoryItems"></div>
+</div>
 </body>
 </html>
