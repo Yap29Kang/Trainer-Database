@@ -503,10 +503,19 @@ if (isset($content_file) && is_file($content_file)) {
 
         <!-- Tab Content: History -->
         <div class="uob" id="upContent-history" style="display: none;">
-            <div id="uploadHistoryList" style="max-height: 280px; overflow-y: auto; margin-bottom: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; padding-right: 4px; min-height: 120px;">
+            <!-- Search + filter row -->
+            <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.65rem;">
+                <input type="text" id="upHistSearch" class="si" placeholder="Search filename…"
+                    style="flex:1;font-size:0.82rem;" oninput="renderUploadHistory()">
+                <div style="display:flex;gap:0.3rem;flex-shrink:0;" id="upHistFilterChips">
+                    <button type="button" class="comp-filter-chip active" data-val="all"   onclick="setUpHistFilter(this)">All</button>
+                    <button type="button" class="comp-filter-chip"        data-val="active"   onclick="setUpHistFilter(this)">Active</button>
+                    <button type="button" class="comp-filter-chip"        data-val="removed" onclick="setUpHistFilter(this)">Removed</button>
+                </div>
+            </div>
+            <div id="uploadHistoryList" style="max-height:260px;overflow-y:auto;margin-bottom:1.25rem;display:flex;flex-direction:column;gap:0.75rem;padding-right:4px;min-height:80px;">
                 <!-- History items populated dynamically -->
             </div>
-            
             <div class="ua" style="display: flex; gap: 0.5rem; margin-top: 1rem;">
                 <button class="ux" onclick="closeUpload()">Cancel</button>
                 <button class="uc" onclick="closeUpload()">✓ Done</button>
@@ -3001,12 +3010,19 @@ function switchUploadTab(tab) {
 }
 
 // ── Load and render upload history ──
-function loadUploadHistory() {
-    var list  = document.getElementById('uploadHistoryList');
-    var badge = document.getElementById('upHistBadge');
-    if (!list) return;
+var _uploadsCache = [];
 
+function loadUploadHistory() {
+    var list = document.getElementById('uploadHistoryList');
+    if (!list) return;
     list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-family:\'Calibri\',sans-serif;font-size:0.85rem;">Loading…</div>';
+
+    // Reset search + filter when opening history tab
+    var searchEl = document.getElementById('upHistSearch');
+    if (searchEl) searchEl.value = '';
+    document.querySelectorAll('#upHistFilterChips .comp-filter-chip').forEach(function(c) {
+        c.classList.toggle('active', c.dataset.val === 'all');
+    });
 
     fetch('api/get-uploads.php', { credentials: 'same-origin', cache: 'no-store' })
         .then(function(r) { return r.json(); })
@@ -3015,47 +3031,73 @@ function loadUploadHistory() {
                 list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--red);font-family:\'Calibri\',sans-serif;font-size:0.85rem;">Failed to load history.</div>';
                 return;
             }
-            var uploads = data.uploads || [];
-            if (badge) badge.textContent = uploads.length;
-
-            if (!uploads.length) {
-                list.innerHTML = '<div style="text-align:center;padding:2rem 1rem;color:var(--muted);font-family:\'Calibri\',sans-serif;font-size:0.85rem;">No uploads yet. Use the Upload tab to import data.</div>';
-                return;
-            }
-
-            list.innerHTML = uploads.map(function(u) {
-                var date = '—';
-                if (u.Upload_Date) {
-                    try { date = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(u.Upload_Date)); } catch(e) {}
-                }
-                var isRemoved = u.UI_Status === 'Removed';
-                var badgeStyle = isRemoved
-                    ? 'background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;'
-                    : 'background:#dcfce7;color:#16a34a;border:1px solid #86efac;';
-                var rowOpacity = isRemoved ? 'opacity:0.55;' : '';
-                var nameStyle = isRemoved
-                    ? 'font-family:\'Calibri\',sans-serif;font-weight:700;font-size:0.87rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;text-decoration:line-through;'
-                    : 'font-family:\'Calibri\',sans-serif;font-weight:700;font-size:0.87rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;';
-                var safeName = escHtml(u.Filename);
-                var filenameAttr = safeName.replace(/"/g, '&quot;');
-                return '<div class="upload-hist-item" style="' + rowOpacity + '">' +
-                    '<div style="display:flex;align-items:center;gap:0.65rem;min-width:0;">' +
-                        '<span style="font-size:1.35rem;flex-shrink:0;">&#128202;</span>' +
-                        '<div style="min-width:0;">' +
-                            '<div style="' + nameStyle + '" title="' + filenameAttr + '">' + safeName + '</div>' +
-                            '<div style="font-size:0.73rem;color:var(--muted);font-family:\'Calibri\',sans-serif;">' + (isRemoved ? '0' : u.Record_Count.toLocaleString()) + ' records · ' + date + '</div>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">' +
-                        '<span style="' + badgeStyle + 'border-radius:10px;padding:2px 8px;font-size:0.72rem;font-weight:700;font-family:\'Calibri\',sans-serif;">' + escHtml(u.UI_Status) + '</span>' +
-                        (!isRemoved ? '<button class="upload-hist-remove-btn" data-uid="' + u.Upload_ID + '" data-fname="' + filenameAttr + '" onclick="removeUpload(+this.dataset.uid, this.dataset.fname)">&#128465; Remove</button>' : '') +
-                    '</div>' +
-                '</div>';
-            }).join('');
+            _uploadsCache = data.uploads || [];
+            var badge = document.getElementById('upHistBadge');
+            if (badge) badge.textContent = _uploadsCache.length;
+            renderUploadHistory();
         })
         .catch(function() {
             list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--red);font-family:\'Calibri\',sans-serif;font-size:0.85rem;">Error loading history.</div>';
         });
+}
+
+function setUpHistFilter(el) {
+    document.querySelectorAll('#upHistFilterChips .comp-filter-chip').forEach(function(c) { c.classList.remove('active'); });
+    el.classList.add('active');
+    renderUploadHistory();
+}
+
+function renderUploadHistory() {
+    var list = document.getElementById('uploadHistoryList');
+    if (!list) return;
+
+    var term   = ((document.getElementById('upHistSearch') || {}).value || '').toLowerCase().trim();
+    var filter = (document.querySelector('#upHistFilterChips .comp-filter-chip.active') || {}).dataset || {};
+    var filterVal = filter.val || 'all';
+
+    var uploads = _uploadsCache.filter(function(u) {
+        if (term && u.Filename.toLowerCase().indexOf(term) === -1) return false;
+        if (filterVal === 'active'  && u.UI_Status !== 'Active')  return false;
+        if (filterVal === 'removed' && u.UI_Status !== 'Removed') return false;
+        return true;
+    });
+
+    if (!uploads.length) {
+        list.innerHTML = '<div style="text-align:center;padding:2rem 1rem;color:var(--muted);font-family:\'Calibri\',sans-serif;font-size:0.85rem;">' +
+            (term || filterVal !== 'all' ? 'No uploads match your search or filter.' : 'No uploads yet. Use the Upload tab to import data.') +
+            '</div>';
+        return;
+    }
+
+    list.innerHTML = uploads.map(function(u) {
+        var date = '—';
+        if (u.Upload_Date) {
+            try { date = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(u.Upload_Date)); } catch(e) {}
+        }
+        var isRemoved = u.UI_Status === 'Removed';
+        var badgeStyle = isRemoved
+            ? 'background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0;'
+            : 'background:#dcfce7;color:#16a34a;border:1px solid #86efac;';
+        var rowOpacity = isRemoved ? 'opacity:0.55;' : '';
+        var nameStyle = isRemoved
+            ? 'font-family:\'Calibri\',sans-serif;font-weight:700;font-size:0.87rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;text-decoration:line-through;'
+            : 'font-family:\'Calibri\',sans-serif;font-weight:700;font-size:0.87rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px;';
+        var safeName = escHtml(u.Filename);
+        var filenameAttr = safeName.replace(/"/g, '&quot;');
+        return '<div class="upload-hist-item" style="' + rowOpacity + '">' +
+            '<div style="display:flex;align-items:center;gap:0.65rem;min-width:0;">' +
+                '<span style="font-size:1.35rem;flex-shrink:0;">&#128202;</span>' +
+                '<div style="min-width:0;">' +
+                    '<div style="' + nameStyle + '" title="' + filenameAttr + '">' + safeName + '</div>' +
+                    '<div style="font-size:0.73rem;color:var(--muted);font-family:\'Calibri\',sans-serif;">' + (isRemoved ? '0' : u.Record_Count.toLocaleString()) + ' records · ' + date + '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">' +
+                '<span style="' + badgeStyle + 'border-radius:10px;padding:2px 8px;font-size:0.72rem;font-weight:700;font-family:\'Calibri\',sans-serif;">' + escHtml(u.UI_Status) + '</span>' +
+                (!isRemoved ? '<button class="upload-hist-remove-btn" data-uid="' + u.Upload_ID + '" data-fname="' + filenameAttr + '" onclick="removeUpload(+this.dataset.uid, this.dataset.fname)">&#128465; Remove</button>' : '') +
+            '</div>' +
+        '</div>';
+    }).join('');
 }
 
 // ── Remove an upload and its enrollment data ──
