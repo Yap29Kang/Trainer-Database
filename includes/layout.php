@@ -3077,16 +3077,22 @@ function loadUploadHistory() {
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (!data.success) {
-                list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--red);font-family:\'Calibri\',sans-serif;font-size:0.85rem;">Failed to load history.</div>';
+                list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:#b91c1c;font-family:\'Calibri\',sans-serif;font-size:0.85rem;">Failed to load history: ' + escHtml(data.error || 'Unknown error') + '</div>';
                 return;
             }
             _uploadsCache = data.uploads || [];
             var badge = document.getElementById('upHistBadge');
             if (badge) badge.textContent = _uploadsCache.length;
-            renderUploadHistory();
+            // Separate try/catch so a render bug never masks a fetch success
+            try {
+                renderUploadHistory();
+            } catch(renderErr) {
+                console.error('renderUploadHistory error:', renderErr);
+                list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:#b91c1c;font-family:\'Calibri\',sans-serif;font-size:0.85rem;">Error rendering history. Check console.</div>';
+            }
         })
-        .catch(function() {
-            list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--red);font-family:\'Calibri\',sans-serif;font-size:0.85rem;">Error loading history.</div>';
+        .catch(function(err) {
+            list.innerHTML = '<div style="text-align:center;padding:1.5rem;color:#b91c1c;font-family:\'Calibri\',sans-serif;font-size:0.85rem;">Network error loading history.</div>';
         });
 }
 

@@ -132,40 +132,41 @@ try {
         $existingCourseCount = 0;
         $duplicateItems = [];
         if (!empty($uniqueItemKeys) && isset($pdo) && $pdo !== null) {
-            // Fetch provider name → ID map
             $tpNames = array_keys($uniqueProviders);
-            $tpPh    = implode(',', array_fill(0, count($tpNames), '?'));
-            $tpStmt  = $pdo->prepare("SELECT TP_ID, TP_Name FROM TrainingProvider WHERE TP_Name IN ($tpPh)");
-            $tpStmt->execute($tpNames);
-            $tpMap = [];
-            foreach ($tpStmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
-                $tpMap[trim($r['TP_Name'] ?? $r['tp_name'] ?? '')] = (int)($r['TP_ID'] ?? $r['tp_id'] ?? 0);
-            }
-
-            // Fetch trainer name → ID map
             $trNames = array_keys($uniqueTrainers);
-            $trPh    = implode(',', array_fill(0, count($trNames), '?'));
-            $trStmt  = $pdo->prepare("SELECT Trainer_ID, Trainer_Name FROM Trainer WHERE Trainer_Name IN ($trPh)");
-            $trStmt->execute($trNames);
-            $trMap = [];
-            foreach ($trStmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
-                $trMap[trim($r['Trainer_Name'] ?? $r['trainer_name'] ?? '')] = (int)($r['Trainer_ID'] ?? $r['trainer_id'] ?? 0);
+
+            // Single query: fetch all existing (TP_Name, Trainer_Name, Item_Name) combos
+            // for the providers and trainers seen in the file — O(1) round trips.
+            $tpPh = implode(',', array_fill(0, count($tpNames), '?'));
+            $trPh = implode(',', array_fill(0, count($trNames), '?'));
+
+            $bulkSql = "
+                SELECT tp.TP_Name, t.Trainer_Name, i.Item_Name
+                FROM Item i
+                JOIN TrainingProvider tp ON tp.TP_ID = i.TP_ID
+                JOIN Trainer t           ON t.Trainer_ID = i.Trainer_ID
+                WHERE tp.TP_Name IN ($tpPh)
+                  AND t.Trainer_Name IN ($trPh)
+            ";
+            $bulkStmt = $pdo->prepare($bulkSql);
+            $bulkStmt->execute(array_merge($tpNames, $trNames));
+
+            // Build a lookup set of "TP_Name|Trainer_Name|Item_Name" strings
+            $existingSet = [];
+            foreach ($bulkStmt->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                $norm = normalizeAssocRow($r);
+                $k = trim($norm['TP_NAME'] ?? '') . '|'
+                   . trim($norm['TRAINER_NAME'] ?? '') . '|'
+                   . trim($norm['ITEM_NAME'] ?? '');
+                $existingSet[$k] = true;
             }
 
-            // For each unique item key, check if it exists
+            // Compare file keys against the in-memory set — no extra DB calls
             foreach (array_keys($uniqueItemKeys) as $key) {
-                [$tpName, $trName, $itemName] = explode('|', $key, 3);
-                $tpId = $tpMap[$tpName] ?? null;
-                $trId = $trMap[$trName] ?? null;
-                if ($tpId && $trId) {
-                    $chkStmt = $pdo->prepare(
-                        "SELECT Item_ID FROM Item WHERE TP_ID = ? AND Trainer_ID = ? AND Item_Name = ? LIMIT 1"
-                    );
-                    $chkStmt->execute([$tpId, $trId, $itemName]);
-                    if ($chkStmt->fetchColumn()) {
-                        $existingCourseCount++;
-                        $duplicateItems[] = $itemName;
-                    }
+                if (isset($existingSet[$key])) {
+                    $existingCourseCount++;
+                    [, , $itemName] = explode('|', $key, 3);
+                    $duplicateItems[] = $itemName;
                 }
             }
         }
