@@ -106,10 +106,10 @@ CREATE INDEX IF NOT EXISTS idx_assignment_trainer_id ON Assignment (Trainer_ID);
 
 CREATE TABLE IF NOT EXISTS Participant (
     Participant_ID SERIAL PRIMARY KEY,
-    Participant_User_ID VARCHAR(100) NOT NULL UNIQUE,
     Participant_Token VARCHAR(64) NOT NULL UNIQUE,
     Participant_Name_Hash CHAR(64) NOT NULL UNIQUE,
     Participant_Name_Encrypted TEXT NOT NULL,
+    Participant_User_ID VARCHAR(100),
     Participant_Department VARCHAR(255)
 );
 
@@ -163,13 +163,6 @@ CREATE INDEX IF NOT EXISTS idx_item_tp_id ON Item (TP_ID);
 CREATE INDEX IF NOT EXISTS idx_item_trainer_id ON Item (Trainer_ID);
 CREATE INDEX IF NOT EXISTS idx_item_tp_trainer ON Item (TP_ID, Trainer_ID);
 CREATE INDEX IF NOT EXISTS idx_item_category ON Item (Item_Category);
-
--- Prevent duplicate course rows for the same provider + trainer + course name.
--- Required by upload.php's ON CONFLICT (TP_ID, Trainer_ID, Item_Name) DO NOTHING upsert.
--- Clean up any existing duplicates manually before running this on an existing database.
-ALTER TABLE Item
-    ADD CONSTRAINT uq_item_tp_trainer_name
-    UNIQUE (TP_ID, Trainer_ID, Item_Name);
 
 CREATE TABLE IF NOT EXISTS Enrollment (
     Enrollment_ID SERIAL PRIMARY KEY,
@@ -256,3 +249,7 @@ CREATE TABLE IF NOT EXISTS complaint_audit_log (
  
 CREATE INDEX IF NOT EXISTS idx_complaint_audit_case_id
     ON complaint_audit_log (case_id, changed_at DESC);
+-- Migration: add User_ID column to existing Participant tables
+-- Safe to run on a fresh DB (column will be created by the CREATE TABLE above).
+-- Only needed for existing databases where Participant already exists without this column.
+ALTER TABLE Participant ADD COLUMN IF NOT EXISTS Participant_User_ID VARCHAR(100);
