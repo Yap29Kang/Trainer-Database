@@ -106,6 +106,7 @@ CREATE INDEX IF NOT EXISTS idx_assignment_trainer_id ON Assignment (Trainer_ID);
 
 CREATE TABLE IF NOT EXISTS Participant (
     Participant_ID SERIAL PRIMARY KEY,
+    Participant_User_ID VARCHAR(100) NOT NULL UNIQUE,
     Participant_Token VARCHAR(64) NOT NULL UNIQUE,
     Participant_Name_Hash CHAR(64) NOT NULL UNIQUE,
     Participant_Name_Encrypted TEXT NOT NULL,

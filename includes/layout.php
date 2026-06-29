@@ -283,7 +283,7 @@ if (isset($content_file) && is_file($content_file)) {
         <div class="pob">
             <table class="ptbl">
                 <thead>
-                    <tr><th>#</th><th>Name</th><th>Department</th><th>Courses</th></tr>
+                    <tr><th>#</th><th>User ID</th><th>Name</th><th>Department</th><th>Courses</th></tr>
                 </thead>
                 <tbody id="partBd"></tbody>
             </table>
@@ -2754,7 +2754,7 @@ function openParticipantsModal(itemId, providerId) {
         .catch(err => {
             console.error(err);
             document.getElementById('partS').textContent = 'Unable to load participants';
-            document.getElementById('partBd').innerHTML = '<tr><td colspan="4" style="text-align:center;padding:1.4rem;color:var(--muted)">Could not load participant list</td></tr>';
+            document.getElementById('partBd').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:1.4rem;color:var(--muted)">Could not load participant list</td></tr>';
             showToast('⚠️ Could not load participant list');
         });
 }
@@ -2828,6 +2828,7 @@ function buildParticipantGroups(rows) {
             groups.set(key, {
                 key,
                 Participant_Name: row.Participant_Name || '—',
+                Participant_User_ID: row.Participant_User_ID || '',
                 Participant_Department: row.Participant_Department || '—',
                 courses: []
             });
@@ -2874,6 +2875,7 @@ function renderParticipants() {
     const filtered = grouped.filter(group => {
         if (!participantSearch) return true;
         const matchesIdentity = String(group.Participant_Name || '').toLowerCase().includes(participantSearch)
+            || String(group.Participant_User_ID || '').toLowerCase().includes(participantSearch)
             || String(group.Participant_Department || '').toLowerCase().includes(participantSearch);
         if (matchesIdentity) return true;
 
@@ -2901,13 +2903,14 @@ function renderParticipants() {
         return `
         <tr class="part-row-summary ${isExpanded ? 'expanded' : ''}" onclick="toggleParticipantExpand(decodeURIComponent('${encodeURIComponent(group.key)}'))">
             <td>${start + idx + 1}</td>
+            <td><span style="font-family:'Calibri',sans-serif;font-size:0.82rem;color:var(--muted);">${escapeHtml(String(group.Participant_User_ID || '—'))}</span></td>
             <td><strong>${escapeHtml(String(group.Participant_Name || '—'))}</strong><span class="part-expand">${isExpanded ? '▾' : '▸'}</span></td>
             <td><span class="dtag">${escapeHtml(String(group.Participant_Department || '—'))}</span></td>
             <td><span class="part-course-count">${group.course_count} ${group.course_count === 1 ? 'course' : 'courses'}</span></td>
         </tr>
-        ${isExpanded ? `<tr class="part-row-detail"><td colspan="4"><div class="part-detail-wrap"><div class="part-detail-head"><span>Course</span><span>Completion Year</span></div>${details}</div></td></tr>` : ''}
+        ${isExpanded ? `<tr class="part-row-detail"><td colspan="5"><div class="part-detail-wrap"><div class="part-detail-head"><span>Course</span><span>Completion Year</span></div>${details}</div></td></tr>` : ''}
         `;
-    }).join('') : `<tr><td colspan="4" style="text-align:center;padding:1.4rem;color:var(--muted)">No participants found</td></tr>`;
+    }).join('') : `<tr><td colspan="5" style="text-align:center;padding:1.4rem;color:var(--muted)">No participants found</td></tr>`;
 
     info.textContent = filtered.length ? `Showing ${start + 1}-${Math.min(start + pageSize, filtered.length)} of ${filtered.length}` : 'Showing 0 of 0';
     pager.innerHTML = '';

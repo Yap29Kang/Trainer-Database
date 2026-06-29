@@ -49,6 +49,7 @@ try {
                 p.Participant_ID,
                 p.Participant_Token,
                 p.Participant_Name_Encrypted,
+                p.Participant_User_ID,
                 p.Participant_Department,
                 i.Item_Name AS Course_Name,
                 e.Completion_Date AS Completion_Date,
@@ -71,6 +72,7 @@ try {
                 p.Participant_ID,
                 p.Participant_Token,
                 p.Participant_Name_Encrypted,
+                p.Participant_User_ID,
                 p.Participant_Department,
                 i.Item_Name AS Course_Name,
                 e.Completion_Date AS Completion_Date,
@@ -89,6 +91,7 @@ try {
     foreach (normalizeAssocRows($stmt->fetchAll(PDO::FETCH_ASSOC)) as $row) {
         $decryptedName = decryptParticipantName($row['Participant_Name_Encrypted'] ?? '');
         $row['Participant_Name'] = $decryptedName ?: ($row['Participant_Token'] ?? 'Participant');
+        $row['Participant_User_ID'] = $row['Participant_User_ID'] ?? '';
         unset($row['Participant_Name_Encrypted']);
         $participants[] = $row;
     }

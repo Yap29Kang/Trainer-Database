@@ -662,6 +662,7 @@ function processUploadData($data) {
     $items_map = [];
     $participant_inputs = [];
     $participant_departments = [];
+    $participant_user_ids    = [];
     $assignment_pairs = [];
     
     foreach ($data as $idx => $row) {
@@ -714,6 +715,11 @@ function processUploadData($data) {
             $department = trim((string)($row['Participant_Department'] ?? ''));
             if ($department !== '') {
                 $participant_departments[$participantHash] = $department;
+            }
+
+            $userId = trim((string)($row['Participant_User_ID'] ?? ''));
+            if ($userId !== '') {
+                $participant_user_ids[$participantHash] = $userId;
             }
         }
     }
@@ -845,12 +851,13 @@ function processUploadData($data) {
                 $participant['token'],
                 $participant['hash'],
                 $participant['encrypted'],
+                $participant_user_ids[$hash] ?? null,
                 $participant_departments[$hash] ?? null,
             ];
         }
     }
     if (!empty($missingParticipants)) {
-        bulkInsertRows($pdo, 'Participant', ['Participant_Token', 'Participant_Name_Hash', 'Participant_Name_Encrypted', 'Participant_Department'], $missingParticipants);
+        bulkInsertRows($pdo, 'Participant', ['Participant_Token', 'Participant_Name_Hash', 'Participant_Name_Encrypted', 'Participant_User_ID', 'Participant_Department'], $missingParticipants);
         $participants_added = count($missingParticipants);
     }
 
@@ -904,6 +911,53 @@ function processUploadData($data) {
                 $deptStmt = $pdo->prepare('UPDATE Participant SET Participant_Department = ? WHERE Participant_ID = ?');
                 foreach ($updateData as $row) {
                     $deptStmt->execute([$row[1], $row[0]]);
+                }
+            }
+        }
+    }
+
+    // Apply User_ID updates for existing participants
+    if (!empty($participant_user_ids)) {
+        $existingUserIds = [];
+        foreach (array_chunk(array_values($participant_ids), 1000) as $chunk) {
+            $placeholders = implode(',', array_fill(0, count($chunk), '?'));
+            $stmt = $pdo->prepare("SELECT Participant_ID, Participant_User_ID FROM Participant WHERE Participant_ID IN ($placeholders)");
+            $stmt->execute($chunk);
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $rowNorm = array_change_key_case($row, CASE_UPPER);
+                $pid = (int)($rowNorm['PARTICIPANT_ID'] ?? 0);
+                if ($pid > 0) {
+                    $existingUserIds[$pid] = $rowNorm['PARTICIPANT_USER_ID'] ?? null;
+                }
+            }
+        }
+
+        $uidUpdateData = [];
+        foreach ($participant_user_ids as $hash => $userId) {
+            $participantId = $participant_ids[$hash] ?? null;
+            if ($participantId !== null && ($existingUserIds[(int)$participantId] ?? null) !== $userId) {
+                $uidUpdateData[] = [$participantId, $userId];
+            }
+        }
+
+        if (!empty($uidUpdateData)) {
+            $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+            if ($driver === 'pgsql') {
+                foreach (array_chunk($uidUpdateData, 1000) as $chunk) {
+                    $values = [];
+                    $params = [];
+                    foreach ($chunk as $row) {
+                        $values[] = '(CAST(? AS INTEGER), CAST(? AS VARCHAR))';
+                        $params[] = $row[0];
+                        $params[] = $row[1];
+                    }
+                    $sql = 'UPDATE Participant AS p SET Participant_User_ID = v.uid FROM (VALUES ' . implode(', ', $values) . ') AS v(id, uid) WHERE p.Participant_ID = v.id';
+                    $pdo->prepare($sql)->execute($params);
+                }
+            } else {
+                $uidStmt = $pdo->prepare('UPDATE Participant SET Participant_User_ID = ? WHERE Participant_ID = ?');
+                foreach ($uidUpdateData as $row) {
+                    $uidStmt->execute([$row[1], $row[0]]);
                 }
             }
         }

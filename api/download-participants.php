@@ -44,6 +44,7 @@ try {
                 p.Participant_ID,
                 p.Participant_Token,
                 p.Participant_Name_Encrypted,
+                p.Participant_User_ID,
                 p.Participant_Department,
                 i.Item_Name AS Course_Name,
                 EXTRACT(YEAR FROM e.Completion_Date) AS Completion_Year
@@ -61,6 +62,7 @@ try {
                 p.Participant_ID,
                 p.Participant_Token,
                 p.Participant_Name_Encrypted,
+                p.Participant_User_ID,
                 p.Participant_Department,
                 i.Item_Name AS Course_Name,
                 EXTRACT(YEAR FROM e.Completion_Date) AS Completion_Year
@@ -88,23 +90,24 @@ try {
     $sheet->setTitle('Participants');
 
     // Header
-    $sheet->fromArray([['No.', 'Name', 'Department', 'Course', 'Completion Year']], null, 'A1');
-    $sheet->getStyle('A1:E1')->getFont()->setBold(true);
-    $sheet->getStyle('A1:E1')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('D9EAF7');
+    $sheet->fromArray([['No.', 'User ID', 'Name', 'Department', 'Course', 'Completion Year']], null, 'A1');
+    $sheet->getStyle('A1:F1')->getFont()->setBold(true);
+    $sheet->getStyle('A1:F1')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)->getStartColor()->setRGB('D9EAF7');
 
     $rowNum = 2;
     $counter = 1;
     foreach ($rows as $r) {
         $sheet->setCellValueExplicit('A' . $rowNum, $counter, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
-        $sheet->setCellValueExplicit('B' . $rowNum, (string)($r['Participant_Name'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-        $sheet->setCellValueExplicit('C' . $rowNum, (string)($r['Participant_Department'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-        $sheet->setCellValueExplicit('D' . $rowNum, (string)($r['Course_Name'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-        $sheet->setCellValueExplicit('E' . $rowNum, (string)($r['Completion_Year'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        $sheet->setCellValueExplicit('B' . $rowNum, (string)($r['Participant_User_ID'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        $sheet->setCellValueExplicit('C' . $rowNum, (string)($r['Participant_Name'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        $sheet->setCellValueExplicit('D' . $rowNum, (string)($r['Participant_Department'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        $sheet->setCellValueExplicit('E' . $rowNum, (string)($r['Course_Name'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+        $sheet->setCellValueExplicit('F' . $rowNum, (string)($r['Completion_Year'] ?? ''), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
         $rowNum++;
         $counter++;
     }
 
-    foreach (range('A', 'E') as $col) {
+    foreach (range('A', 'F') as $col) {
         $sheet->getColumnDimension($col)->setAutoSize(true);
     }
 
