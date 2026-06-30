@@ -736,8 +736,11 @@ if (isset($content_file) && is_file($content_file)) {
                             </button>
                             <input type="hidden" id="compLearnOps" required>
                             <div id="compLearnOpsMenu" class="trainer-flag-reason-menu" style="width:100%;">
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Mohammed Sabri')">Mohammed Sabri</button>
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Felicia Seka')">Felicia Seka</button>
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Sharifah Patemah')">Sharifah Patemah</button>
                                 <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Nur Suzyla')">Nur Suzyla</button>
-                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Felicia')">Felicia</button>
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Rina')">Rina</button>
                             </div>
                         </div>
                     </div>
