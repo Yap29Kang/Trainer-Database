@@ -3055,6 +3055,19 @@ function openUpload() {
 }
 
 function closeUpload() {
+    if (_isUploading) {
+        if (!confirm('A file is currently being uploaded. Closing now may interrupt the process and the upload could fail. Are you sure you want to close?')) {
+            return;
+        }
+    } else if (_previewChecked) {
+        if (!confirm('You already checked this file. Closing now means you will need to check it again before uploading. Are you sure you want to close?')) {
+            return;
+        }
+    }
+    closeUploadForce();
+}
+
+function closeUploadForce() {
     document.getElementById('upOv').classList.remove('open');
     document.body.style.overflow = '';
 }
@@ -3066,6 +3079,7 @@ function resetUpload() {
     document.getElementById('fi2').value = '';
     selectedFile = null;
     _previewChecked = false;
+    _isUploading = false;
     var panel = document.getElementById('upPreviewPanel');
     if (panel) panel.style.display = 'none';
     var btn = document.getElementById('upMainBtn');
@@ -3284,6 +3298,7 @@ function uploadWithProgress(url, formData, onProgress) {
 }
 
 var _previewChecked = false; // true once preview has passed
+var _isUploading = false;    // true while the final import request is in flight
 
 var UPLOAD_PASSWORD = 'database2026';
 
@@ -3407,6 +3422,8 @@ function confirmImport() {
     fill.style.width = '0';
     lbl.textContent = 'Uploading…';
 
+    _isUploading = true;
+
     const uploadStartTime = performance.now();
     uploadWithProgress('api/upload.php', formData, function(e) {
         if (e.lengthComputable) {
@@ -3421,12 +3438,13 @@ function confirmImport() {
     })
     .then(parseUploadResponse)
     .then(result => {
+        _isUploading = false;
         if (result.success) {
             const timeTaken = ((performance.now() - uploadStartTime) / 1000).toFixed(1);
             fill.style.width = '100%';
             lbl.textContent = 'Processing complete ✓';
             setTimeout(() => {
-                closeUpload();
+                closeUploadForce();
                 showSuccess(result.stats || {}, timeTaken, selectedFile);
                 resetUpload();
             }, 600);
@@ -3436,6 +3454,7 @@ function confirmImport() {
         }
     })
     .catch(err => {
+        _isUploading = false;
         showToast('❌ Upload error: ' + (err && err.message ? err.message : String(err || 'Unknown error')));
         prog.style.display = 'none';
     });
