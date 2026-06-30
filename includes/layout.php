@@ -460,7 +460,7 @@ if (isset($content_file) && is_file($content_file)) {
                 This action will modify the database. Please enter the database password to continue.
             </p>
             <label class="stm-label">Password</label>
-            <input type="password" id="upPwInput" class="si" style="width:100%;margin-top:0.3rem;" placeholder="Enter password"
+            <input type="password" id="upPwInput" class="si" style="width:100%;margin-top:0.3rem;padding-left:0.7rem;" placeholder="Enter password"
                 onkeydown="if(event.key==='Enter'){event.preventDefault();confirmUploadPassword();}">
             <div id="upPwError" style="display:none;color:#b91c1c;font-size:0.78rem;font-family:'Calibri',sans-serif;margin-top:0.5rem;">⚠️ Incorrect password. Please try again.</div>
             <div style="display:flex;gap:0.5rem;margin-top:1.2rem;">
