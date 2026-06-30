@@ -472,6 +472,25 @@ if (isset($content_file) && is_file($content_file)) {
 </div>
 
 <!-- ════════════════════════════════════
+     UPLOAD CLOSE-CONFIRMATION MODAL
+════════════════════════════ -->
+<div class="uov" id="upCloseConfirmOv" style="z-index:1150;" onclick="if(event.target===this)cancelCloseUpload()">
+    <div class="uom" style="max-width:400px;width:100%;">
+        <div class="uoh" style="background:var(--blue);color:#fff;padding:1rem 1.45rem;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:0.5rem;font-weight:700;font-family:'Calibri',sans-serif;">⚠️ Close Upload?</div>
+            <button class="uoc" onclick="cancelCloseUpload()" style="background:rgba(255,255,255,0.15);border:none;border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;">✕</button>
+        </div>
+        <div style="padding:1.35rem 1.45rem;">
+            <p id="upCloseConfirmMsg" style="font-family:'Calibri',sans-serif;font-size:0.85rem;color:var(--ink);margin:0;line-height:1.5;"></p>
+            <div style="display:flex;gap:0.5rem;margin-top:1.3rem;">
+                <button class="ux" style="flex:1;" onclick="cancelCloseUpload()">Keep editing</button>
+                <button class="uc" style="flex:1;background:#dc2626;" onclick="confirmCloseUpload()">Close anyway</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════
      UPLOAD MODAL (Admin Only)
      (included always so client-side toggles work even if session not yet persisted)
 ════════════════════════════ -->
@@ -3056,14 +3075,27 @@ function openUpload() {
 
 function closeUpload() {
     if (_isUploading) {
-        if (!confirm('A file is currently being uploaded. Closing now may interrupt the process and the upload could fail. Are you sure you want to close?')) {
-            return;
-        }
-    } else if (_previewChecked) {
-        if (!confirm('You already checked this file. Closing now means you will need to check it again before uploading. Are you sure you want to close?')) {
-            return;
-        }
+        showCloseUploadConfirm('A file is currently being uploaded. Closing now may interrupt the process and the upload could fail. Are you sure you want to close?');
+        return;
     }
+    if (_previewChecked) {
+        showCloseUploadConfirm('You already checked this file. Closing now means you will need to check it again before uploading. Are you sure you want to close?');
+        return;
+    }
+    closeUploadForce();
+}
+
+function showCloseUploadConfirm(message) {
+    document.getElementById('upCloseConfirmMsg').textContent = message;
+    document.getElementById('upCloseConfirmOv').classList.add('open');
+}
+
+function cancelCloseUpload() {
+    document.getElementById('upCloseConfirmOv').classList.remove('open');
+}
+
+function confirmCloseUpload() {
+    document.getElementById('upCloseConfirmOv').classList.remove('open');
     closeUploadForce();
 }
 
