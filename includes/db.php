@@ -101,6 +101,7 @@ function normalizeAssocRow($row) {
         'PARTICIPANT_NAME_HASH' => 'Participant_Name_Hash',
         'PARTICIPANT_NAME_ENCRYPTED' => 'Participant_Name_Encrypted',
         'PARTICIPANT_DEPARTMENT' => 'Participant_Department',
+        'PARTICIPANT_USER_ID' => 'Participant_User_ID',
         'COMPLETION_DATE' => 'Completion_Date',
         'COMPLETION_YEAR' => 'Completion_Year',
         'COURSE_NAME' => 'Course_Name',
