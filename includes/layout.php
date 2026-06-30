@@ -447,6 +447,31 @@ if (isset($content_file) && is_file($content_file)) {
 </div>
 
 <!-- ════════════════════════════════════
+     UPLOAD PASSWORD CONFIRM MODAL
+════════════════════════════ -->
+<div class="uov" id="upPwOv" style="z-index:1100;" onclick="if(event.target===this)closeUploadPwModal()">
+    <div class="uom" style="max-width:380px;width:100%;">
+        <div class="uoh" style="background:var(--blue);color:#fff;padding:1rem 1.45rem;border-radius:14px 14px 0 0;display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:0.5rem;font-weight:700;font-family:'Calibri',sans-serif;">🔒 Confirm Upload</div>
+            <button class="uoc" onclick="closeUploadPwModal()" style="background:rgba(255,255,255,0.15);border:none;border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;">✕</button>
+        </div>
+        <div style="padding:1.35rem 1.45rem;">
+            <p style="font-family:'Calibri',sans-serif;font-size:0.85rem;color:var(--muted);margin:0 0 0.9rem;line-height:1.45;">
+                This action will modify the database. Please enter the database password to continue.
+            </p>
+            <label class="stm-label">Password</label>
+            <input type="password" id="upPwInput" class="si" style="width:100%;margin-top:0.3rem;" placeholder="Enter password"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();confirmUploadPassword();}">
+            <div id="upPwError" style="display:none;color:#b91c1c;font-size:0.78rem;font-family:'Calibri',sans-serif;margin-top:0.5rem;">⚠️ Incorrect password. Please try again.</div>
+            <div style="display:flex;gap:0.5rem;margin-top:1.2rem;">
+                <button class="ux" style="flex:1;" onclick="closeUploadPwModal()">Cancel</button>
+                <button class="uc" style="flex:1;" onclick="confirmUploadPassword()">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════
      UPLOAD MODAL (Admin Only)
      (included always so client-side toggles work even if session not yet persisted)
 ════════════════════════════ -->
@@ -3260,12 +3285,40 @@ function uploadWithProgress(url, formData, onProgress) {
 
 var _previewChecked = false; // true once preview has passed
 
+var UPLOAD_PASSWORD = 'database2026';
+
 function performUpload() {
     if (!selectedFile) { showToast('⚠️ Select a file first'); return; }
 
-    // If preview already approved, go straight to import
+    // If preview already approved, password was already confirmed once — skip straight to import
     if (_previewChecked) { confirmImport(); return; }
 
+    // First time clicking Upload for this file: require the database password
+    document.getElementById('upPwInput').value = '';
+    document.getElementById('upPwError').style.display = 'none';
+    document.getElementById('upPwOv').classList.add('open');
+    setTimeout(function() { document.getElementById('upPwInput').focus(); }, 50);
+}
+
+function closeUploadPwModal() {
+    document.getElementById('upPwOv').classList.remove('open');
+}
+
+function confirmUploadPassword() {
+    var input = document.getElementById('upPwInput');
+    var errorEl = document.getElementById('upPwError');
+    if ((input.value || '').trim() !== UPLOAD_PASSWORD) {
+        errorEl.style.display = 'block';
+        input.value = '';
+        input.focus();
+        return;
+    }
+    errorEl.style.display = 'none';
+    document.getElementById('upPwOv').classList.remove('open');
+    runUploadPreviewCheck();
+}
+
+function runUploadPreviewCheck() {
     var btn = document.getElementById('upMainBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'Checking file…'; }
 
