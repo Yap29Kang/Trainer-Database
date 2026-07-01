@@ -712,11 +712,19 @@ if (isset($content_file) && is_file($content_file)) {
                     </div>
                     <div>
                         <label class="stm-label">Employee Name *</label>
-                        <input type="text" id="compEmpName" class="si" style="width:100%;margin-top:0.25rem" required>
+                        <div style="position:relative;margin-top:0.25rem;">
+                            <input type="text" id="compEmpName" class="si" style="width:100%" required
+                                autocomplete="off" oninput="searchParticipant('name', this.value, 'compEmpName', 'compEmpId', 'compEmpNameDd')">
+                            <div id="compEmpNameDd" class="trainer-flag-reason-menu" style="width:100%;max-height:200px;overflow-y:auto;display:none;position:absolute;z-index:200;"></div>
+                        </div>
                     </div>
                     <div>
                         <label class="stm-label">Employee ID *</label>
-                        <input type="text" id="compEmpId" class="si" style="width:100%;margin-top:0.25rem" required>
+                        <div style="position:relative;margin-top:0.25rem;">
+                            <input type="text" id="compEmpId" class="si" style="width:100%" required
+                                autocomplete="off" oninput="searchParticipant('id', this.value, 'compEmpName', 'compEmpId', 'compEmpIdDd')">
+                            <div id="compEmpIdDd" class="trainer-flag-reason-menu" style="width:100%;max-height:200px;overflow-y:auto;display:none;position:absolute;z-index:200;"></div>
+                        </div>
                     </div>
                     <div>
                         <label class="stm-label">Department *</label>
@@ -4166,6 +4174,76 @@ document.addEventListener('click', function(e) {
         closeExpDropdown();
     }
 });
+// ── Participant autocomplete for Employee Name / Employee ID ──
+var _participantSearchTimer = null;
+
+function searchParticipant(mode, query, nameId, idId, dropdownId) {
+    const dd = document.getElementById(dropdownId);
+    if (!dd) return;
+
+    // Close the other dropdown
+    const otherDdId = dropdownId === (nameId + 'Dd') ? (idId + 'Dd') : (nameId + 'Dd');
+    const otherDd = document.getElementById(otherDdId);
+    if (otherDd) { otherDd.style.display = 'none'; otherDd.innerHTML = ''; }
+
+    if (!query || query.length < 2) {
+        dd.style.display = 'none';
+        dd.innerHTML = '';
+        return;
+    }
+
+    clearTimeout(_participantSearchTimer);
+    _participantSearchTimer = setTimeout(function() {
+        dd.style.display = 'block';
+        dd.innerHTML = '<div style="padding:0.5rem 0.7rem;font-size:0.8rem;color:var(--muted);">Searching…</div>';
+
+        fetch('api/get-participant-search.php?mode=' + encodeURIComponent(mode) + '&q=' + encodeURIComponent(query), {
+            credentials: 'same-origin', cache: 'no-store'
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(res) {
+            if (!res.success || !res.data.length) {
+                dd.innerHTML = '<div style="padding:0.5rem 0.7rem;font-size:0.8rem;color:var(--muted);">No matches found</div>';
+                return;
+            }
+            dd.innerHTML = res.data.map(function(p) {
+                const safeName   = escapeHtml(p.name   || '');
+                const safeUserId = escapeHtml(p.user_id || '');
+                const label = mode === 'id'
+                    ? '<strong>' + safeUserId + '</strong> &mdash; ' + safeName
+                    : '<strong>' + safeName + '</strong>' + (safeUserId ? ' &mdash; <span style="color:var(--muted);font-size:0.78rem;">' + safeUserId + '</span>' : '');
+                return '<button type="button" class="trainer-flag-reason-item" style="text-align:left;" ' +
+                    'onclick="selectParticipant(\'' + nameId + '\',\'' + idId + '\',\'' + dropdownId + '\',' +
+                    JSON.stringify(p.name) + ',' + JSON.stringify(p.user_id) + ')">' +
+                    label + '</button>';
+            }).join('');
+        })
+        .catch(function() {
+            dd.innerHTML = '<div style="padding:0.5rem 0.7rem;font-size:0.8rem;color:var(--muted);">Search failed</div>';
+        });
+    }, 280);
+}
+
+function selectParticipant(nameId, idId, dropdownId, name, userId) {
+    const nameEl = document.getElementById(nameId);
+    const idEl   = document.getElementById(idId);
+    const dd     = document.getElementById(dropdownId);
+    if (nameEl) nameEl.value = name || '';
+    if (idEl)   idEl.value   = userId || '';
+    if (dd)     { dd.style.display = 'none'; dd.innerHTML = ''; }
+}
+
+// Close participant dropdowns when clicking outside
+document.addEventListener('click', function(e) {
+    ['compEmpNameDd', 'compEmpIdDd'].forEach(function(id) {
+        const dd = document.getElementById(id);
+        const relInput = id === 'compEmpNameDd' ? document.getElementById('compEmpName') : document.getElementById('compEmpId');
+        if (dd && !dd.contains(e.target) && e.target !== relInput) {
+            dd.style.display = 'none';
+        }
+    });
+});
+
 function filterCompTp(inputId, dropdownId, hiddenId) {
     const term = document.getElementById(inputId).value.toLowerCase();
     const dd = document.getElementById(dropdownId);
