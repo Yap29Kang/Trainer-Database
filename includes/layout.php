@@ -859,7 +859,7 @@ if (isset($content_file) && is_file($content_file)) {
                         <input type="hidden" id="editCompCaseIdHidden">
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
                             <div>
-                                <label class="stm-label">Date of Complaint</label>
+                                <label class="stm-label">Date of Case</label>
                                 <div id="editCompDateDisplay" class="si comp-readonly-field" style="width:100%;margin-top:0.25rem;"></div>
                                 <input type="hidden" id="editCompDate">
                             </div>
@@ -895,12 +895,12 @@ if (isset($content_file) && is_file($content_file)) {
                                 <input type="hidden" id="editCompTpId">
                             </div>
                             <div>
-                                <label class="stm-label">Complaint Category</label>
+                                <label class="stm-label">Case Category</label>
                                 <div id="editCompCategoryDisplay" class="si comp-readonly-field" style="width:100%;margin-top:0.25rem;"></div>
                                 <input type="hidden" id="editCompCategory">
                             </div>
                             <div style="grid-column: span 2;">
-                                <label class="stm-label">Complaint Summary</label>
+                                <label class="stm-label">Case Summary</label>
                                 <div id="editCompSummaryDisplay" class="remark-input comp-readonly-field" style="width:100%;margin-top:0.25rem;min-height:4rem;white-space:pre-wrap;"></div>
                                 <input type="hidden" id="editCompSummary">
                             </div>
@@ -3834,7 +3834,7 @@ window.addEventListener('DOMContentLoaded', () => {
             <form id="newComplaintForm" onsubmit="submitNewComplaint(event)">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
                     <div>
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Date of Complaint *</label>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Date of Case *</label>
                         <input type="date" id="compDate" class="si" required style="width:100%">
                     </div>
                     <div>
@@ -3879,18 +3879,18 @@ window.addEventListener('DOMContentLoaded', () => {
                 </div>
                 
                 <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Complaint Category *</label>
+                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Case Category *</label>
                     <input type="text" id="compCategory" class="si" placeholder="E.g., Poor content, unprofessional..." required style="width:100%">
                 </div>
                 
                 <div style="margin-bottom:1rem;">
-                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Complaint Summary</label>
+                    <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Case Summary</label>
                     <textarea id="compSummary" class="si" rows="3" style="width:100%;resize:vertical;"></textarea>
                 </div>
                 
                 <div style="display:flex;justify-content:flex-end;gap:0.5rem;">
                     <button type="button" class="stm-cancel" onclick="document.getElementById('newComplaintForm').reset();document.getElementById('compTpId').value='';setCselValue('compPriority','compPriorityLabel','','Select Priority');setCselValue('compLearnOps','compLearnOpsLabel','','Select LearnOps');setCselValue('compCategory','compCategoryLabel','','Select Category')">Clear</button>
-                    <button type="submit" class="stm-confirm">Submit Complaint</button>
+                    <button type="submit" class="stm-confirm">Submit Case</button>
                 </div>
             </form>
         </div>
@@ -3923,7 +3923,7 @@ window.addEventListener('DOMContentLoaded', () => {
                     <!-- Repeated Form Fields for Edit -->
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
                         <div>
-                            <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Date of Complaint *</label>
+                            <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Date of Case *</label>
                             <input type="date" id="editCompDate" class="si" required style="width:100%">
                         </div>
                         <div>
@@ -3966,12 +3966,12 @@ window.addEventListener('DOMContentLoaded', () => {
                     </div>
                     
                     <div style="margin-bottom:1rem;">
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Complaint Category *</label>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Case Category *</label>
                         <input type="text" id="editCompCategory" class="si" required style="width:100%">
                     </div>
                     
                     <div style="margin-bottom:1rem;">
-                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Complaint Summary</label>
+                        <label style="display:block;font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.4rem;">Case Summary</label>
                         <textarea id="editCompSummary" class="si" rows="2" style="width:100%;resize:vertical;"></textarea>
                     </div>
 
