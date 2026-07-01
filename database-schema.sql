@@ -200,7 +200,7 @@ CREATE TABLE IF NOT EXISTS Complaint (
     complaint_summary TEXT NOT NULL,
     priority TEXT NOT NULL CHECK (priority IN ('Low', 'Medium', 'High')),
     status TEXT NOT NULL CHECK (status IN ('Open', 'Under Review', 'Closed')),
-    ldcm_decision TEXT CHECK (ldcm_decision IN ('No Action', 'LDCM Decision', 'Blacklist')),
+    ldcm_decision TEXT CHECK (ldcm_decision IN ('No Action', 'Greylist', 'Blacklist', 'Active')),
     decision_date DATE,
     remarks TEXT,
     
@@ -253,3 +253,12 @@ CREATE INDEX IF NOT EXISTS idx_complaint_audit_case_id
 -- Safe to run on a fresh DB (column will be created by the CREATE TABLE above).
 -- Only needed for existing databases where Participant already exists without this column.
 ALTER TABLE Participant ADD COLUMN IF NOT EXISTS Participant_User_ID VARCHAR(100);
+
+-- Migration: update ldcm_decision CHECK constraint to include Greylist and Active
+-- Drop the old constraint and add the new one.
+ALTER TABLE Complaint DROP CONSTRAINT IF EXISTS complaint_ldcm_decision_check;
+ALTER TABLE Complaint ADD CONSTRAINT complaint_ldcm_decision_check
+    CHECK (ldcm_decision IN ('No Action', 'Greylist', 'Blacklist', 'Active'));
+
+-- Also update any existing 'LDCM Decision' values to 'No Action' to avoid orphaned data
+UPDATE Complaint SET ldcm_decision = 'No Action' WHERE ldcm_decision = 'LDCM Decision';

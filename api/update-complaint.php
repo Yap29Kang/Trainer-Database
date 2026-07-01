@@ -47,28 +47,37 @@ try {
         $data['case_id']
     ]);
     
-    // Handle side-effect for Blacklist
-    if ($data['ldcm_decision'] === 'Blacklist') {
-        // Insert a new status entry if it's not already blacklisted for this exact complaint
-        // We can just blindly insert or check current status. Usually we just insert.
-        // But to prevent duplicates on multiple saves, we can check the latest status.
-        $checkSql = "SELECT TP_Status FROM TrainingProviderStatus WHERE TP_ID = ? ORDER BY TP_StatusStartDate DESC, TP_Status_ID DESC LIMIT 1";
-        $checkStmt = $pdo->prepare($checkSql);
-        $checkStmt->execute([$data['training_provider_id']]);
-        $currentStatus = $checkStmt->fetchColumn();
-        
-        if ($currentStatus !== 'Blacklisted') {
-            $reasoning = "Blacklisted due to complaint " . $data['case_id'];
-            if (!empty($data['complaint_summary'])) {
-                $reasoning .= ": " . $data['complaint_summary'];
+    // Handle side-effects for decisions that change the provider's status
+    $decisionsWithStatusChange = ['Blacklist', 'Greylist', 'Active'];
+    if (in_array($data['ldcm_decision'], $decisionsWithStatusChange)) {
+
+        $targetStatus = match($data['ldcm_decision']) {
+            'Blacklist' => 'Blacklisted',
+            'Greylist'  => 'Greylist',
+            'Active'    => 'Active',
+            default     => null
+        };
+
+        if ($targetStatus) {
+            // Only insert a new status entry if the provider isn't already at the target status
+            $checkSql = "SELECT TP_Status FROM TrainingProviderStatus WHERE TP_ID = ? ORDER BY TP_StatusStartDate DESC, TP_Status_ID DESC LIMIT 1";
+            $checkStmt = $pdo->prepare($checkSql);
+            $checkStmt->execute([$data['training_provider_id']]);
+            $currentStatus = $checkStmt->fetchColumn();
+
+            if ($currentStatus !== $targetStatus) {
+                $reasoning = "Status set to {$targetStatus} due to complaint " . $data['case_id'];
+                if (!empty($data['complaint_summary'])) {
+                    $reasoning .= ": " . $data['complaint_summary'];
+                }
+                if (!empty($data['remarks'])) {
+                    $reasoning .= " | Remarks: " . $data['remarks'];
+                }
+
+                $insertSql = "INSERT INTO TrainingProviderStatus (TP_ID, TP_Status, TP_StatusReasoning, TP_StatusStartDate) VALUES (?, ?, ?, CURRENT_DATE)";
+                $insertStmt = $pdo->prepare($insertSql);
+                $insertStmt->execute([$data['training_provider_id'], $targetStatus, $reasoning]);
             }
-            if (!empty($data['remarks'])) {
-                $reasoning .= " | Remarks: " . $data['remarks'];
-            }
-            
-            $insertSql = "INSERT INTO TrainingProviderStatus (TP_ID, TP_Status, TP_StatusReasoning, TP_StatusStartDate) VALUES (?, 'Blacklisted', ?, CURRENT_DATE)";
-            $insertStmt = $pdo->prepare($insertSql);
-            $insertStmt->execute([$data['training_provider_id'], $reasoning]);
         }
     }
 

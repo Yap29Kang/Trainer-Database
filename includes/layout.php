@@ -736,11 +736,8 @@ if (isset($content_file) && is_file($content_file)) {
                             </button>
                             <input type="hidden" id="compLearnOps" required>
                             <div id="compLearnOpsMenu" class="trainer-flag-reason-menu" style="width:100%;">
-                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Mohammed Sabri')">Mohammed Sabri</button>
-                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Felicia Seka')">Felicia Seka</button>
-                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Sharifah Patemah')">Sharifah Patemah</button>
                                 <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Nur Suzyla')">Nur Suzyla</button>
-                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Rina')">Rina</button>
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Felicia')">Felicia</button>
                             </div>
                         </div>
                     </div>
@@ -929,8 +926,9 @@ if (isset($content_file) && is_file($content_file)) {
                                     <input type="hidden" id="editCompDecision" required>
                                     <div id="editCompDecisionMenu" class="trainer-flag-reason-menu" style="width:100%;">
                                         <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompDecision','editCompDecisionLabel','editCompDecisionMenu','editCompDecisionBtn','No Action')">No Action</button>
-                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompDecision','editCompDecisionLabel','editCompDecisionMenu','editCompDecisionBtn','LDCM Decision')">LDCM Decision</button>
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompDecision','editCompDecisionLabel','editCompDecisionMenu','editCompDecisionBtn','Greylist')">Greylist</button>
                                         <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompDecision','editCompDecisionLabel','editCompDecisionMenu','editCompDecisionBtn','Blacklist')">Blacklist</button>
+                                        <button type="button" class="trainer-flag-reason-item" onclick="setCsel('editCompDecision','editCompDecisionLabel','editCompDecisionMenu','editCompDecisionBtn','Active')">Active</button>
                                     </div>
                                 </div>
                             </div>
@@ -4381,7 +4379,9 @@ function renderComplaintList() {
     }
     function decisionColor(d) {
         if (!d || d === 'No Action') return { bg:'#f8fafc', color:'#64748b', border:'#cbd5e1' };
-        if (d === 'Blacklist') return { bg:'#fff1f2', color:'#be123c', border:'#fca5a5' };
+        if (d === 'Blacklist')       return { bg:'#fff1f2', color:'#be123c', border:'#fca5a5' };
+        if (d === 'Greylist')        return { bg:'#fefce8', color:'#854d0e', border:'#fde68a' };
+        if (d === 'Active')          return { bg:'#f0fdf4', color:'#166534', border:'#86efac' };
         return { bg:'#fafaf0', color:'#854d0e', border:'#fde68a' };
     }
 
@@ -4550,8 +4550,9 @@ function renderAuditLog(entries) {
     };
     const decisionColors = {
         'No Action':    { bg:'#f8fafc', color:'#64748b', border:'#cbd5e1' },
-        'LDCM Decision':{ bg:'#fafaf0', color:'#854d0e', border:'#fde68a' },
-        'Blacklist':    { bg:'#fff1f2', color:'#be123c', border:'#fca5a5' }
+        'Greylist':     { bg:'#fefce8', color:'#854d0e', border:'#fde68a' },
+        'Blacklist':    { bg:'#fff1f2', color:'#be123c', border:'#fca5a5' },
+        'Active':       { bg:'#f0fdf4', color:'#166534', border:'#86efac' }
     };
 
     function chip(label, val, colorMap) {
