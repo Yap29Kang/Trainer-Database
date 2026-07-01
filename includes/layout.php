@@ -673,7 +673,7 @@ if (isset($content_file) && is_file($content_file)) {
         <div class="uoh" style="background: var(--blue); color: #fff; padding: 1rem 1.45rem; border-radius: 14px 14px 0 0; display: flex; align-items: center; justify-content: space-between;">
             <div style="display: flex; align-items: center; gap: 0.5rem; font-family: 'Calibri', sans-serif; font-weight: 700; font-size: 1.05rem;">
                 <span style="font-size: 1.2rem;">🚩</span>
-                <span>Complaints</span>
+                <span>Case</span>
             </div>
             <button class="uoc" onclick="closeComplaintModal()" style="background: rgba(255,255,255,0.15); border: none; border-radius: 6px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #fff;">✕</button>
         </div>
@@ -681,19 +681,19 @@ if (isset($content_file) && is_file($content_file)) {
         <!-- Tabs -->
         <div style="display: flex; background: var(--cream); border-bottom: 1px solid var(--border);">
             <button class="u-tab-btn active" id="ctab-new" onclick="switchComplaintTab('new')">
-                New complaint
+                New Case
             </button>
             <button class="u-tab-btn" id="ctab-update" onclick="switchComplaintTab('update')">
-                Update status
+                Case List
             </button>
         </div>
 
-        <!-- Tab Content: New Complaint -->
+        <!-- Tab Content: New Case -->
         <div class="uob" id="compContent-new">
             <form id="newComplaintForm" onsubmit="submitNewComplaint(event)">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
                     <div>
-                        <label class="stm-label">Date of Complaint *</label>
+                        <label class="stm-label">Date of Case *</label>
                         <input type="date" id="compDate" class="si" style="width:100%;margin-top:0.25rem" max="<?php echo date('Y-m-d'); ?>" required>
                     </div>
                     <div>
@@ -736,8 +736,11 @@ if (isset($content_file) && is_file($content_file)) {
                             </button>
                             <input type="hidden" id="compLearnOps" required>
                             <div id="compLearnOpsMenu" class="trainer-flag-reason-menu" style="width:100%;">
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Mohammed Sabri')">Mohammed Sabri</button>
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Felicia Seka')">Felicia Seka</button>
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Sharifah Patemah')">Sharifah Patemah</button>
                                 <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Nur Suzyla')">Nur Suzyla</button>
-                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Felicia')">Felicia</button>
+                                <button type="button" class="trainer-flag-reason-item" onclick="setCsel('compLearnOps','compLearnOpsLabel','compLearnOpsMenu','compLearnOpsBtn','Rina')">Rina</button>
                             </div>
                         </div>
                     </div>
@@ -750,7 +753,7 @@ if (isset($content_file) && is_file($content_file)) {
                         </div>
                     </div>
                     <div>
-                        <label class="stm-label">Complaint Category *</label>
+                        <label class="stm-label">Case Category *</label>
                         <div class="csel-wrap" style="position:relative;margin-top:0.25rem;">
                             <button type="button" id="compCategoryBtn" class="si dept-select-btn" style="width:100%" onclick="toggleCsel('compCategoryMenu','compCategoryBtn')">
                                 <span id="compCategoryLabel" class="dept-select-placeholder">Select Category</span>
@@ -765,24 +768,24 @@ if (isset($content_file) && is_file($content_file)) {
                     </div>
                 </div>
                 <div style="margin-bottom:1rem;">
-                    <label class="stm-label">Complaint Summary *</label>
+                    <label class="stm-label">Case Summary *</label>
                     <textarea id="compSummary" class="remark-input" rows="3" style="width:100%;margin-top:0.25rem" required></textarea>
                 </div>
                 <div class="ua" style="display: flex; gap: 0.5rem; justify-content:flex-end;">
                     <button type="button" class="ux" onclick="closeComplaintModal()">Cancel</button>
-                    <button type="submit" class="uc">Submit Complaint</button>
+                    <button type="submit" class="uc">Submit Case</button>
                 </div>
             </form>
         </div>
 
-        <!-- Tab Content: Update status -->
+        <!-- Tab Content: Case List -->
         <div class="uob" id="compContent-update" style="display: none;">
             <div id="compListSection">
                 <!-- Stats bar -->
                 <div id="compStatsBar" style="display:flex;align-items:center;background:var(--blue);border-radius:10px;padding:0.7rem 1.1rem;margin-bottom:0.85rem;gap:0;">
                     <div class="sum-main" style="border-right:1px solid rgba(255,255,255,.25);padding-right:1.1rem;min-width:0;">
                         <div class="sum-main-num" id="compStatTotal">—</div>
-                        <div class="sum-main-lbl">Complaints</div>
+                        <div class="sum-main-lbl">Case</div>
                     </div>
                     <div class="sum-stats" style="padding-left:1.1rem;gap:1.2rem;">
                         <div class="ss">
@@ -800,7 +803,7 @@ if (isset($content_file) && is_file($content_file)) {
                     </div>
                 </div>
                 <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;align-items:center;">
-                    <input type="text" id="compSearchInput" class="si" placeholder="Search complaints..." style="flex:0 1 240px" oninput="renderComplaintList()">
+                    <input type="text" id="compSearchInput" class="si" placeholder="Search case..." style="flex:0 1 240px" oninput="renderComplaintList()">
                     <!-- Filter button -->
                     <div style="position:relative;">
                         <button type="button" id="compFilterBtn" onclick="toggleCompFilter()" style="display:inline-flex;align-items:center;gap:0.35rem;border:1.5px solid var(--border);border-radius:8px;padding:.4rem .8rem;font-family:'Calibri',sans-serif;font-size:.82rem;font-weight:700;background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap;transition:all .2s;">
@@ -811,7 +814,7 @@ if (isset($content_file) && is_file($content_file)) {
                         <!-- Filter panel -->
                         <div id="compFilterPanel" style="display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:300;background:var(--card);border:1.5px solid var(--border);border-radius:10px;padding:1rem;width:240px;box-shadow:0 4px 16px rgba(0,0,0,.12);">
                             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
-                                <span style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Filter Complaints</span>
+                                <span style="font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;">Filter Case</span>
                                 <button type="button" onclick="clearCompFilters()" style="font-size:.72rem;color:var(--blue);background:none;border:none;cursor:pointer;font-weight:700;padding:0;">Clear all</button>
                             </div>
                             <!-- Status -->
@@ -841,11 +844,11 @@ if (isset($content_file) && is_file($content_file)) {
                 <!-- Active filter tags row -->
                 <div id="compActiveFilters" style="display:none;flex-wrap:wrap;gap:0.3rem;margin-bottom:0.6rem;"></div>
                 <div id="compListContainer" style="max-height: 420px; overflow-y: auto;">
-                    <!-- Complaints list inserted here -->
+                    <!-- Case list inserted here -->
                 </div>
             </div>
 
-            <!-- Edit Complaint Form (Hidden initially) -->
+            <!-- Edit Case Form (Hidden initially) -->
             <div id="compEditSection" style="display:none;">
                 <div style="display:flex;align-items:center;margin-bottom:1rem;gap:0.5rem;">
                     <button type="button" class="ux" onclick="showComplaintList()" style="padding:4px 8px;">← Back</button>
@@ -902,7 +905,7 @@ if (isset($content_file) && is_file($content_file)) {
                                 <input type="hidden" id="editCompSummary">
                             </div>
 
-                            <!-- Update Status Specific Fields -->
+                            <!-- Case List Specific Fields -->
                             <div>
                                 <label class="stm-label">Status *</label>
                                 <div class="csel-wrap" style="position:relative;margin-top:0.25rem;">
@@ -3822,11 +3825,11 @@ window.addEventListener('DOMContentLoaded', () => {
             <button class="mc" onclick="closeComplaintModal()">×</button>
         </div>
         <div class="ptabs">
-            <button class="ptab active" id="ctab-new" onclick="switchComplaintTab('new')">New Complaint</button>
-            <button class="ptab" id="ctab-update" onclick="switchComplaintTab('update')">Update Status</button>
+            <button class="ptab active" id="ctab-new" onclick="switchComplaintTab('new')">New Case</button>
+            <button class="ptab" id="ctab-update" onclick="switchComplaintTab('update')">Case List</button>
         </div>
         
-        <!-- New Complaint Tab -->
+        <!-- New Case Tab -->
         <div class="mb2" id="compContent-new">
             <form id="newComplaintForm" onsubmit="submitNewComplaint(event)">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
@@ -3892,7 +3895,7 @@ window.addEventListener('DOMContentLoaded', () => {
             </form>
         </div>
         
-        <!-- Update Status Tab -->
+        <!-- Case List Tab -->
         <div class="mb2" id="compContent-update" style="display:none;">
             <!-- List Section -->
             <div id="compListSection">
@@ -4014,7 +4017,7 @@ window.addEventListener('DOMContentLoaded', () => {
 </div>
 
 <script>
-// Complaints Logic
+// Case Logic
 let complaintsCache = [];
 let departmentsCache = [];
 function openComplaintModal() {
@@ -4361,7 +4364,7 @@ function renderComplaintList() {
     setEl('compStatClosed', nClosed);
 
     if (!data.length) {
-        c.innerHTML = '<div style="padding:1rem;color:var(--muted);text-align:center;">No complaints found</div>';
+        c.innerHTML = '<div style="padding:1rem;color:var(--muted);text-align:center;">No cases found</div>';
         return;
     }
 
